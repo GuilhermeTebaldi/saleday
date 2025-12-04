@@ -1,0 +1,769 @@
+// frontend/src/components/SearchBar.jsx
+//aqui é a barra com icones ! baixo da barra de logo
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api.js';
+import { toast } from 'react-hot-toast';
+import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter } from 'lucide-react';
+import { getCountryLabel } from '../data/countries.js';
+
+const regionDisplay =
+  typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
+    ? new Intl.DisplayNames(['pt-BR', 'en'], { type: 'region' })
+    : null;
+
+const normalizeText = (value) =>
+  (value || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const tokenize = (value) => {
+  const normalized = normalizeText(value);
+  return normalized ? normalized.split(' ').filter(Boolean) : [];
+};
+
+const levenshteinDistance = (a = '', b = '') => {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const dp = Array(b.length + 1)
+    .fill(null)
+    .map(() => Array(a.length + 1).fill(0));
+  for (let i = 0; i <= b.length; i += 1) dp[i][0] = i;
+  for (let j = 0; j <= a.length; j += 1) dp[0][j] = j;
+  for (let i = 1; i <= b.length; i += 1) {
+    for (let j = 1; j <= a.length; j += 1) {
+      const indicator = a[j - 1] === b[i - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + indicator
+      );
+    }
+  }
+  return dp[b.length][a.length];
+};
+
+const tokenMatches = (candidate, queryToken) => {
+  if (!candidate || !queryToken) return false;
+  if (candidate.includes(queryToken) || queryToken.includes(candidate)) return true;
+  const tolerance = queryToken.length <= 4 ? 1 : 2;
+  return levenshteinDistance(candidate, queryToken) <= tolerance;
+};
+
+const matchesProductQuery = (product, queryTokens) => {
+  if (!product || !queryTokens.length) return false;
+  const searchable = [
+    product.title,
+    product.description,
+    product.category,
+    product.tags?.join?.(' '),
+    product.city,
+    product.state,
+    product.country,
+    product.seller_name,
+    product.subtitle,
+    product.brand
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const productTokens = tokenize(searchable);
+  if (!productTokens.length) return false;
+  return queryTokens.every((token) =>
+    productTokens.some((candidate) => tokenMatches(candidate, token))
+  );
+};
+
+const filterProductsByQuery = (products, query) => {
+  const tokens = tokenize(query);
+  if (!tokens.length) return [];
+  return products.filter((product) => matchesProductQuery(product, tokens));
+};
+
+const mergeResults = (primary = [], secondary = []) => {
+  const seen = new Set();
+  const merged = [];
+  const pushUnique = (list) => {
+    for (const item of list) {
+      if (!item) continue;
+      const key = item.id ?? `${item.product_id}-${item.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(item);
+    }
+  };
+  pushUnique(primary);
+  pushUnique(secondary);
+  return merged;
+};
+
+const buildLocationLabel = (geo) => {
+  if (!geo) return '';
+  const parts = [];
+  if (geo.city) parts.push(geo.city);
+  if (geo.state && geo.state !== geo.city) parts.push(geo.state);
+  if (geo.country) {
+    const countryName = regionDisplay?.of(geo.country) || geo.country;
+    parts.push(countryName);
+  }
+  return parts.filter(Boolean).join(', ');
+};
+
+const resolveCountryName = (code) => {
+  if (!code) return '';
+  const normalized = String(code).trim().toUpperCase();
+  return getCountryLabel(normalized) || regionDisplay?.of(normalized) || normalized;
+};
+
+const FLAG_BASE_URL = 'https://flagcdn.com';
+const getFlagUrl = (code) => {
+  if (!code) return null;
+  const normalized = String(code).trim().toLowerCase();
+  return `${FLAG_BASE_URL}/w40/${normalized}.png`;
+};
+
+const COUNTRY_THEMES = {
+  BR: { border: 'border-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-900' },
+  US: { border: 'border-blue-500', bg: 'bg-blue-50', text: 'text-blue-900' },
+  IT: { border: 'border-rose-500', bg: 'bg-rose-50', text: 'text-rose-900' }
+};
+
+const getCountryTheme = (code) => {
+  const normalized = String(code || '').trim().toUpperCase();
+  return COUNTRY_THEMES[normalized] ?? { border: 'border-gray-200', bg: 'bg-white', text: 'text-gray-700' };
+};
+
+export default function SearchBar({
+  onProductsLoaded,
+  onFiltersChange,
+  resetSignal,
+  onOpenMap,
+  geoScope,
+  originCountry,
+  categoryOptions = [],
+  categoryFilter,
+  categoryLoading,
+  onCategorySelect,
+  locationSummary
+}) {
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const [address, setAddress] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [panel, setPanel] = useState(null); // 'address' | 'seller' | 'country' | null
+  const [sellerName, setSellerName] = useState('');
+  const [sellerRating, setSellerRating] = useState('');
+  const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
+  const popRef = useRef(null);
+  const fallbackCountry = (originCountry || 'BR').toString().trim().toUpperCase() || 'BR';
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [countryLoading, setCountryLoading] = useState(false);
+  const [countryApplying, setCountryApplying] = useState(false);
+  const searchInputRef = useRef(null);
+
+  const activeCountry =
+    geoScope?.type === 'country' && geoScope?.country
+      ? String(geoScope.country).toUpperCase()
+      : null;
+
+  const hasCategoryOptions = Array.isArray(categoryOptions) && categoryOptions.length > 0;
+  const toggleCategoryPanel = () => {
+    if (!hasCategoryOptions) return;
+    setCategoryPanelOpen((prev) => !prev);
+    setPanel(null);
+  };
+  const handleCategorySelection = (label) => {
+    if (!label) return;
+    if (typeof onCategorySelect === 'function') {
+      onCategorySelect(label);
+    }
+    setCategoryPanelOpen(false);
+  };
+
+  const buildGeoParams = (scopeOverride) => {
+    const scope = scopeOverride || geoScope;
+    if (scope?.type === 'bbox') {
+      const bounds = scope.bounds || scope;
+      const { minLat, maxLat, minLng, maxLng } = bounds || {};
+      if ([minLat, maxLat, minLng, maxLng].every((value) => Number.isFinite(value))) {
+        return { minLat, maxLat, minLng, maxLng };
+      }
+    }
+    const countryCode = scope?.country || fallbackCountry;
+    return countryCode ? { country: countryCode } : {};
+  };
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!popRef.current) return;
+      if (!popRef.current.contains(e.target)) {
+        setPanel(null);
+        setCategoryPanelOpen(false);
+      }
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
+  useEffect(() => {
+    if (resetSignal === undefined) return;
+    setQ('');
+    setAddress('');
+    setSellerName('');
+    setSellerRating('');
+    setPanel(null);
+  }, [resetSignal]);
+
+  useEffect(() => {
+    if (!hasCategoryOptions) {
+      setCategoryPanelOpen(false);
+    }
+  }, [hasCategoryOptions]);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  const toggleCountryPanel = () => {
+    setPanel((prev) => {
+      const next = prev === 'country' ? null : 'country';
+      if (next === 'country' && !countryOptions.length && !countryLoading) {
+        loadCountryOptions();
+      }
+      return next;
+    });
+  };
+
+  async function loadCountryOptions() {
+    setCountryLoading(true);
+    try {
+      const { data } = await api.get('/products/countries');
+      if (data.success) {
+        const normalized = Array.isArray(data.data) ? data.data : [];
+        const deduped = [];
+        const seen = new Set();
+        for (const item of normalized) {
+          const code = String(item.country || '').trim().toUpperCase();
+          if (!code || seen.has(code)) continue;
+          seen.add(code);
+          deduped.push({ country: code, total: Number(item.total) || 0 });
+        }
+        setCountryOptions(deduped);
+      } else {
+        toast.error('Não foi possível carregar os países.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao carregar países.');
+    } finally {
+      setCountryLoading(false);
+    }
+  }
+
+  async function applyCountryFilter(code) {
+    const normalized = String(code || '').trim().toUpperCase();
+    if (!normalized) return;
+    setCountryApplying(true);
+    try {
+      const { data } = await api.get('/products', {
+        params: { sort: 'rank', country: normalized }
+      });
+      if (data.success) {
+        const list = Array.isArray(data.data) ? data.data : [];
+        onProductsLoaded?.(list);
+        const label = resolveCountryName(normalized);
+        onFiltersChange?.({ type: 'country', value: { country: normalized, label } });
+        toast.success(`Filtrando por ${label}.`);
+        setPanel(null);
+      } else {
+        toast.error('Nenhum produto encontrado neste país.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao filtrar por país.');
+    } finally {
+      setCountryApplying(false);
+    }
+  }
+
+  async function searchText() {
+    const trimmed = q.trim();
+    if (!trimmed) {
+      toast.error('Digite algo para buscar.');
+      return;
+    }
+    const geoParams = buildGeoParams();
+    try {
+      const primary = await api.get('/products', {
+        params: { q: trimmed, sort: 'rank', ...geoParams }
+      });
+      let results = [];
+      if (primary.data?.success) {
+        results = primary.data.data ?? [];
+      }
+
+      let enriched = results;
+      if (trimmed.length > 0) {
+        const filteredPrimary = filterProductsByQuery(results, trimmed);
+        enriched = filteredPrimary.length ? filteredPrimary : results;
+      }
+
+      if (!enriched.length) {
+        const fallback = await api.get('/products', {
+          params: { sort: 'rank', ...geoParams }
+        });
+        if (fallback.data?.success) {
+          enriched = filterProductsByQuery(fallback.data.data ?? [], trimmed);
+        }
+      } else if (enriched.length < 6) {
+        const fallback = await api.get('/products', {
+          params: { sort: 'rank', ...geoParams }
+        });
+        if (fallback.data?.success) {
+          const filteredFallback = filterProductsByQuery(fallback.data.data ?? [], trimmed);
+          enriched = mergeResults(enriched, filteredFallback);
+        }
+      }
+
+      if (enriched.length) {
+        onProductsLoaded?.(enriched);
+        onFiltersChange?.({ type: 'search', value: trimmed });
+      } else {
+        toast.error('Nenhum produto corresponde à sua busca.');
+      }
+      setPanel(null);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao buscar produtos.');
+    }
+  }
+
+  async function applyAddress() {
+    const raw = address.trim();
+    if (!raw) return toast.error('Digite um endereço ou cidade.');
+    setLoading(true);
+    try {
+      const { data } = await api.get('/geo/forward', { params: { q: raw } });
+      if (!data.success || !data.data) {
+        toast.error('Endereço não encontrado.');
+        return;
+      }
+      const formattedLabel = buildLocationLabel(data.data);
+      if (formattedLabel) {
+        setAddress(formattedLabel);
+      }
+      const { lat, lng, city } = data.data;
+      const params = { sort: 'rank' };
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        Object.assign(params, {
+          minLat: lat - 0.05,
+          maxLat: lat + 0.05,
+          minLng: lng - 0.05,
+          maxLng: lng + 0.05
+        });
+      }
+
+      let products = [];
+      const primary = await api.get('/products', { params });
+      if (primary.data?.success) {
+        products = primary.data.data ?? [];
+      }
+
+      if ((!products || products.length === 0) && city) {
+        const fallback = await api.get('/products', {
+          params: { sort: 'rank', city }
+        });
+        if (fallback.data?.success) {
+          products = fallback.data.data ?? [];
+        }
+      }
+
+      if ((!products || products.length === 0) && city) {
+        const general = await api.get('/products', { params: { sort: 'rank' } });
+        if (general.data?.success) {
+          const normalizedTarget = normalizeText(city);
+          products =
+            general.data.data?.filter((product) => normalizeText(product.city) === normalizedTarget) ??
+            [];
+        }
+      }
+
+      if (products && products.length) {
+        const payload = { ...data.data, label: formattedLabel || raw };
+        onProductsLoaded?.(products);
+        onFiltersChange?.({ type: 'address', value: payload });
+        toast.success(`Região aplicada: ${payload.label}`);
+      } else {
+        toast.error('Nenhum produto encontrado nessa região.');
+      }
+      setPanel(null);
+    } catch {
+      toast.error('Erro ao aplicar endereço.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function useGPSQuick() {
+    if (!navigator.geolocation) return toast.error('GPS indisponível.');
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const bbox = {
+            minLat: coords.latitude - 0.05,
+            maxLat: coords.latitude + 0.05,
+            minLng: coords.longitude - 0.05,
+            maxLng: coords.longitude + 0.05
+          };
+          const r = await api.get('/products', { params: { ...bbox, sort: 'rank' } });
+          if (r.data.success) {
+            const payload = {
+              label: 'Perto de você',
+              lat: coords.latitude,
+              lng: coords.longitude
+            };
+            onProductsLoaded?.(r.data.data);
+            onFiltersChange?.({
+              type: 'address',
+              value: payload
+            });
+            toast.success('Produtos próximos.');
+          }
+        } catch {
+          toast.error('Erro ao buscar próximos.');
+        }
+      },
+      () => toast.error('Não foi possível obter o GPS.')
+    );
+  }
+
+  async function resetAll() {
+    try {
+      const defaultParams = buildGeoParams({ type: 'country', country: fallbackCountry });
+      const { data } = await api.get('/products', {
+        params: { sort: 'rank', ...defaultParams }
+      });
+      if (data.success) onProductsLoaded?.(data.data);
+      setAddress(''); setQ(''); setPanel(null);
+      onFiltersChange?.({ type: 'reset' });
+    } catch {
+      toast.error('Erro ao resetar.');
+    }
+  }
+
+  function searchSeller() {
+    const nameTrimmed = sellerName.trim();
+    const ratingSelected = sellerRating;
+    if (!nameTrimmed && !ratingSelected) {
+      toast.error('Informe um nome ou uma nota mínima.');
+      return;
+    }
+    const params = new URLSearchParams();
+    if (nameTrimmed) params.set('q', nameTrimmed);
+    if (ratingSelected) params.set('minRating', ratingSelected);
+    navigate(`/sellers/search?${params.toString()}`);
+    setPanel(null);
+  }
+
+  return (
+    <div className="relative" ref={popRef}>
+      {/* Barra de busca fixa */}
+      <div className="mb-2">
+        <div className="flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
+          <Search size={18} className="text-gray-500 ml-1" />
+          <input
+            ref={searchInputRef}
+            className="flex-1 p-2 outline-none bg-transparent"
+            placeholder="Buscar por título, marca, modelo ou serviço"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && searchText()}
+          />
+          <button
+            onClick={searchText}
+            className="px-2 py-2 rounded-full bg-gray-900 text-white text-sm"
+          >
+            Buscar
+          </button>
+        </div>
+      </div>
+
+      {/* Barra de ícones */}
+      <div className="flex items-center gap-5 p-2 bg-white rounded-md shadow-sm">
+        {hasCategoryOptions && (
+          <div className="relative">
+            <button
+              type="button"
+              title="Filtrar categorias"
+              onClick={toggleCategoryPanel}
+              aria-haspopup="true"
+              aria-expanded={categoryPanelOpen}
+              className={`p-2 rounded hover:bg-gray-100 transition ${
+                categoryPanelOpen ? 'bg-gray-100 shadow-sm' : ''
+              }`}
+            >
+              <Filter size={18} />
+              {categoryFilter && (
+                <span className="pointer-events-none absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500" />
+              )}
+            </button>
+            {categoryPanelOpen && (
+              <div className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-2xl p-3 text-sm">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <p>
+                    {locationSummary
+                      ? `Disponíveis em ${locationSummary}`
+                      : 'Categorias'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {categoryFilter && (
+                      <button
+                        type="button"
+                        onClick={() => handleCategorySelection(categoryFilter)}
+                        disabled={categoryLoading}
+                        className="text-emerald-600 hover:underline disabled:cursor-wait disabled:opacity-60"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setCategoryPanelOpen(false)}
+                      className="text-gray-500 hover:underline"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+                  {categoryOptions.map(({ label, count }) => {
+                    const active = categoryFilter === label;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => handleCategorySelection(label)}
+                        disabled={categoryLoading}
+                        className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                          active
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
+                      >
+                        <span className="block text-sm font-semibold truncate">
+                          {label}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {count} anúncios
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          title="Filtrar por países"
+          onClick={toggleCountryPanel}
+          className="p-2 rounded hover:bg-gray-100"
+          aria-haspopup="dialog"
+          aria-expanded={panel === 'country'}
+        >
+          <Globe size={18} />
+        </button>
+        {false && (
+          <button
+            type="button"
+            title="Cidade, bairro ou endereço"
+            onClick={() => setPanel((p) => (p === 'address' ? null : 'address'))}
+            className="p-2 rounded hover:bg-gray-100"
+            aria-haspopup="dialog"
+            aria-expanded={panel === 'address'}
+          >
+            <MapPin size={18} />
+          </button>
+        )}
+        <button
+          type="button"
+          title="GPS"
+          onClick={useGPSQuick}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <Crosshair size={18} />
+        </button>
+        <button
+          type="button"
+          title="Reset"
+          onClick={resetAll}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <RotateCw size={18} />
+        </button>
+        <button
+          type="button"
+          title="Localizar no mapa"
+          onClick={() => {
+            let handled = false;
+            if (typeof onOpenMap === 'function') {
+              handled = onOpenMap() === true;
+            }
+            if (!handled) {
+              window.dispatchEvent(new Event('saleday:open-map'));
+            }
+          }}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <MapIcon size={18} />
+        </button>
+        <button
+          type="button"
+          title="Buscar vendedores"
+          onClick={() => setPanel((p) => (p === 'seller' ? null : 'seller'))}
+          className="p-2 rounded hover:bg-gray-100"
+          aria-haspopup="dialog"
+          aria-expanded={panel === 'seller'}
+        >
+          <User size={18} />
+        </button>
+      </div>
+
+      {/* Painéis */}
+
+      {panel === 'address' && (
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-2 flex items-center gap-2">
+          <MapPin size={16} className="text-gray-500" />
+          <input
+            className="flex-1 p-2 outline-none"
+            placeholder="Cidade, bairro ou endereço (ex: Chapecó)"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applyAddress()}
+            autoFocus
+          />
+          <button
+            onClick={applyAddress}
+            disabled={loading}
+            className="px-3 py-2 rounded bg-blue-600 text-white text-sm disabled:opacity-60"
+          >
+            {loading ? 'Aplicando...' : 'Aplicar'}
+          </button>
+          <button onClick={() => setPanel(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Fechar">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {panel === 'seller' && (
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-3 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-gray-500" />
+            <input
+              className="flex-1 p-2 outline-none"
+              placeholder="Nome do vendedor ou empresa"
+              value={sellerName}
+              onChange={(e) => setSellerName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchSeller()}
+              autoFocus
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600" htmlFor="seller-rating-select">
+              Nota mínima
+            </label>
+            <select
+              id="seller-rating-select"
+              className="flex-1 p-2 border rounded-md"
+              value={sellerRating}
+              onChange={(e) => setSellerRating(e.target.value)}
+            >
+              <option value="">Qualquer nota</option>
+              <option value="5">5 estrelas</option>
+              <option value="4.5">4.5 ou mais</option>
+              <option value="4">4 ou mais</option>
+              <option value="3">3 ou mais</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setPanel(null)} className="px-3 py-2 rounded bg-gray-200 text-sm">
+              Fechar
+            </button>
+            <button onClick={searchSeller} className="px-3 py-2 rounded bg-emerald-600 text-white text-sm">
+              Buscar vendedores
+            </button>
+          </div>
+        </div>
+      )}
+
+      {panel === 'country' && (
+        <div className="fixed z-40 top-24 right-4 w-72 max-w-[90vw] h-[70vh] rounded-2xl border bg-white/95 backdrop-blur shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <div>
+              <p className="text-sm font-semibold">Filtrar por país</p>
+              <p className="text-xs text-gray-500">Somente países com anúncios ativos</p>
+            </div>
+            <button type="button" onClick={() => setPanel(null)} className="p-1.5 rounded-full hover:bg-gray-100" aria-label="Fechar lista de países">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="p-4 flex-1 overflow-auto space-y-2">
+            {countryLoading ? (
+              <p className="text-sm text-gray-500">Carregando países...</p>
+            ) : countryOptions.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
+            ) : (
+              countryOptions.map((item) => {
+                const label = resolveCountryName(item.country);
+                const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
+                const isActive = activeCountry === item.country;
+                const flagUrl = getFlagUrl(item.country);
+                const theme = getCountryTheme(item.country);
+                return (
+                  <button
+                    key={item.country}
+                    type="button"
+                    disabled={countryApplying}
+                    onClick={() => applyCountryFilter(item.country)}
+                    className={`w-full text-left p-3 rounded-2xl border transition hover:shadow-sm ${
+                      isActive
+                        ? `${theme.border} ${theme.bg} ${theme.text}`
+                        : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {flagUrl ? (
+                          <img
+                            src={flagUrl}
+                            alt={label}
+                            className="w-5 h-5 rounded-sm object-cover border border-white/60"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
+                            {item.country}
+                          </span>
+                        )}
+                        <p className="font-semibold text-sm truncate">{label}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{countLabel}</p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <div className="px-4 py-3 border-t text-xs text-gray-500">
+            {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

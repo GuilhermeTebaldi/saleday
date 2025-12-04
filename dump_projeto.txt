@@ -1,0 +1,5929 @@
+backend/src/server.js:
+```js
+import dotenv from 'dotenv';
+dotenv.config();
+import app from './app.js';
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`API on http://localhost:${PORT}`));
+
+```
+
+backend/src/app.js:
+```js
+import express from 'express';
+import cors from 'cors';
+import routes from './routes/index.js';
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.use('/api', routes);          // prefixo da API
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+export default app;
+
+```
+
+backend/src/config/db.js:
+```js
+import pg from 'pg';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const { Pool } = pg;
+
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASS,
+  port: process.env.DB_PORT
+});
+
+export default pool;
+
+```
+
+backend/src/routes/index.js:
+```js
+//backend/src/routes/index.js
+import express from 'express';
+import authRoutes from './authRoutes.js';
+import userRoutes from './userRoutes.js';
+import productRoutes from './productRoutes.js';
+import messageRoutes from './messageRoutes.js';
+import geoRoutes from './geo.js';
+import favoriteRoutes from './favoriteRoutes.js';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+
+const router = express.Router();
+
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/products', productRoutes);
+router.use('/messages', messageRoutes);
+router.use('/geo', geoRoutes);
+router.use('/favorites', favoriteRoutes); // <-- novo
+
+// rota de teste privada
+router.get('/private', verifyToken, (req, res) => {
+  res.json({ success: true, message: 'Acesso autorizado', userId: req.user.id });
+});
+
+export default router;
+
+```
+
+backend/src/routes/authRoutes.js:
+```js
+import express from 'express';
+import { register, login, updateProfile } from '../controllers/authController.js';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+
+const router = express.Router();
+
+router.post('/register', register);
+router.post('/login', login);
+router.put('/update', verifyToken, updateProfile);
+
+export default router;
+
+```
+
+backend/src/routes/productRoutes.js:
+```js
+import express from 'express';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+import {
+  listProducts,
+  getProduct,
+  listMyProducts,
+  create,
+  update,
+  remove,
+  setStatus
+} from '../controllers/productsController.js';
+
+const router = express.Router();
+
+// públicas
+router.get('/', listProducts);
+
+// protegidas
+router.get('/my', verifyToken, listMyProducts);
+router.post('/', verifyToken, create);
+router.put('/:id', verifyToken, update);
+router.put('/:id/status', verifyToken, setStatus);
+router.delete('/:id', verifyToken, remove);
+
+// pública com parâmetro (depois de /my para evitar conflito)
+router.get('/:id', getProduct);
+
+export default router;
+
+```
+
+backend/src/routes/messageRoutes.js:
+```js
+import express from 'express';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+import {
+  sendMessage,
+  getMessages,
+  getConversations,
+  getUnreadCount
+} from '../controllers/messageController.js';
+
+const router = express.Router();
+
+router.post('/', verifyToken, sendMessage);
+router.get('/', verifyToken, getConversations);
+router.get('/unread/count', verifyToken, getUnreadCount);
+router.get('/:productId', verifyToken, getMessages);
+
+export default router;
+
+```
+
+backend/src/routes/favoriteRoutes.js:
+```js
+//backend/src/routes/favoriteRoutes.js
+import { Router } from 'express';
+import { verifyToken } from '../middlewares/authMiddleware.js';
+import {
+  getFavoriteIds,
+  getFavoriteProducts,
+  postFavorite,
+  deleteFavorite,
+  checkFavorite
+} from '../controllers/favoriteController.js';
+
+const router = Router();
+router.use(verifyToken);
+
+router.get('/ids', getFavoriteIds);
+router.get('/', getFavoriteProducts);
+router.post('/', postFavorite);
+router.delete('/:productId', deleteFavorite);
+router.get('/check/:productId', checkFavorite);
+
+export default router;
+
+```
+
+backend/src/routes/userRoutes.js:
+```js
+import express from 'express';
+import { getPublicProfile } from '../controllers/userController.js';
+
+const router = express.Router();
+
+router.get('/:id', getPublicProfile);
+
+export default router;
+
+```
+
+backend/src/routes/geo.js:
+```js
+import express from 'express';
+import {
+  reverseGeocode,
+  forwardGeocode,
+  getByCep
+} from '../controllers/geoController.js';
+
+const router = express.Router();
+
+router.get('/reverse', reverseGeocode);
+router.get('/forward', forwardGeocode);
+router.get('/cep', getByCep);
+
+export default router;
+
+```
+
+backend/src/controllers/authController.js:
+```js
+import bcrypt from 'bcrypt';
+import pool from '../config/db.js';
+import generateToken from '../utils/generateToken.js';
+import { createUser, findUserByEmail } from '../models/userModel.js';
+
+export async function register(req, res) {
+  try {
+    const {
+      username,
+      email,
+      phone,
+      country,
+      state,
+      city,
+      district,
+      street,
+      zip,
+      password
+    } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Campos obrigatórios faltando.' });
+    }
+
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'E-mail já cadastrado.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = await createUser({
+      username,
+      email,
+      phone,
+      country,
+      state,
+      city,
+      district,
+      street,
+      zip,
+      passwordHash
+    });
+
+    const token = generateToken(newUser.id);
+    res.status(201).json({ success: true, data: { user: newUser, token } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro no servidor.' });
+  }
+}
+
+export async function login(req, res) {
+  try {
+    const { email, password } = req.body;
+    const user = await findUserByEmail(email);
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).json({ success: false, message: 'Senha incorreta.' });
+    }
+
+    const token = generateToken(user.id);
+    res.status(200).json({ success: true, data: { user, token } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro no servidor.' });
+  }
+}
+
+export async function updateProfile(req, res) {
+  try {
+    const userId = req.user.id;
+    const {
+      username,
+      phone,
+      country,
+      state,
+      city,
+      district,
+      street,
+      zip
+    } = req.body;
+
+    const result = await pool.query(
+      `UPDATE users
+       SET username=$1, phone=$2, country=$3, state=$4,
+           city=$5, district=$6, street=$7, zip=$8
+       WHERE id=$9
+       RETURNING id, username, email, phone, country, state, city, district, street, zip`,
+      [username, phone, country, state, city, district, street, zip, userId]
+    );
+
+    res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar perfil.' });
+  }
+}
+
+```
+
+backend/src/controllers/productsController.js:
+```js
+import pool from '../config/db.js';
+import { getProductById, deleteProduct } from '../models/productModel.js';
+
+const toNumberOrNull = (value) => {
+  const normalized = typeof value === 'string' ? value.trim() : value;
+  if (normalized === undefined || normalized === null || normalized === '') {
+    return null;
+  }
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+};
+
+export async function listProducts(req, res) {
+  try {
+    const where = [];
+    const params = [];
+    let index = 1;
+
+    const status = (req.query.status || 'active').trim();
+    if (['active', 'sold', 'inactive'].includes(status)) {
+      where.push(`status = $${index}`);
+      params.push(status);
+      index++;
+    }
+
+    if (req.query.q && req.query.q.trim() !== '') {
+      where.push(`(LOWER(title) LIKE LOWER($${index}) OR LOWER(description) LIKE LOWER($${index}))`);
+      params.push(`%${req.query.q.trim()}%`);
+      index++;
+    }
+
+    if (req.query.category && req.query.category.trim() !== '') {
+      where.push(`category = $${index}`);
+      params.push(req.query.category.trim());
+      index++;
+    }
+
+    const toNum = (v) => (v === undefined || v === '' ? null : Number(v));
+    const minLat = toNum(req.query.minLat);
+    const maxLat = toNum(req.query.maxLat);
+    const minLng = toNum(req.query.minLng);
+    const maxLng = toNum(req.query.maxLng);
+
+    if (
+      Number.isFinite(minLat) &&
+      Number.isFinite(maxLat) &&
+      Number.isFinite(minLng) &&
+      Number.isFinite(maxLng)
+    ) {
+      where.push(
+        `lat BETWEEN $${index} AND $${index + 1}
+         AND lng BETWEEN $${index + 2} AND $${index + 3}`
+      );
+      params.push(minLat, maxLat, minLng, maxLng);
+      index += 4;
+    }
+
+    const sql = `
+      SELECT id, title, price, category, city, image_url, lat, lng, status
+      FROM products
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY created_at DESC NULLS LAST, id DESC
+      LIMIT 60
+    `;
+
+    const result = await pool.query(sql, params);
+    return res.json({ success: true, data: result.rows || [] });
+  } catch (err) {
+    console.error('Erro em listProducts:', err.message);
+    return res.status(500).json({ success: false, message: 'Erro ao listar produtos.' });
+  }
+}
+
+export async function setStatus(req, res) {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) {
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado.' });
+    }
+
+    const id = Number(req.params.id);
+    const status = String(req.body?.status || '').trim();
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, message: 'id inválido' });
+    }
+
+    if (!['active', 'sold', 'inactive'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'status inválido' });
+    }
+
+    const sql = `
+      UPDATE products
+      SET status = $3
+      WHERE id = $1 AND user_id = $2
+      RETURNING id, status
+    `;
+    const { rows } = await pool.query(sql, [id, user_id, status]);
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Produto não encontrado ou sem permissão.' });
+    }
+
+    return res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao atualizar status.' });
+  }
+}
+
+export async function getProduct(req, res) {
+  try {
+    const product = await getProductById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Produto não encontrado.' });
+    }
+    res.status(200).json({ success: true, data: product });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao buscar produto.' });
+  }
+}
+
+export async function create(req, res) {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) {
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado.' });
+    }
+
+    const {
+      title,
+      description,
+      price,
+      category,
+      city,
+      image_url,
+      country,
+      state,
+      neighborhood,
+      street,
+      zip,
+      lat,
+      lng
+    } = req.body;
+
+    console.log('[CREATE] body', {
+      country,
+      state,
+      city,
+      zip,
+      lat,
+      lng,
+      price,
+      title
+    });
+
+    if (!title || !price) {
+      return res.status(400).json({ success: false, message: 'Título e preço são obrigatórios.' });
+    }
+
+    const clean = (val) =>
+      val === undefined || val === null || val === '' ? null : val;
+
+    const priceValue = toNumberOrNull(price);
+    const latValue = toNumberOrNull(lat);
+    const lngValue = toNumberOrNull(lng);
+
+    const result = await pool.query(
+      `INSERT INTO products
+       (user_id, title, description, price, category, city, image_url,
+        country, state, neighborhood, street, zip, lat, lng)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING id, title, price, city`,
+      [
+        user_id,
+        title,
+        clean(description),
+        priceValue,
+        clean(category),
+        clean(city),
+        clean(image_url),
+        clean(country),
+        clean(state),
+        clean(neighborhood),
+        clean(street),
+        clean(zip),
+        latValue,
+        lngValue
+      ]
+    );
+
+    return res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao criar produto.' });
+  }
+}
+
+export async function update(req, res) {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) {
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado.' });
+    }
+
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      price,
+      category,
+      city,
+      image_url,
+      country,
+      state,
+      neighborhood,
+      street,
+      zip,
+      lat,
+      lng
+    } = req.body;
+
+    const priceValue = toNumberOrNull(price);
+    const latValue = toNumberOrNull(lat);
+    const lngValue = toNumberOrNull(lng);
+
+    const result = await pool.query(
+      `UPDATE products
+       SET title=$1, description=$2, price=$3, category=$4, city=$5, image_url=$6,
+           country=$7, state=$8, neighborhood=$9, street=$10, zip=$11, lat=$12, lng=$13
+       WHERE id=$14 AND user_id=$15
+       RETURNING *`,
+      [
+        title,
+        description,
+        priceValue,
+        category,
+        city,
+        image_url,
+        country,
+        state,
+        neighborhood,
+        street,
+        zip,
+        latValue,
+        lngValue,
+        id,
+        user_id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Produto não encontrado ou sem permissão.'
+      });
+    }
+
+    res.status(200).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar produto.' });
+  }
+}
+
+export async function remove(req, res) {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) {
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado.' });
+    }
+
+    const deleted = await deleteProduct(req.params.id, user_id);
+    if (!deleted) {
+      return res.status(403).json({ success: false, message: 'Sem permissão para excluir.' });
+    }
+
+    res.status(200).json({ success: true, message: 'Produto removido.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao remover produto.' });
+  }
+}
+
+export async function listMyProducts(req, res) {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products WHERE user_id=$1 ORDER BY id DESC',
+      [req.user.id]
+    );
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao listar seus produtos.' });
+  }
+}
+
+```
+
+backend/src/controllers/messageController.js:
+```js
+import {
+  createMessage,
+  getMessagesByProduct,
+  getUserConversations,
+  countUnreadMessages
+} from '../models/messageModel.js';
+import pool from '../config/db.js';
+
+export async function sendMessage(req, res) {
+  try {
+    const sender_id = req.user.id;
+    const { product_id, content, receiver_id: providedReceiver } = req.body;
+
+    if (!product_id || !content) {
+      return res.status(400).json({ success: false, message: 'Campos obrigatórios faltando.' });
+    }
+
+    const productResult = await pool.query('SELECT user_id FROM products WHERE id = $1', [product_id]);
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Produto não encontrado.' });
+    }
+
+    const owner_id = productResult.rows[0].user_id;
+    const parsedReceiver =
+      providedReceiver !== undefined && providedReceiver !== null
+        ? Number(providedReceiver)
+        : undefined;
+
+    if (parsedReceiver !== undefined && Number.isNaN(parsedReceiver)) {
+      return res.status(400).json({ success: false, message: 'Destinatário inválido.' });
+    }
+
+    let receiver_id = parsedReceiver ?? owner_id;
+
+    if (sender_id === owner_id && (parsedReceiver === undefined || receiver_id === sender_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destinatário inválido para esta conversa.'
+      });
+    }
+
+    if (receiver_id === sender_id) {
+      return res.status(400).json({ success: false, message: 'Não é possível enviar mensagem para si mesmo.' });
+    }
+
+    const message = await createMessage({ sender_id, receiver_id, product_id, content });
+    return res.status(201).json({ success: true, data: message });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao enviar mensagem.' });
+  }
+}
+
+export async function getMessages(req, res) {
+  try {
+    const user_id = req.user.id;
+    const { productId } = req.params;
+    const messages = await getMessagesByProduct(productId, user_id);
+    return res.status(200).json({ success: true, data: messages });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao buscar mensagens.' });
+  }
+}
+
+export async function getConversations(req, res) {
+  try {
+    const user_id = req.user.id;
+    const convos = await getUserConversations(user_id);
+    return res.status(200).json({ success: true, data: convos });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao listar conversas.' });
+  }
+}
+
+export async function getUnreadCount(req, res) {
+  try {
+    const user_id = req.user.id;
+    const count = await countUnreadMessages(user_id);
+    return res.status(200).json({ success: true, count });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao contar mensagens não lidas.' });
+  }
+}
+
+```
+
+backend/src/controllers/favoriteController.js:
+```js
+//backend/src/controllers/favoriteController.js
+import {
+  addFavorite,
+  removeFavorite,
+  listFavoriteIds,
+  listFavoriteProducts,
+  isFavorite
+} from '../models/favoriteModel.js';
+
+export async function getFavoriteIds(req, res, next) {
+  try {
+    const ids = await listFavoriteIds(req.user.id);
+    res.json({ success: true, data: ids });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getFavoriteProducts(req, res, next) {
+  try {
+    const products = await listFavoriteProducts(req.user.id);
+    res.json({ success: true, data: products });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postFavorite(req, res, next) {
+  try {
+    const { product_id } = req.body || {};
+    if (!product_id) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'product_id é obrigatório' });
+    }
+    const created = await addFavorite(req.user.id, Number(product_id));
+    res.status(created ? 201 : 200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteFavorite(req, res, next) {
+  try {
+    const productId = Number(req.params.productId);
+    if (!productId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'productId inválido' });
+    }
+    const deleted = await removeFavorite(req.user.id, productId);
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Favorito não encontrado' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function checkFavorite(req, res, next) {
+  try {
+    const productId = Number(req.params.productId);
+    const favorite = await isFavorite(req.user.id, productId);
+    res.json({ success: true, data: { favorite } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+```
+
+backend/src/controllers/userController.js:
+```js
+import pool from '../config/db.js';
+
+export async function getPublicProfile(req, res) {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, phone, country, state, city FROM users WHERE id=$1',
+      [req.params.id]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+    return res.json({ success: true, data: user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Erro ao buscar perfil.' });
+  }
+}
+
+```
+
+backend/src/controllers/geoController.js:
+```js
+//backend/src/controllers/geoController.js
+import fetch from 'node-fetch';
+
+export const reverseGeocode = async (req, res) => {
+  const { lat, lng } = req.query;
+
+  if (!lat || !lng) {
+    return res.status(400).json({
+      success: false,
+      message: 'Parâmetros lat e lng são obrigatórios.'
+    });
+  }
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'SaleDay/1.0' }
+    });
+    const data = await response.json();
+    const a = data.address || {};
+
+    res.json({
+      success: true,
+      data: {
+        country: a.country_code?.toUpperCase() || '',
+        state: a.state || a.region || '',
+        city: a.city || a.town || a.village || '',
+        neighborhood: a.suburb || a.neighbourhood || '',
+        street: [a.road, a.house_number].filter(Boolean).join(', '),
+        zip: a.postcode || ''
+      }
+    });
+  } catch (error) {
+    console.error('Erro no reverse geocoding:', error);
+    res
+      .status(500)
+      .json({ success: false, message: 'Falha ao consultar o endereço.' });
+  }
+};
+
+export const forwardGeocode = async (req, res) => {
+  const { q } = req.query;
+
+  if (!q) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Parâmetro q é obrigatório.' });
+  }
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(
+      q
+    )}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'SaleDay/1.0' }
+    });
+    const results = await response.json();
+
+    if (!Array.isArray(results) || results.length === 0) {
+      return res.json({ success: true, data: null });
+    }
+
+    const item = results[0];
+    const address = item.address || {};
+
+    return res.json({
+      success: true,
+      data: {
+        lat: Number(item.lat),
+        lng: Number(item.lon),
+        country: address.country_code?.toUpperCase() || '',
+        state: address.state || address.region || '',
+        city: address.city || address.town || address.village || '',
+        neighborhood:
+          address.suburb || address.neighbourhood || address.city_district || '',
+        street: [address.road, address.house_number].filter(Boolean).join(', '),
+        zip: address.postcode || ''
+      }
+    });
+  } catch (error) {
+    console.error('Erro no forward geocoding:', error);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Falha no forward geocoding' });
+  }
+};
+
+export const getByCep = async (req, res) => {
+  try {
+    const country = String(req.query.country || 'BR').toUpperCase();
+    const zip = String(req.query.zip || '').replace(/\D/g, '');
+
+    if (!zip) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'zip obrigatório' });
+    }
+
+    let payload = null;
+
+    if (country === 'BR') {
+      const response = await fetch(`https://viacep.com.br/ws/${zip}/json/`);
+      if (!response.ok) {
+        return res.json({ success: false, message: 'CEP não encontrado' });
+      }
+      const json = await response.json();
+      if (json.erro) {
+        return res.json({ success: false, message: 'CEP não encontrado' });
+      }
+
+      const addr = {
+        country: 'BR',
+        state: json.uf || null,
+        city: json.localidade || null,
+        neighborhood: json.bairro || null,
+        street: json.logradouro || null,
+        zip
+      };
+
+      // 1ª tentativa: Nominatim por postalcode + query
+      const q1 = encodeURIComponent(
+        `${addr.street || ''}, ${addr.city || ''}, ${addr.state || ''}, BR, ${zip}`
+      );
+      let lat = null,
+        lng = null;
+
+      const n1 = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&postalcode=${zip}&q=${q1}`,
+        { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+      )
+        .then((r) => r.json())
+        .catch(() => []);
+
+      if (Array.isArray(n1) && n1[0]) {
+        lat = Number(n1[0].lat);
+        lng = Number(n1[0].lon);
+      }
+
+      // 2ª tentativa: só postalcode + city/state
+      if (lat == null || lng == null) {
+        const q2 = encodeURIComponent(`${addr.city || ''}, ${addr.state || ''}, BR, ${zip}`);
+        const n2 = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&postalcode=${zip}&q=${q2}`,
+          { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+        )
+          .then((r) => r.json())
+          .catch(() => []);
+        if (Array.isArray(n2) && n2[0]) {
+          lat = Number(n2[0].lat);
+          lng = Number(n2[0].lon);
+        }
+      }
+
+      // 3ª tentativa: forward puro com zip + city/state (mais permissivo)
+      if (lat == null || lng == null) {
+        const q3 = `${zip}, ${addr.city || ''}, ${addr.state || ''}, BR`;
+        const n3 = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q3)}`,
+          { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+        )
+          .then((r) => r.json())
+          .catch(() => []);
+        if (Array.isArray(n3) && n3[0]) {
+          lat = Number(n3[0].lat);
+          lng = Number(n3[0].lon);
+        }
+      }
+
+      if (lat != null && lng != null) {
+        addr.lat = lat;
+        addr.lng = lng;
+      }
+
+      payload = addr;
+    } else {
+      const response = await fetch(
+        `https://api.zippopotam.us/${country.toLowerCase()}/${zip}`
+      );
+
+      if (!response.ok) {
+        return res.json({ success: false, message: 'ZIP/CEP não encontrado' });
+      }
+
+      const json = await response.json();
+      const place = json.places?.[0];
+
+      const addr = {
+        country,
+        state: place?.['state abbreviation'] || place?.state || null,
+        city: place?.['place name'] || null,
+        neighborhood: null,
+        street: null,
+        zip
+      };
+
+      if (place?.latitude && place?.longitude) {
+        addr.lat = Number(place.latitude);
+        addr.lng = Number(place.longitude);
+      }
+
+      payload = addr;
+    }
+
+    console.log('[CEP]', { country, zip, payload });
+    return res.json({ success: true, data: payload });
+  } catch (error) {
+    console.error('Erro ao consultar CEP:', error);
+    return res.status(500).json({ success: false, message: 'Falha CEP' });
+  }
+};
+
+```
+
+backend/src/models/userModel.js:
+```js
+import pool from '../config/db.js';
+
+export async function createUser(userData) {
+  const {
+    username,
+    email,
+    phone,
+    country,
+    state,
+    city,
+    district,
+    street,
+    zip,
+    passwordHash
+  } = userData;
+
+  const query = `
+    INSERT INTO users (username, email, phone, country, state, city, district, street, zip, password)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    RETURNING id, username, email;
+  `;
+
+  const values = [
+    username,
+    email,
+    phone,
+    country,
+    state,
+    city,
+    district,
+    street,
+    zip,
+    passwordHash
+  ];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+}
+
+export async function findUserByEmail(email) {
+  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  return result.rows[0];
+}
+
+```
+
+backend/src/models/productModel.js:
+```js
+// backend/src/models/productModel.js
+import pool from '../config/db.js';
+
+export async function getAllProducts() {
+  const result = await pool.query(
+    `SELECT id, user_id, title, price, category, city, image_url
+     FROM products
+     ORDER BY id DESC`
+  );
+  return result.rows;
+}
+
+export async function getProductById(id) {
+  const sql = `
+    SELECT
+      p.*,
+      u.username AS seller_name,
+      u.city     AS seller_city,
+      u.state    AS seller_state,
+      u.country  AS seller_country
+    FROM products p
+    LEFT JOIN users u ON u.id = p.user_id
+    WHERE p.id = $1
+    LIMIT 1
+  `;
+  const result = await pool.query(sql, [id]);
+  return result.rows[0] || null;
+}
+
+export async function deleteProduct(id, user_id) {
+  const result = await pool.query(
+    `DELETE FROM products WHERE id=$1 AND user_id=$2 RETURNING id`,
+    [id, user_id]
+  );
+  return result.rows[0];
+}
+
+```
+
+backend/src/models/messageModel.js:
+```js
+import pool from '../config/db.js';
+
+// registrar nova mensagem no banco
+export async function createMessage({ sender_id, receiver_id, product_id, content }) {
+  const result = await pool.query(
+    `INSERT INTO messages (sender_id, receiver_id, product_id, content, is_read)
+     VALUES ($1, $2, $3, $4, FALSE)
+     RETURNING *`,
+    [sender_id, receiver_id, product_id, content]
+  );
+  return result.rows[0];
+}
+
+// buscar mensagens trocadas sobre um produto
+export async function getMessagesByProduct(product_id, user_id) {
+  await pool.query(
+    `UPDATE messages
+     SET is_read = true
+     WHERE product_id=$1 AND receiver_id=$2`,
+    [product_id, user_id]
+  );
+
+  const result = await pool.query(
+    `SELECT m.*, p.title AS product_title, u.username AS seller_name
+     FROM messages m
+     JOIN products p ON p.id = m.product_id
+     JOIN users u ON u.id = p.user_id
+     WHERE m.product_id=$1
+     ORDER BY m.created_at ASC`,
+    [product_id]
+  );
+  return result.rows;
+}
+
+// listar últimas conversas envolvendo o usuário
+export async function getUserConversations(user_id) {
+  const result = await pool.query(
+    `SELECT DISTINCT ON (
+        m.product_id,
+        LEAST(m.sender_id, m.receiver_id),
+        GREATEST(m.sender_id, m.receiver_id)
+      )
+        m.id,
+        m.product_id,
+        m.sender_id,
+        m.receiver_id,
+        m.content,
+        m.created_at,
+        p.title AS product_title,
+        u.username AS seller_name
+     FROM messages m
+     JOIN products p ON p.id = m.product_id
+     JOIN users u ON u.id = p.user_id
+     WHERE m.sender_id = $1 OR m.receiver_id = $1
+     ORDER BY
+       m.product_id,
+       LEAST(m.sender_id, m.receiver_id),
+       GREATEST(m.sender_id, m.receiver_id),
+       m.created_at DESC`,
+    [user_id]
+  );
+  return result.rows;
+}
+
+export async function countUnreadMessages(user_id) {
+  const result = await pool.query(
+    `SELECT COUNT(*) FROM messages WHERE receiver_id=$1 AND is_read=false`,
+    [user_id]
+  );
+  return parseInt(result.rows[0].count, 10);
+}
+
+```
+
+backend/src/models/favoriteModel.js:
+```js
+//backend/src/models/favoriteModel.js
+import pool from '../config/db.js';
+
+export async function addFavorite(userId, productId) {
+  const sql = `
+    INSERT INTO favorites (user_id, product_id)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id, product_id) DO NOTHING
+    RETURNING id, user_id, product_id, created_at
+  `;
+  const { rows } = await pool.query(sql, [userId, productId]);
+  return rows[0] || null;
+}
+
+export async function removeFavorite(userId, productId) {
+  const { rows } = await pool.query(
+    'DELETE FROM favorites WHERE user_id=$1 AND product_id=$2 RETURNING id',
+    [userId, productId]
+  );
+  return rows[0] || null;
+}
+
+export async function listFavoriteIds(userId) {
+  const { rows } = await pool.query(
+    'SELECT product_id FROM favorites WHERE user_id=$1 ORDER BY id DESC',
+    [userId]
+  );
+  return rows.map(r => r.product_id);
+}
+
+export async function listFavoriteProducts(userId) {
+  const sql = `
+    SELECT p.id, p.user_id, p.title, p.price, p.category, p.city, p.image_url
+    FROM favorites f
+    JOIN products p ON p.id = f.product_id
+    WHERE f.user_id = $1
+    ORDER BY f.id DESC
+  `;
+  const { rows } = await pool.query(sql, [userId]);
+  return rows;
+}
+
+export async function isFavorite(userId, productId) {
+  const { rows } = await pool.query(
+    'SELECT 1 FROM favorites WHERE user_id=$1 AND product_id=$2 LIMIT 1',
+    [userId, productId]
+  );
+  return rows.length > 0;
+}
+
+```
+
+backend/src/middlewares/authMiddleware.js:
+```js
+//backend/src/middlewares/authMiddleware.js
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ success: false, message: 'Token não fornecido.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Token inválido.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ success: false, message: 'Token expirado ou inválido.' });
+  }
+}
+
+```
+
+backend/src/utils/generateToken.js:
+```js
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export default function generateToken(userId) {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+}
+
+```
+
+frontend/src/main.jsx:
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './styles/global.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+```
+
+frontend/src/App.jsx:
+```jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext.jsx';
+import Header from './components/Header.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Home from './pages/Home.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import ProductDetail from './pages/ProductDetail.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import EditProfile from './pages/EditProfile.jsx';
+import NewProduct from './pages/NewProduct.jsx';
+import MyProducts from './pages/MyProducts.jsx';
+import Messages from './pages/Messages.jsx';
+import SellerProfile from './pages/SellerProfile.jsx';
+import EditProduct from './pages/EditProduct.jsx';
+
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/users/:id" element={<SellerProfile />} />
+          <Route
+            path="/product/:id"
+            element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-products"
+            element={
+              <ProtectedRoute>
+                <MyProducts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/new-product"
+            element={
+              <ProtectedRoute>
+                <NewProduct />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-product/:id"
+            element={
+              <ProtectedRoute>
+                <EditProduct />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+        <Toaster position="top-center" />
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+```
+
+frontend/src/context/AuthContext.jsx:
+```jsx
+import { createContext, useEffect, useMemo, useState } from 'react';
+
+export const AuthContext = createContext();
+
+const sanitizeUser = (rawUser) => {
+  if (!rawUser) return null;
+  const { password, ...safeUser } = rawUser;
+  return safeUser;
+};
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (token) localStorage.setItem('token', token);
+    else localStorage.removeItem('token');
+  }, [token]);
+
+  useEffect(() => {
+    if (user) localStorage.setItem('user', JSON.stringify(sanitizeUser(user)));
+    else localStorage.removeItem('user');
+  }, [user]);
+
+  const login = (data) => {
+    setUser(sanitizeUser(data.user));
+    setToken(data.token);
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      login,
+      logout,
+    }),
+    [user, token, loading]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+```
+
+frontend/src/api/api.js:
+```js
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  headers: { 'Content-Type': 'application/json' }
+});
+
+api.interceptors.request.use((config) => {
+  if (!config.headers) {
+    config.headers = {};
+  }
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
+
+```
+
+frontend/src/components/Header.jsx:
+```jsx
+// frontend/src/components/Header.jsx
+import { useContext, useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext.jsx';
+import api from '../api/api.js';
+import { useRef } from 'react';
+
+function SaleDayLogo({ className }) {
+  return (
+    <img
+      src="/logo-saleday.png"
+      alt="Logo SaleDay"
+      className={className}
+      width={120}
+      height={120}
+      loading="lazy"
+    />
+  );
+}
+
+function BellIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 18a3 3 0 1 1-6 0" />
+      <path d="M18 16v-5a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09A6 6 0 0 0 6 11v5l-1.3 1.3A1 1 0 0 0 5.7 19h12.6a1 1 0 0 0 .71-1.7Z" />
+    </svg>
+  );
+}
+
+function HomeIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5 10v10h5v-5h4v5h5V10" />
+    </svg>
+  );
+}
+
+function LogoutIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15.75 16.5v1.75a1.75 1.75 0 0 1-1.75 1.75H6.25A1.75 1.75 0 0 1 4.5 18.25V5.75A1.75 1.75 0 0 1 6.25 4h7.75a1.75 1.75 0 0 1 1.75 1.75V7.5" />
+      <path d="M10.5 12h9" />
+      <path d="m17.25 9.75 2.75 2.25-2.75 2.25" />
+    </svg>
+  );
+}
+function playUISound(file) {
+  try {
+    const sound = new Audio(`/sounds/${file}`);
+    sound.volume = 0.4;
+    sound.play().catch(() => {});
+  } catch {
+    // ignora falhas
+  }
+}
+
+export default function Header() {
+  const { user, token, logout } = useContext(AuthContext);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const drawerRef = useRef(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const closeDrawer = () => setDrawerOpen(false);
+
+  function handleLogoClick(e) {
+    // permite abrir em nova aba com Ctrl/Cmd+clique
+    if (e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+
+    if (location.pathname === '/') {
+      window.location.reload();
+      return;
+    }
+    // navega para home e força recarregar para limpar estados e refazer fetch
+    navigate('/', { replace: true });
+    // força recarga completa
+    window.location.href = '/';
+  }
+
+  useEffect(() => {
+    if (!token) {
+      setConversations([]);
+      setUnreadCount(0);
+      setDrawerOpen(false);
+      return;
+    }
+    let lastCount = 0;
+    const sound = new Audio('/sounds/notification.mp3');
+
+    const fetchNotifications = async () => {
+      try {
+        const [convosRes, unreadRes] = await Promise.all([
+          api.get('/messages', { headers: { Authorization: `Bearer ${token}` } }),
+          api.get('/messages/unread/count', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+
+        setConversations(convosRes.data.data ?? []);
+        const newCount = unreadRes.data.count ?? 0;
+        setUnreadCount(newCount);
+
+        if (newCount > lastCount && lastCount !== 0) {
+          sound.volume = 0.3;
+          sound.play().catch(() => {});
+        }
+        lastCount = newCount;
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  const handleToggleDrawer = () => {
+    if (!drawerOpen && unreadCount > 0) setUnreadCount(0);
+    const next = !drawerOpen;
+    setDrawerOpen(next);
+    if (next) playUISound('open-bell.mp3');
+  };
+  
+
+  const handleLogout = () => logout();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (drawerRef.current && !drawerRef.current.contains(event.target)) {
+        setDrawerOpen(false);
+      }
+    }
+
+    if (drawerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [drawerOpen]);
+
+  return (
+    <header className="app-header">
+      <div className="app-shell">
+      <a
+  href="/"
+  className="app-logo transition-transform duration-300 active:scale-95"
+  onClick={(e) => {
+    e.preventDefault();
+    // toca o som
+    const sound = new Audio('/sounds/open-logo.mp3');
+    sound.volume = 0.10;
+    sound.play().catch(() => {});
+    // adiciona pequena animação de saída
+    const logo = e.currentTarget.querySelector('.app-logo__mark');
+    if (logo) {
+      logo.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+      logo.style.transform = 'scale(0.9) rotate(-5deg)';
+      logo.style.opacity = '0.8';
+    }
+    // redireciona junto com o fim do som
+    setTimeout(() => handleLogoClick(e), 400);
+  }}
+  aria-label="Ir para a página inicial e recarregar"
+>
+
+
+
+        <div className="relative flex items-center justify-center">
+  <div className="relative">
+    <SaleDayLogo className="app-logo__mark animate-logoEntry" />
+    <span
+  className="absolute font-extrabold animate-slideIn
+  text-2xl left-[35px] top-[2px]
+  sm:text-3xl sm:left-[70px] sm:top-[15px]
+  md:text-4xl md:left-[50px] md:top-[5px]
+  bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
+  style={{ whiteSpace: 'nowrap' }}
+>
+  aleDay
+</span>
+
+  </div>
+</div>
+
+
+
+         
+        </a>
+      </div>
+
+      <nav className="app-nav" aria-label="Menu principal">
+        {user ? (
+          <>
+            <Link
+  to="/dashboard"
+  className="nav-icon-button"
+  aria-label="Ir para o painel"
+  onClick={() => playUISound('open-home.mp3')}
+>
+  <HomeIcon size={20} />
+  <span className="sr-only">Dashboard</span>
+</Link>
+
+
+            <div className="nav-notification-wrapper">
+              <button
+                type="button"
+                className={`nav-icon-button nav-notifications${unreadCount > 0 ? ' has-unread' : ''}`}
+                onClick={handleToggleDrawer}
+                aria-haspopup="true"
+                aria-expanded={drawerOpen}
+                aria-label="Abrir notificações"
+              >
+                <BellIcon size={20} />
+                {unreadCount > 0 && <span className="nav-notifications__badge">{unreadCount}</span>}
+              </button>
+
+              {drawerOpen && (
+                <div ref={drawerRef} className="nav-notifications__drawer animate-smoothZoom">
+
+                  <div className="nav-notifications__header">
+                    <h3>Mensagens</h3>
+                    <button type="button" onClick={closeDrawer} aria-label="Fechar notificações">
+                      ×
+                    </button>
+                  </div>
+                  <div className="nav-notifications__body">
+                    {conversations.length ? (
+                      conversations.map((conversation) => (
+                        <Link
+                          key={`${conversation.product_id}-${conversation.sender_id}-${conversation.receiver_id}`}
+                          to={`/messages?product=${conversation.product_id}`}
+                          className="nav-notifications__item"
+                          onClick={closeDrawer}
+                        >
+                          <p className="nav-notifications__item-title">
+                            {conversation.product_title || `Produto #${conversation.product_id}`}
+                          </p>
+                          <p className="nav-notifications__item-subtitle">
+                            com {conversation.seller_name || 'Vendedor'}
+                          </p>
+                          <p className="nav-notifications__item-preview">
+                            {conversation.content?.slice(0, 60) || 'Sem conteúdo recente.'}
+                          </p>
+                        </Link>
+                      ))
+                    ) : (
+                      <p className="nav-notifications__empty">Nenhuma nova mensagem.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="nav-link">Login</Link>
+            <Link to="/register" className="nav-link">Cadastre-se</Link>
+          </>
+        )}
+      </nav>
+    </header>
+  );
+}
+```
+
+frontend/src/components/ProtectedRoute.jsx:
+```jsx
+import { useContext } from 'react';
+import { Navigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+export default function ProtectedRoute({ children, redirectTo = '/login' }) {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) return <div className="page-loading">Carregando...</div>;
+
+  if (!user) return <Navigate to={redirectTo} replace />;
+
+  return children;
+}
+
+```
+
+frontend/src/components/SearchBar.jsx:
+```jsx
+// frontend/src/components/SearchBar.jsx
+//aqui é a barra com icones ! baixo da barra de logo
+import { useEffect, useRef, useState } from 'react';
+import api from '../api/api.js';
+import { toast } from 'react-hot-toast';
+import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X } from 'lucide-react';
+
+
+export default function SearchBar({ onProductsLoaded }) {
+  const [q, setQ] = useState('');
+  const [address, setAddress] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [panel, setPanel] = useState(null); // 'search' | 'address' | null
+  const popRef = useRef(null);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!popRef.current) return;
+      if (!popRef.current.contains(e.target)) setPanel(null);
+    }
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
+
+  async function searchText() {
+    try {
+      const { data } = await api.get('/products', { params: { q } });
+      if (data.success) onProductsLoaded?.(data.data);
+      setPanel(null);
+    } catch {
+      toast.error('Erro ao buscar produtos.');
+    }
+  }
+
+  async function applyAddress() {
+    if (!address.trim()) return toast.error('Digite um endereço ou cidade.');
+    setLoading(true);
+    try {
+      const { data } = await api.get('/geo/forward', { params: { q: address } });
+      if (!data.success || !data.data) return toast.error('Endereço não encontrado.');
+      const { lat, lng } = data.data;
+      const bbox = { minLat: lat - 0.05, maxLat: lat + 0.05, minLng: lng - 0.05, maxLng: lng + 0.05 };
+      const r = await api.get('/products', { params: bbox });
+      if (r.data.success) {
+        onProductsLoaded?.(r.data.data);
+        toast.success('Região aplicada.');
+      }
+      setPanel(null);
+    } catch {
+      toast.error('Erro ao aplicar endereço.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function useGPSQuick() {
+    if (!navigator.geolocation) return toast.error('GPS indisponível.');
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const bbox = {
+            minLat: coords.latitude - 0.05,
+            maxLat: coords.latitude + 0.05,
+            minLng: coords.longitude - 0.05,
+            maxLng: coords.longitude + 0.05
+          };
+          const r = await api.get('/products', { params: bbox });
+          if (r.data.success) {
+            onProductsLoaded?.(r.data.data);
+            toast.success('Produtos próximos.');
+          }
+        } catch {
+          toast.error('Erro ao buscar próximos.');
+        }
+      },
+      () => toast.error('Não foi possível obter o GPS.')
+    );
+  }
+
+  async function resetAll() {
+    try {
+      const { data } = await api.get('/products');
+      if (data.success) onProductsLoaded?.(data.data);
+      setAddress(''); setQ(''); setPanel(null);
+    } catch {
+      toast.error('Erro ao resetar.');
+    }
+  }
+
+  function locateOnMap() {
+    const el = document.getElementById('map-search');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  return (
+    <div className="relative" ref={popRef}>
+      {/* Barra de ícones */}
+      <div className="flex items-center gap-2 p-2 bg-white rounded-md shadow-sm">
+        <button
+          type="button"
+          title="Buscar por título ou descrição"
+          onClick={() => setPanel(p => p === 'search' ? null : 'search')}
+          className="p-2 rounded hover:bg-gray-100"
+          aria-haspopup="dialog"
+          aria-expanded={panel === 'search'}
+        >
+          <Search size={18} />
+        </button>
+        <button
+          type="button"
+          title="Cidade, bairro ou endereço"
+          onClick={() => setPanel(p => p === 'address' ? null : 'address')}
+          className="p-2 rounded hover:bg-gray-100"
+          aria-haspopup="dialog"
+          aria-expanded={panel === 'address'}
+        >
+          <MapPin size={18} />
+        </button>
+        <button
+          type="button"
+          title="GPS"
+          onClick={useGPSQuick}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <Crosshair size={18} />
+        </button>
+        <button
+          type="button"
+          title="Reset"
+          onClick={resetAll}
+          className="p-2 rounded hover:bg-gray-100"
+        >
+          <RotateCw size={18} />
+        </button>
+        <button
+    type="button"
+    title="Localizar no mapa"
+    onClick={() => window.dispatchEvent(new Event('saleday:open-map'))}
+    className="p-2 rounded hover:bg-gray-100"
+  >
+    <MapIcon size={18} />
+  </button>
+      </div>
+
+      {/* Painéis */}
+      {panel === 'search' && (
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-2 flex items-center gap-2">
+          <Search size={16} className="text-gray-500" />
+          <input
+            className="flex-1 p-2 outline-none"
+            placeholder="Buscar por título ou descrição"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && searchText()}
+            autoFocus
+          />
+          <button onClick={searchText} className="px-3 py-2 rounded bg-gray-900 text-white text-sm">
+            Buscar
+          </button>
+          <button onClick={() => setPanel(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Fechar">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {panel === 'address' && (
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-2 flex items-center gap-2">
+          <MapPin size={16} className="text-gray-500" />
+          <input
+            className="flex-1 p-2 outline-none"
+            placeholder="Cidade, bairro ou endereço (ex: Chapecó)"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && applyAddress()}
+            autoFocus
+          />
+          <button
+            onClick={applyAddress}
+            disabled={loading}
+            className="px-3 py-2 rounded bg-blue-600 text-white text-sm disabled:opacity-60"
+          >
+            {loading ? 'Aplicando...' : 'Aplicar'}
+          </button>
+          <button onClick={() => setPanel(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Fechar">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+```
+
+frontend/src/components/MapSearch.jsx:
+```jsx
+// frontend/src/components/MapSearch.jsx
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Map as MapIcon, X } from 'lucide-react';
+import api from '../api/api.js';
+import { toast } from 'react-hot-toast';
+
+function MapEvents({ onBoundsChange }) {
+  useMapEvents({
+    moveend(e) {
+      const b = e.target.getBounds();
+      onBoundsChange({
+        minLat: b.getSouth(),
+        maxLat: b.getNorth(),
+        minLng: b.getWest(),
+        maxLng: b.getEast(),
+      });
+    },
+  });
+  return null;
+}
+
+export default function MapSearch({ onProductsLoaded }) {
+  const [showMap, setShowMap] = useState(false);
+  const [bbox, setBbox] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const mapRef = useRef(null);
+
+  const closeModal = useCallback(() => setShowMap(false), []);
+  const openModal = useCallback(() => setShowMap(true), []);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') closeModal();
+    }
+    if (showMap) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showMap, closeModal]);
+
+  async function fetchProductsByBbox(bounds) {
+    setLoading(true);
+    try {
+      const params = {
+        minLat: bounds?.minLat,
+        maxLat: bounds?.maxLat,
+        minLng: bounds?.minLng,
+        maxLng: bounds?.maxLng,
+      };
+      const { data } = await api.get('/products', { params });
+      if (data.success) {
+        onProductsLoaded?.(data.data);
+        if (bounds?.minLat != null) toast.success('Produtos atualizados para a região selecionada.');
+      } else {
+        toast.error('Nenhum produto encontrado.');
+      }
+    } catch {
+      toast.error('Erro ao carregar produtos.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleConfirmRegion() {
+    if (!bbox) return toast.error('Selecione uma região no mapa.');
+    fetchProductsByBbox(bbox);
+    closeModal();
+  }
+
+  useEffect(() => {
+    function openFromBar() {
+      setShowMap(true);
+    }
+    window.addEventListener('saleday:open-map', openFromBar);
+    return () => window.removeEventListener('saleday:open-map', openFromBar);
+  }, []);
+
+  useEffect(() => {
+    if (!showMap) return;
+    const t = setTimeout(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      const b = map.getBounds();
+      if (b) {
+        setBbox({
+          minLat: b.getSouth(),
+          maxLat: b.getNorth(),
+          minLng: b.getWest(),
+          maxLng: b.getEast(),
+        });
+      }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 13);
+          },
+          () => {}
+        );
+      }
+    }, 200);
+    return () => clearTimeout(t);
+  }, [showMap]);
+
+  return (
+    <div className="flex items-center">
+      <AnimatePresence>
+        {showMap && (
+          <motion.div
+            className="fixed inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
+
+            <motion.div
+              className="relative mx-auto mt-[6vh] w-[92%] max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden"
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+            >
+              <div className="flex items-center justify-between px-3 py-2 border-b">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
+                    <MapIcon size={16} />
+                  </span>
+                  <h3 className="font-semibold text-sm">Selecione a região no mapa</h3>
+                </div>
+                <button
+                  onClick={closeModal}
+                  aria-label="Fechar"
+                  className="p-2 rounded hover:bg-gray-100"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="relative h-[420px]">
+                <MapContainer
+                  center={[-23.55, -46.63]}
+                  zoom={12}
+                  style={{ height: '100%', width: '100%', zIndex: 0 }}
+                  whenCreated={(map) => {
+                    mapRef.current = map;
+                  }}
+                >
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <MapEvents onBoundsChange={setBbox} />
+                </MapContainer>
+
+                {/* sobreposição com círculo amarelo */}
+                <div
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  style={{ zIndex: 999 }}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <div
+                      className="rounded-full"
+                      style={{
+                        width: '200px',
+                        height: '200px',
+                        backgroundColor: 'rgba(255, 223, 0, 0.25)',
+                        border: '2px solid rgba(255, 215, 0, 0.7)',
+                        boxShadow: '0 0 15px rgba(255, 200, 0, 0.4)',
+                      }}
+                    />
+                    <div className="absolute">
+                      <div className="w-4 h-4 rounded-full border-2 border-blue-600 bg-white shadow" />
+                      <span className="absolute inset-0 rounded-full animate-ping border-2 border-blue-300" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 border-t flex justify-end gap-2">
+                <button
+                  onClick={closeModal}
+                  className="px-3 py-1.5 rounded border hover:bg-gray-50"
+                  type="button"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmRegion}
+                  disabled={loading}
+                  className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="button"
+                >
+                  {loading ? 'Carregando...' : 'Confirmar região'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+```
+
+frontend/src/components/ProductCard.jsx:
+```jsx
+import { Link } from 'react-router-dom';
+import SoldBadge from './SoldBadge.jsx';
+
+export default function ProductCard({ product }) {
+  const price = Number(product.price ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
+  return (
+    <article className="product-card">
+      <div className="relative">
+        {product.image_url ? (
+          <div className="product-card__image">
+            <img src={product.image_url} alt={product.title} />
+          </div>
+        ) : (
+          <div className="product-card__placeholder">Sem imagem</div>
+        )}
+        {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
+      </div>
+      <h3 className="product-card__title">{product.title}</h3>
+      <p className="product-card__price">{price}</p>
+      <Link to={`/product/${product.id}`} className="product-card__link">
+        Ver detalhes
+      </Link>
+    </article>
+  );
+}
+
+```
+
+frontend/src/components/SoldBadge.jsx:
+```jsx
+//vendido aqui é a marca apos vender que aaprece em meus produtos
+export default function SoldBadge({ className = '' }) {
+  return (
+    <div className={`pointer-events-none select-none ${className}`}>
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ef4444" />
+            <stop offset="1" stopColor="#b91c1c" />
+          </linearGradient>
+        </defs>
+
+        {/* Tarja diagonal */}
+        <polygon points="0,0 120,0 0,120" fill="url(#g)" opacity="0.9" />
+
+        {/* Imagem sobre a tarja */}
+        <image
+          href="/Vendido.png"
+          x="0"
+          y="20"
+          width="90"
+          height="190"
+          transform="rotate(-45 -25, 64)"
+          preserveAspectRatio="xMidYMid meet"
+        />
+      </svg>
+    </div>
+  );
+}
+
+```
+
+frontend/src/pages/Home.jsx:
+```jsx
+// frontend/src/pages/Home.jsx
+import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import MapSearch from '../components/MapSearch.jsx';
+import SearchBar from '../components/SearchBar.jsx';
+import api from '../api/api.js';
+
+export default function Home() {
+  const [products, setProducts] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showFavBar, setShowFavBar] = useState(false);
+  const favRef = useRef(null);
+
+  // Carrega produtos e limpa favoritos inexistentes
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get('/products');
+        if (data.success) {
+          const allProducts = data.data;
+          setProducts(allProducts);
+
+          // Limpa favoritos que não existem mais
+          setFavorites((prev) => {
+            const valid = prev.filter((id) =>
+              allProducts.some((p) => p.id === id)
+            );
+            if (valid.length !== prev.length) {
+              localStorage.setItem('favorites', JSON.stringify(valid));
+            }
+            return valid;
+          });
+        }
+      } catch {
+        // falha silenciosa
+      }
+    })();
+  }, []);
+
+  // Alterna favorito
+  function toggleFavorite(id) {
+    setFavorites((prev) => {
+      const exists = prev.includes(id);
+      const updated = exists ? prev.filter((f) => f !== id) : [...prev, id];
+      localStorage.setItem('favorites', JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  // Produtos favoritados válidos
+  const favoriteProducts = products.filter((p) => favorites.includes(p.id));
+
+  // Fecha a barra ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (favRef.current && !favRef.current.contains(e.target)) {
+        setShowFavBar(false);
+      }
+    }
+    if (showFavBar) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFavBar]);
+
+  return (
+    <div className="space-y-4 p-4 relative overflow-hidden">
+      <SearchBar onProductsLoaded={setProducts} />
+      <MapSearch onProductsLoaded={setProducts} />
+
+      {/* Botão para abrir barra de favoritos */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowFavBar(true)}
+          className="px-3 py-2 text-sm bg-yellow-400 text-black rounded hover:bg-yellow-500"
+        >
+          Ver Favoritos ({favorites.length})
+        </button>
+      </div>
+
+      {/* Grid normal de produtos */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {products.length === 0 ? (
+          <p className="col-span-full text-center text-gray-500">
+            Nenhum produto encontrado.
+          </p>
+        ) : (
+          products.map((product) => (
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className="relative border rounded p-2 bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  toggleFavorite(product.id);
+                }}
+                className={`absolute top-2 right-2 text-red-500 ${
+                  favorites.includes(product.id) ? 'opacity-100' : 'opacity-40'
+                } hover:opacity-100`}
+              >
+                ♥
+              </button>
+
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.title}
+                  className="w-full h-40 object-cover rounded"
+                />
+              ) : (
+                <div className="w-full h-40 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                  Sem imagem
+                </div>
+              )}
+
+              <p className="font-semibold mt-2 line-clamp-2">{product.title}</p>
+              <p className="text-green-600 font-medium">R$ {product.price}</p>
+              <p className="text-sm text-gray-500">{product.city}</p>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* Barra lateral de favoritos */}
+      <AnimatePresence>
+        {showFavBar && (
+          <>
+            {/* Fundo escuro clicável */}
+            <motion.div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            {/* Barra lateral animada */}
+            <motion.div
+              ref={favRef}
+              className="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-50 p-4 flex flex-col"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+            >
+              <div className="flex justify-between items-center mb-3 border-b pb-2">
+                <h2 className="text-lg font-semibold">
+                  Favoritos ({favoriteProducts.length})
+                </h2>
+                <button
+                  onClick={() => setShowFavBar(false)}
+                  className="text-gray-500 hover:text-black text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {favoriteProducts.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center mt-8">
+                    Nenhum favorito salvo.
+                  </p>
+                ) : (
+                  favoriteProducts.map((product) => (
+                    <Link
+                      key={product.id}
+                      to={`/product/${product.id}`}
+                      className="block border rounded p-2 bg-gray-50 hover:bg-gray-100 transition"
+                      onClick={() => setShowFavBar(false)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                            —
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="font-medium text-sm line-clamp-2">
+                            {product.title}
+                          </p>
+                          <p className="text-green-600 text-sm font-semibold">
+                            R$ {product.price}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite(product.id);
+                          }}
+                          className="text-red-500 hover:scale-110 transition"
+                        >
+                          ♥
+                        </button>
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+```
+
+frontend/src/pages/ProductDetail.jsx:
+```jsx
+// frontend/src/pages/ProductDetail.jsx
+import { useContext, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Heart, Send, Share2, MapPin, X as CloseIcon, Copy as CopyIcon } from 'lucide-react';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+import SoldBadge from '../components/SoldBadge.jsx';
+
+export default function ProductDetail() {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [favorite, setFavorite] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const { user, token } = useContext(AuthContext);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get(`/products/${id}`)
+      .then((res) => active && setProduct(res.data.data))
+      .catch(() => active && setError('Não foi possível carregar o produto.'))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [id]);
+
+  const handleSendMessage = async () => {
+    if (!message.trim()) return alert('Digite uma mensagem antes de enviar.');
+    setSending(true);
+    try {
+      await api.post(
+        '/messages',
+        { product_id: product.id, content: message },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Mensagem enviada ao vendedor.');
+      setMessage('');
+    } catch {
+      alert('Erro ao enviar mensagem.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleFavorite = () => {
+    setFavorite((prev) => !prev);
+    // opcional: persistir em localStorage ou chamar POST /favorites
+  };
+
+  const handleOffer = () => {
+    if (product?.status === 'sold') return;
+    if (!token) return alert('Você precisa estar logado para fazer uma oferta.');
+    alert('Funcionalidade de oferta em desenvolvimento.');
+  };
+
+  const openShare = () => {
+    const url = window.location.href;
+    const title = product?.title || 'SaleDay';
+    const text = `Dê uma olhada neste produto: ${title}`;
+    if (navigator.share) {
+      navigator.share({ title, text, url }).catch(() => {});
+    } else {
+      setShareOpen(true);
+    }
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Link copiado.');
+    } catch {
+      alert('Falha ao copiar link.');
+    }
+  };
+
+  if (loading) return <div className="p-6 text-center">Carregando produto...</div>;
+  if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
+  if (!product) return null;
+
+  const priceBRL = Number(product.price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const sellerName = product.seller_name || 'Usuário SaleDay';
+  const locCity = product.city || product.seller_city || '';
+  const locState = product.state || product.seller_state || '';
+  const locCountry = product.country || product.seller_country || '';
+  const isSold = product.status === 'sold';
+  const isOwner = user && user.id === product.user_id;
+
+  const sendQuickAvailability = async () => {
+    if (isSold) return;
+    if (!token) return alert('Você precisa estar logado para enviar mensagem.');
+    try {
+      await api.post(
+        '/messages',
+        { product_id: product.id, content: 'Ainda está disponível?' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Mensagem enviada ao vendedor.');
+    } catch {
+      alert('Erro ao enviar mensagem.');
+    }
+  };
+
+  // links de compartilhamento
+  const shareUrl = encodeURIComponent(window.location.href);
+  const shareText = encodeURIComponent(product.title || 'Produto SaleDay');
+  const whatsapp = `https://wa.me/?text=${shareText}%20${shareUrl}`;
+  const telegram = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
+  const facebook = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+  const xUrl = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`;
+
+  return (
+    <article className="max-w-5xl mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
+      {/* Cabeçalho com vendedor */}
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b pb-3 gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-semibold truncate">{product.title}</h1>
+          {isSold && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700">
+              Vendido
+            </span>
+          )}
+          <p className="text-gray-600 flex items-center gap-1 text-xs md:text-sm">
+            <MapPin size={14} /> {locCity || 'Local não informado'}{locState ? `, ${locState}` : ''}{locCountry ? ` (${locCountry})` : ''}
+          </p>
+        </div>
+        <div className="text-left md:text-right">
+          <p className="text-xs md:text-sm text-gray-500">Vendedor:</p>
+          <p className="font-medium text-gray-800 text-sm md:text-base">{sellerName}</p>
+        </div>
+      </header>
+
+      {/* Imagem principal */}
+      <div className="w-full bg-gray-100 rounded-lg overflow-hidden shadow-sm relative">
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.title}
+            className="w-full h-64 md:h-[420px] object-cover"
+          />
+        ) : (
+          <div className="w-full h-64 md:h-[420px] flex items-center justify-center text-gray-400">
+            Sem imagem
+          </div>
+        )}
+        {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
+      </div>
+
+      {/* Botões de ação */}
+      <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+        <button
+          onClick={handleFavorite}
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm ${
+            favorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700'
+          }`}
+        >
+          <Heart size={18} /> {favorite ? 'Favoritado' : 'Favoritar'}
+        </button>
+
+        <button
+          onClick={handleOffer}
+          disabled={isSold}
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm ${
+            isSold
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          <Send size={18} /> {isSold ? 'Produto vendido' : 'Fazer oferta'}
+        </button>
+
+        <button
+          onClick={openShare}
+          className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-blue-600 text-white hover:bg-blue-700 text-sm"
+        >
+          <Share2 size={18} /> Compartilhar
+        </button>
+
+        {!isSold && user && user.id !== product.user_id && (
+          <button
+            onClick={sendQuickAvailability}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-gray-800 text-white hover:bg-gray-900 text-sm"
+          >
+            Ainda está disponível?
+          </button>
+        )}
+
+        {isOwner && !isSold && (
+          <button
+            onClick={async () => {
+              try {
+                await api.put(
+                  `/products/${product.id}/status`,
+                  { status: 'sold' },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setProduct((prev) => ({ ...prev, status: 'sold' }));
+                alert('Produto marcado como vendido.');
+              } catch {
+                alert('Falha ao marcar como vendido.');
+              }
+            }}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-gray-800 text-white text-sm"
+          >
+            Marcar como vendido
+          </button>
+        )}
+      </div>
+
+      {/* Detalhes do produto */}
+      <section className="space-y-2 border-t pt-4">
+        <p className="text-xl md:text-2xl font-semibold text-green-600">{priceBRL}</p>
+        <p className="text-gray-800 text-sm md:text-base">{product.description || 'Sem descrição disponível.'}</p>
+
+        <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-1 md:gap-y-0 md:gap-x-6">
+          <p>Categoria: <span className="text-gray-800">{product.category || 'Não informada'}</span></p>
+          <p>CEP: <span className="text-gray-800">{product.zip || 'Não informado'}</span></p>
+          <p>Rua: <span className="text-gray-800">{product.street || 'Não informada'}</span></p>
+          <p>Bairro: <span className="text-gray-800">{product.neighborhood || 'Não informado'}</span></p>
+        </div>
+      </section>
+
+      {/* Enviar mensagem */}
+      {!isSold && user && user.id !== product.user_id && (
+        <section className="border-t pt-4">
+          <h3 className="font-semibold mb-2 text-sm md:text-base">Enviar mensagem ao vendedor</h3>
+          <textarea
+            className="w-full border rounded p-2 mb-2 h-24 text-sm md:text-base"
+            placeholder="Digite sua mensagem..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={sending}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60 text-sm md:text-base"
+          >
+            {sending ? 'Enviando...' : 'Enviar mensagem'}
+          </button>
+        </section>
+      )}
+
+      {/* Modal de compartilhamento (fallback) */}
+      {shareOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
+          <div className="bg-white w-full md:w-[420px] rounded-t-2xl md:rounded-2xl p-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold">Compartilhar</h4>
+              <button
+                onClick={() => setShareOpen(false)}
+                className="p-1 rounded hover:bg-gray-100"
+                aria-label="Fechar"
+              >
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 text-center">
+              <a href={whatsapp} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WhatsApp" className="w-8 h-8 mx-auto" />
+                WhatsApp
+              </a>
+              <a href={telegram} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/telegram.svg" alt="Telegram" className="w-8 h-8 mx-auto" />
+                Telegram
+              </a>
+              <a href={facebook} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" className="w-8 h-8 mx-auto" />
+                Facebook
+              </a>
+              <a href={xUrl} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X" className="w-8 h-8 mx-auto" />
+                X
+              </a>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={copyLink}
+                className="inline-flex items-center gap-2 px-3 py-2 border rounded text-sm hover:bg-gray-50"
+              >
+                <CopyIcon size={16} /> Copiar link
+              </button>
+              <button
+                onClick={() => setShareOpen(false)}
+                className="ml-auto px-3 py-2 bg-gray-800 text-white rounded text-sm"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+```
+
+frontend/src/pages/NewProduct.jsx:
+```jsx
+// frontend/src/pages/NewProduct.jsx
+import { useContext, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { toast } from 'react-hot-toast';
+
+// bounds simples por país
+const BOUNDS = {
+  BR: { lat: [-34, 5], lng: [-74, -34] },
+  US: { lat: [18, 72], lng: [-170, -66] },
+  IT: { lat: [35, 47], lng: [6, 19] }
+};
+
+const inBounds = (code, lat, lng) => {
+  const b = BOUNDS[code];
+  if (!b || lat == null || lng == null) return true;
+  return lat >= b.lat[0] && lat <= b.lat[1] && lng >= b.lng[0] && lng <= b.lng[1];
+};
+
+const initialFormState = {
+  title: '',
+  description: '',
+  price: '',
+  category: '',
+  city: '',
+  image_url: '',
+  country: 'BR', // padrão BR
+  state: '',
+  neighborhood: '',
+  street: '',
+  zip: '',
+  lat: '',
+  lng: ''
+};
+
+const categories = [
+  'Eletrônicos',
+  'Informática',
+  'Moda',
+  'Casa e Jardim',
+  'Esportes',
+  'Veículos',
+  'Outros'
+];
+
+// opções de país (ISO-3166 alpha-2)
+const COUNTRY_OPTIONS = [
+  { code: 'BR', label: 'Brasil' },
+  { code: 'US', label: 'Estados Unidos' },
+  { code: 'IT', label: 'Itália' }
+];
+
+// normaliza país escrito em pt/en para sigla
+function normalizeCountry(input) {
+  if (!input) return null;
+  const v = String(input).trim().toLowerCase();
+  if (['br', 'bra', 'brasil', 'brazil'].includes(v)) return 'BR';
+  if (['us', 'usa', 'eua', 'united states', 'estados unidos', 'u.s.', 'u.s.a.'].includes(v)) return 'US';
+  if (['it', 'ita', 'italia', 'itália', 'italy'].includes(v)) return 'IT';
+  return null; // desconhecido
+}
+
+// normaliza UF para duas letras quando possível
+function normalizeState(uf, country) {
+  if (!uf) return '';
+  const s = String(uf).trim().toUpperCase();
+
+  if (country === 'BR') {
+    // aceita nome ou sigla e converte para sigla
+    const mapBR = {
+      'ACRE':'AC','AC':'AC','ALAGOAS':'AL','AL':'AL','AMAPA':'AP','AMAPÁ':'AP','AP':'AP',
+      'AMAZONAS':'AM','AM':'AM','BAHIA':'BA','BA':'BA','CEARA':'CE','CEARÁ':'CE','CE':'CE',
+      'DISTRITO FEDERAL':'DF','DF':'DF','ESPIRITO SANTO':'ES','ESPÍRITO SANTO':'ES','ES':'ES',
+      'GOIAS':'GO','GOIÁS':'GO','GO':'GO','MARANHAO':'MA','MARANHÃO':'MA','MA':'MA',
+      'MATO GROSSO':'MT','MT':'MT','MATO GROSSO DO SUL':'MS','MS':'MS',
+      'MINAS GERAIS':'MG','MG':'MG','PARA':'PA','PARÁ':'PA','PA':'PA',
+      'PARAIBA':'PB','PARAÍBA':'PB','PB':'PB','PARANA':'PR','PARANÁ':'PR','PR':'PR',
+      'PERNAMBUCO':'PE','PE':'PE','PIAUI':'PI','PIAUÍ':'PI','PI':'PI',
+      'RIO DE JANEIRO':'RJ','RJ':'RJ','RIO GRANDE DO NORTE':'RN','RN':'RN',
+      'RIO GRANDE DO SUL':'RS','RS':'RS','RONDONIA':'RO','RONDÔNIA':'RO','RO':'RO',
+      'RORAIMA':'RR','RR':'RR','SANTA CATARINA':'SC','SC':'SC','SAO PAULO':'SP','SÃO PAULO':'SP','SP':'SP',
+      'SERGIPE':'SE','SE':'SE','TOCANTINS':'TO','TO':'TO'
+    };
+    return mapBR[s] || s.slice(0, 2); // fallback
+  }
+
+  if (country === 'US') {
+    // normaliza para 2 letras US
+    const mapUS = {
+      'ALABAMA':'AL','AL':'AL','ALASKA':'AK','AK':'AK','ARIZONA':'AZ','AZ':'AZ','ARKANSAS':'AR','AR':'AR',
+      'CALIFORNIA':'CA','CA':'CA','COLORADO':'CO','CO':'CO','CONNECTICUT':'CT','CT':'CT',
+      'DELAWARE':'DE','DE':'DE','FLORIDA':'FL','FL':'FL','GEORGIA':'GA','GA':'GA',
+      'HAWAII':'HI','HI':'HI','IDAHO':'ID','ID':'ID','ILLINOIS':'IL','IL':'IL','INDIANA':'IN','IN':'IN',
+      'IOWA':'IA','IA':'IA','KANSAS':'KS','KS':'KS','KENTUCKY':'KY','KY':'KY',
+      'LOUISIANA':'LA','LA':'LA','MAINE':'ME','ME':'ME','MARYLAND':'MD','MD':'MD',
+      'MASSACHUSETTS':'MA','MA':'MA','MICHIGAN':'MI','MI':'MI','MINNESOTA':'MN','MN':'MN',
+      'MISSISSIPPI':'MS','MS':'MS','MISSOURI':'MO','MO':'MO','MONTANA':'MT','MT':'MT',
+      'NEBRASKA':'NE','NE':'NE','NEVADA':'NV','NV':'NV','NEW HAMPSHIRE':'NH','NH':'NH',
+      'NEW JERSEY':'NJ','NJ':'NJ','NEW MEXICO':'NM','NM':'NM','NEW YORK':'NY','NY':'NY',
+      'NORTH CAROLINA':'NC','NC':'NC','NORTH DAKOTA':'ND','ND':'ND','OHIO':'OH','OH':'OH',
+      'OKLAHOMA':'OK','OK':'OK','OREGON':'OR','OR':'OR','PENNSYLVANIA':'PA','PA':'PA',
+      'RHODE ISLAND':'RI','RI':'RI','SOUTH CAROLINA':'SC','SC':'SC','SOUTH DAKOTA':'SD','SD':'SD',
+      'TENNESSEE':'TN','TN':'TN','TEXAS':'TX','TX':'TX','UTAH':'UT','UT':'UT',
+      'VERMONT':'VT','VT':'VT','VIRGINIA':'VA','VA':'VA','WASHINGTON':'WA','WA':'WA',
+      'WEST VIRGINIA':'WV','WV':'WV','WISCONSIN':'WI','WI':'WI','WYOMING':'WY','WY':'WY',
+      'DISTRICT OF COLUMBIA':'DC','DC':'DC'
+    };
+    return mapUS[s] || s.slice(0, 2);
+  }
+
+  // IT ou outros: mantém como digitado, em maiúsculas curto
+  return s.slice(0, 5);
+}
+
+export default function NewProduct() {
+  const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [form, setForm] = useState(initialFormState);
+  const [sending, setSending] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
+  const isValid = useMemo(() => form.title && form.price, [form.title, form.price]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    // select de country já envia code
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // GPS -> normaliza país para sigla e UF
+  async function handleDetectLocation() {
+    if (!navigator.geolocation) return toast.error('Seu navegador não suporta GPS.');
+    setLoadingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const { data } = await api.get(`/geo/reverse?lat=${latitude}&lng=${longitude}`);
+          if (data.success) {
+            const addr = data.data || {};
+            const countryCode = normalizeCountry(addr.country) || form.country || 'BR';
+            const stateNorm = normalizeState(addr.state, countryCode);
+            const lat = latitude;
+            const lng = longitude;
+
+            if (!inBounds(countryCode, lat, lng)) {
+              toast.error('Seu GPS parece apontar outro país. Ajuste o país/UF ou use “Preencher pelo CEP”.');
+              setLoadingLocation(false);
+              return;
+            }
+
+            setForm((f) => ({
+              ...f,
+              country: countryCode,
+              state: stateNorm,
+              city: addr.city || f.city,
+              neighborhood: addr.neighborhood || f.neighborhood,
+              street: addr.street || f.street,
+              zip: addr.zip || f.zip,
+              lat,
+              lng
+            }));
+            toast.success('Localização detectada com sucesso.');
+          } else {
+            toast.error('Falha ao detectar endereço.');
+          }
+        } catch {
+          toast.error('Erro ao consultar localização.');
+        } finally {
+          setLoadingLocation(false);
+        }
+      },
+      () => {
+        toast.error('Não foi possível acessar o GPS.');
+        setLoadingLocation(false);
+      }
+    );
+  }
+
+  async function handleFillByZip() {
+    const country = (form.country || 'BR').toUpperCase();
+    const zip = String(form.zip || '').trim();
+    if (!zip) return toast.error('Informe o CEP/ZIP.');
+
+    try {
+      const { data } = await api.get('/geo/cep', { params: { country, zip } });
+      if (!data.success || !data.data) return toast.error('CEP/ZIP não encontrado.');
+
+      const a = data.data;
+      let next = {
+        ...form,
+        country: a.country || form.country,
+        state: a.state || form.state,
+        city: a.city || form.city,
+        neighborhood: a.neighborhood ?? form.neighborhood,
+        street: a.street ?? form.street,
+        zip: a.zip || zip
+      };
+
+      // se não veio lat/lng do CEP, tenta forward com os campos preenchidos
+      if (a.lat == null || a.lng == null) {
+        const parts = [next.street, next.neighborhood, next.city, next.state, next.country].filter(Boolean);
+        const q = parts.join(', ');
+        const fr = await api.get('/geo/forward', { params: { q } });
+        if (fr.data?.success && fr.data?.data?.lat != null && fr.data?.data?.lng != null) {
+          next.lat = fr.data.data.lat;
+          next.lng = fr.data.data.lng;
+        }
+      } else {
+        next.lat = a.lat;
+        next.lng = a.lng;
+      }
+
+      setForm(next);
+      toast.success('Endereço preenchido pelo CEP.');
+    } catch {
+      toast.error('Erro ao consultar CEP.');
+    }
+  }
+
+  // normalização final antes de enviar
+  function buildPayload() {
+    const countryCode =
+      form.country && form.country.length <= 3
+        ? form.country.toUpperCase()
+        : normalizeCountry(form.country) || 'BR';
+
+    const stateCode = normalizeState(form.state, countryCode);
+    const latNum =
+      form.lat === '' || form.lat === null || form.lat === undefined
+        ? null
+        : Number(form.lat);
+    const lngNum =
+      form.lng === '' || form.lng === null || form.lng === undefined
+        ? null
+        : Number(form.lng);
+    const latOk =
+      Number.isFinite(latNum) &&
+      Number.isFinite(lngNum) &&
+      inBounds(countryCode, latNum, lngNum);
+    const lat = latOk ? latNum : null;
+    const lng = latOk ? lngNum : null;
+
+    return {
+      ...form,
+      country: countryCode,
+      state: stateCode,
+      lat,
+      lng,
+      price: Number(form.price) || form.price,
+      city: form.city?.trim() || null,
+      neighborhood: form.neighborhood?.trim() || null,
+      street: form.street?.trim() || null,
+      zip: form.zip?.trim() || null,
+      image_url: form.image_url?.trim() || null,
+      title: form.title?.trim(),
+      description: form.description?.trim() || null
+    };
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!isValid || sending) return;
+    if (!token) return toast.error('Você precisa estar logado para publicar.');
+
+    setSending(true);
+    try {
+      const payload = buildPayload();
+      await api.post('/products', payload);
+      toast.success('Produto publicado com sucesso!');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao publicar produto.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <section className="new-product-page">
+      <div className="new-product-card">
+        <header className="new-product-header">
+          <h1>Publicar novo produto</h1>
+          <p>Compartilhe seu produto com a comunidade SaleDay em poucos passos.</p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="new-product-form">
+          <div className="form-grid">
+            <label>
+              Título*
+              <input name="title" placeholder="Ex: Notebook Dell XPS 13" value={form.title} onChange={handleChange} required />
+            </label>
+
+            <label>
+              Preço*
+              <input name="price" placeholder="Ex: 3500" value={form.price} onChange={handleChange} required inputMode="decimal" />
+            </label>
+
+            <label>
+              Categoria
+              <select name="category" value={form.category} onChange={handleChange}>
+                <option value="">Selecione uma categoria</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Cidade
+              <input name="city" placeholder="Localização do produto" value={form.city} onChange={handleChange} />
+        </label>
+          </div>
+
+          {/* CEP/ZIP primeiro */}
+          <div className="my-2">
+            <div className="flex gap-2">
+              <input
+                className="border p-2 rounded flex-1"
+                placeholder={form.country === 'US' ? 'ZIP (5)' : 'CEP (8)'}
+                name="zip"
+                value={form.zip}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                onClick={handleFillByZip}
+                className="px-3 py-2 rounded bg-blue-600 text-white"
+              >
+                Preencher pelo CEP
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Dica: use “Preencher pelo CEP/ZIP” para localizar automaticamente.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between my-2">
+            <span className="text-sm text-gray-600">Detectar localização automática:</span>
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={loadingLocation}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+            </button>
+          </div>
+
+          {/* Endereço */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* País como SELECT com siglas */}
+            <label className="flex flex-col">
+              <span className="text-sm mb-1">País (sigla)</span>
+              <select
+                className="border p-2 rounded"
+                name="country"
+                value={form.country}
+                onChange={handleChange}
+              >
+                {COUNTRY_OPTIONS.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col">
+              <span className="text-sm mb-1">Estado/UF</span>
+              <input
+                className="border p-2 rounded"
+                placeholder={form.country === 'US' ? 'Ex: CA' : 'Ex: SP'}
+                name="state"
+                value={form.state}
+                onChange={handleChange}
+              />
+            </label>
+
+            <input className="border p-2 rounded" placeholder="Bairro" name="neighborhood" value={form.neighborhood} onChange={handleChange} />
+            <input className="border p-2 rounded" placeholder="Rua" name="street" value={form.street} onChange={handleChange} />
+          </div>
+
+          <label>
+            URL da imagem
+            <input name="image_url" placeholder="https://exemplo.com/imagem.jpg" value={form.image_url} onChange={handleChange} />
+          </label>
+
+          <label>
+            Descrição
+            <textarea
+              name="description"
+              placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
+              value={form.description}
+              onChange={handleChange}
+              rows={5}
+            />
+          </label>
+
+          <footer className="new-product-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setForm(initialFormState)}
+              disabled={sending}
+            >
+              Limpar
+            </button>
+            <button type="submit" className="btn-primary" disabled={sending || !isValid}>
+              {sending ? 'Publicando...' : 'Publicar produto'}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+```
+
+frontend/src/pages/EditProduct.jsx:
+```jsx
+//frontend/src/pages/EditProduct.jsx
+//aqui edita e posta produto 
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+import { toast } from 'react-hot-toast';
+
+export default function EditProduct() {
+  const { id } = useParams();
+  const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: '',
+    city: '',
+    image_url: '',
+    country: '',
+    state: '',
+    neighborhood: '',
+    street: '',
+    zip: '',
+    lat: '',
+    lng: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get(`/products/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (active && res.data?.data) {
+          const data = res.data.data;
+          setForm({
+            title: data.title ?? '',
+            description: data.description ?? '',
+            price: data.price !== undefined && data.price !== null ? String(data.price) : '',
+            category: data.category ?? '',
+            city: data.city ?? '',
+            image_url: data.image_url ?? '',
+            country: data.country ?? '',
+            state: data.state ?? '',
+            neighborhood: data.neighborhood ?? '',
+            street: data.street ?? '',
+            zip: data.zip ?? '',
+            lat: data.lat !== undefined && data.lat !== null ? String(data.lat) : '',
+            lng: data.lng !== undefined && data.lng !== null ? String(data.lng) : ''
+          });
+        }
+      })
+      .catch(() => {
+        toast.error('Erro ao carregar produto.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, token]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const canSubmit = useMemo(() => form.title && form.price, [form.title, form.price]);
+
+  async function handleDetectLocation() {
+    if (!navigator.geolocation) {
+      toast.error('Seu navegador não suporta GPS.');
+      return;
+    }
+    setLoadingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const { data } = await api.get(`/geo/reverse?lat=${latitude}&lng=${longitude}`);
+          if (data.success) {
+            const addr = data.data;
+            setForm((prev) => ({
+              ...prev,
+              country: addr.country,
+              state: addr.state,
+              city: addr.city,
+              neighborhood: addr.neighborhood,
+              street: addr.street,
+              zip: addr.zip,
+              lat: latitude,
+              lng: longitude
+            }));
+            toast.success('Localização atualizada.');
+          } else {
+            toast.error('Falha ao detectar endereço.');
+          }
+        } catch {
+          toast.error('Erro ao consultar localização.');
+        } finally {
+          setLoadingLocation(false);
+        }
+      },
+      () => {
+        toast.error('Não foi possível acessar o GPS.');
+        setLoadingLocation(false);
+      }
+    );
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!canSubmit) {
+      toast.error('Título e preço são obrigatórios.');
+      return;
+    }
+
+    try {
+      await api.put(
+        `/products/${id}`,
+        {
+          ...form,
+          price: Number(form.price) || form.price
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      toast.success('Produto atualizado.');
+      navigate('/my-products');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao atualizar produto.');
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm('Deseja realmente excluir este produto?');
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Produto excluído.');
+      navigate('/my-products');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao excluir produto.');
+    }
+  };
+
+  if (loading) return <div className="page-loading">Carregando produto...</div>;
+
+  return (
+    <div className="edit-product-page">
+      <h2>Editar Produto</h2>
+      <form onSubmit={handleSubmit} className="edit-product-form">
+        <input name="title" value={form.title} onChange={handleChange} placeholder="Título" required />
+        <input
+          name="price"
+          value={form.price}
+          onChange={handleChange}
+          placeholder="Preço"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+        />
+        <input name="category" value={form.category} onChange={handleChange} placeholder="Categoria" />
+        <input name="city" value={form.city} onChange={handleChange} placeholder="Cidade" />
+        <input
+          name="image_url"
+          value={form.image_url}
+          onChange={handleChange}
+          placeholder="URL da Imagem"
+        />
+        <div className="flex items-center justify-between w-full">
+          <span className="text-sm text-gray-600">Atualizar endereço automaticamente:</span>
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={loadingLocation}
+            className="bg-blue-600 text-white px-3 py-1 rounded"
+          >
+            {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+          </button>
+        </div>
+        <input
+          name="country"
+          value={form.country}
+          onChange={handleChange}
+          placeholder="País"
+        />
+        <input name="state" value={form.state} onChange={handleChange} placeholder="Estado" />
+        <input
+          name="neighborhood"
+          value={form.neighborhood}
+          onChange={handleChange}
+          placeholder="Bairro"
+        />
+        <input name="street" value={form.street} onChange={handleChange} placeholder="Rua" />
+        <input name="zip" value={form.zip} onChange={handleChange} placeholder="CEP" />
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={handleChange}
+          placeholder="Descrição"
+        />
+        <p className="text-xs text-gray-500">
+          Coordenadas: {form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'não definidas'}
+        </p>
+        <div className="edit-product-actions">
+          <button type="submit" disabled={!canSubmit}>
+            Salvar
+          </button>
+          <button type="button" className="danger" onClick={handleDelete}>
+            Excluir
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+```
+
+frontend/src/pages/MyProducts.jsx:
+```jsx
+import { useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+import SoldBadge from '../components/SoldBadge.jsx';
+
+export default function MyProducts() {
+  const { token } = useContext(AuthContext);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api
+      .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => { if (active) setProducts(res.data?.data ?? []); })
+      .catch(console.error)
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
+
+  async function markAsSold(id) {
+    try {
+      await api.put(`/products/${id}/status`, { status: 'sold' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProducts((prev) => prev.map(p => p.id === id ? { ...p, status: 'sold' } : p));
+      alert('Produto marcado como vendido.');
+    } catch {
+      alert('Falha ao marcar como vendido.');
+    }
+  }
+
+  if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
+  if (!products.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
+
+  return (
+    <div className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
+      {products.map((product) => {
+        const isSold = product.status === 'sold';
+        return (
+          <article key={product.id} className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
+            <div className="relative">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.title} className="my-product-card__image w-full h-44 object-cover" />
+              ) : (
+                <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">Sem imagem</div>
+              )}
+              {isSold && <SoldBadge className="absolute -top-1 -left-1" />}
+            </div>
+            <div className="my-product-card__body p-3 space-y-1">
+              <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+              <p className="text-green-600 font-medium">
+                {Number(product.price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+              <div className="flex items-center gap-2 pt-2">
+                <Link
+                  to={`/edit-product/${product.id}`}
+                  className="my-product-card__edit px-3 py-1.5 text-sm border rounded hover:bg-gray-50 disabled:opacity-50"
+                  aria-disabled={isSold}
+                >
+                  Editar
+                </Link>
+                {!isSold && (
+                  <button
+                    onClick={() => markAsSold(product.id)}
+                    className="px-3 py-1.5 text-sm rounded bg-gray-800 text-white hover:bg-gray-900"
+                  >
+                    Marcar como vendido
+                  </button>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+```
+
+frontend/src/pages/Messages.jsx:
+```jsx
+import { useEffect, useRef, useState, useContext, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+export default function Messages() {
+  const { token, user } = useContext(AuthContext);
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedMeta, setSelectedMeta] = useState({ title: '', seller: '' });
+  const [counterpartId, setCounterpartId] = useState(null);
+  const [newMsg, setNewMsg] = useState('');
+  const [sending, setSending] = useState(false);
+  const [searchParams] = useSearchParams();
+  const soundRef = useRef(null);
+  const lastMessageCountRef = useRef(null);
+  const pollingRef = useRef(null);
+
+  useEffect(() => {
+    if (!soundRef.current) {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.3;
+      soundRef.current = audio;
+    }
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await api.get('/messages', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(response.data?.data ?? []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const determineCounterpart = useCallback(
+    (data, fallback) => {
+      if (data.length > 0) {
+        const lastMessage = data[data.length - 1];
+        return lastMessage.sender_id === user.id ? lastMessage.receiver_id : lastMessage.sender_id;
+      }
+      if (fallback) {
+        return fallback.sender_id === user.id ? fallback.receiver_id : fallback.sender_id;
+      }
+      return null;
+    },
+    [user.id]
+  );
+
+  const fetchMessages = useCallback(
+    async (productId, { playSound = false, conversation } = {}) => {
+      if (!token || !productId) return [];
+      try {
+        const response = await api.get(`/messages/${productId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = response.data?.data ?? [];
+
+        if (
+          playSound &&
+          soundRef.current &&
+          lastMessageCountRef.current !== null &&
+          data.length > lastMessageCountRef.current
+        ) {
+          soundRef.current.play().catch(() => {});
+        }
+
+        setMessages(data);
+
+        if (data.length > 0) {
+          const meta = data[0];
+          setSelectedMeta({ title: meta.product_title, seller: meta.seller_name });
+        } else if (conversation) {
+          setSelectedMeta({
+            title: conversation.product_title,
+            seller: conversation.seller_name
+          });
+        }
+
+        const counterpart = determineCounterpart(data, conversation);
+        setCounterpartId(counterpart);
+
+        lastMessageCountRef.current = data.length;
+        return data;
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    },
+    [token, determineCounterpart]
+  );
+
+  const openChat = useCallback(
+    async (productId, conversation) => {
+      if (!productId) return;
+      const numericId = Number(productId);
+      setSelectedProduct(numericId);
+      lastMessageCountRef.current = null; // reset so initial load doesn't play sound
+      await fetchMessages(numericId, { playSound: false, conversation });
+    },
+    [fetchMessages]
+  );
+
+  // open chat from query param when conversations fetched
+  useEffect(() => {
+    const pid = searchParams.get('product');
+    if (!pid) return;
+    const existing = conversations.find((c) => c.product_id === Number(pid));
+    openChat(pid, existing);
+  }, [searchParams, conversations, openChat]);
+
+  // polling
+  useEffect(() => {
+    if (!selectedProduct) return undefined;
+
+    const poll = async () => {
+      const conversation =
+        conversations.find((c) => c.product_id === selectedProduct) ?? null;
+      await fetchMessages(selectedProduct, { playSound: true, conversation });
+    };
+
+    poll();
+    pollingRef.current = setInterval(poll, 5000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [selectedProduct, conversations, fetchMessages]);
+
+  const handleSend = useCallback(
+    async (event) => {
+      event.preventDefault();
+      if (!newMsg.trim() || !selectedProduct || !token || sending) return;
+      setSending(true);
+      const conversation =
+        conversations.find((c) => c.product_id === selectedProduct) ?? null;
+      const effectiveReceiver =
+        counterpartId ?? determineCounterpart(messages, conversation);
+
+      if (!effectiveReceiver) {
+        setSending(false);
+        alert('Não foi possível identificar o destinatário da mensagem.');
+        return;
+      }
+
+      try {
+        await api.post(
+          '/messages',
+          {
+            product_id: selectedProduct,
+            content: newMsg.trim(),
+            receiver_id: effectiveReceiver
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setNewMsg('');
+        lastMessageCountRef.current = null; // avoid skipping play on new incoming
+        await fetchMessages(selectedProduct, { playSound: false });
+        await loadConversations();
+      } catch (err) {
+        console.error(err);
+        alert('Não foi possível enviar a mensagem. Tente novamente.');
+      } finally {
+        setSending(false);
+      }
+    },
+    [
+      newMsg,
+      selectedProduct,
+      token,
+      counterpartId,
+      sending,
+      fetchMessages,
+      loadConversations,
+      determineCounterpart,
+      conversations,
+      messages
+    ]
+  );
+
+  return (
+    <div className="grid h-[calc(100vh-64px)] bg-gray-100 lg:grid-cols-[360px_auto]">
+      {/* Sidebar */}
+      <aside className="flex flex-col bg-white border-b lg:border-b-0 lg:border-r shadow-lg max-h-full">
+        <div className="p-4 border-b bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-lg">
+          Conversas
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          {conversations.length === 0 && (
+            <p className="text-center text-gray-400 mt-10">Nenhuma conversa</p>
+          )}
+          {conversations.map((c) => (
+            <button
+              key={`${c.product_id}-${c.receiver_id}-${c.sender_id}`}
+              onClick={() => openChat(c.product_id, c)}
+              className={`w-full text-left p-3 rounded-lg transition ${
+                c.product_id === selectedProduct
+                  ? 'bg-blue-100 border-l-4 border-blue-500'
+                  : 'bg-gray-50 hover:bg-gray-100'
+              }`}
+            >
+              <p className="font-semibold text-gray-800">{c.product_title}</p>
+              <p className="text-xs text-gray-500">Vendedor: {c.seller_name}</p>
+              <p className="text-sm text-gray-600 truncate">{c.content}</p>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* Chat */}
+      <section className="flex flex-1 flex-col bg-gray-50 max-h-full">
+        {selectedProduct ? (
+          <>
+            <header className="bg-white border-b p-4 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-800">{selectedMeta.title}</h2>
+              <p className="text-sm text-gray-500">Vendedor: {selectedMeta.seller}</p>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 bg-[url('https://www.transparenttextures.com/patterns/sandpaper.png')]">
+              <div className="max-w-3xl mx-auto flex flex-col gap-2">
+                {messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-2xl text-sm shadow ${
+                      m.sender_id === user.id
+                        ? 'self-end bg-blue-500 text-white rounded-br-none'
+                        : 'self-start bg-white text-gray-800 rounded-bl-none'
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <form
+              onSubmit={handleSend}
+              className="p-4 bg-white border-t shadow flex flex-col sm:flex-row sm:items-center gap-3"
+            >
+              <input
+                className="w-full sm:flex-1 border rounded-full px-4 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={newMsg}
+                onChange={(e) => setNewMsg(e.target.value)}
+                placeholder="Digite sua mensagem..."
+                disabled={sending}
+              />
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-5 py-3 sm:py-2 rounded-full hover:bg-blue-700 transition disabled:opacity-60"
+                disabled={sending || !newMsg.trim()}
+              >
+                {sending ? 'Enviando...' : 'Enviar'}
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-lg p-6 text-center">
+            Selecione uma conversa para começar a trocar mensagens.
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+```
+
+frontend/src/pages/Dashboard.jsx:
+```jsx
+//frontend/src/pages/Dashboard.jsx
+import { useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+export default function Dashboard() {
+  const { user, token, logout } = useContext(AuthContext);
+  const [conversations, setConversations] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/messages', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (active) setConversations(res.data.data ?? []);
+      })
+      .catch((err) => console.error(err));
+    return () => { active = false };
+  }, [token]);
+
+  return (
+    <section className="dashboard p-4 sm:p-6 md:p-8 max-w-4xl mx-auto">
+    <header className="w-full bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm rounded-xl px-4 sm:px-6 py-3 mb-6 flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    
+    <div className="bg-yellow-400 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg shadow text-gray-900 font-bold">
+      👤
+    </div>
+    
+    <div className="flex flex-col">
+      <span className="text-sm text-gray-500 leading-none">Painel do usuário</span>
+      <h1 className="text-base sm:text-lg font-semibold text-gray-800">
+        {user?.username || user?.email}
+      </h1>
+    </div>
+    
+
+    <Link
+  to="/edit-profile"
+  className=" bg-blue-700/100 hover:bg-blue-100 
+             text-emerald-100 font-medium text-sm py-1.5 px-3 rounded-md text-center 
+             shadow-sm transition-all duration-200 backdrop-blur-sm hover:scale-[1.02]"
+>
+  Editar Perfil
+</Link>
+
+  </div>
+  <div className="hidden sm:flex items-center text-sm text-gray-500 font-medium">
+    
+
+  </div>
+</header>
+
+
+      {/* MENU PRINCIPAL */}
+      <div
+        className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-8"
+      >
+        <Link
+          className="dashboard-button bg-yellow-300/80 hover:bg-yellow-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+          to="/my-products"
+        >
+          Meus Anúncios
+        </Link>
+
+        <Link
+          className="dashboard-button bg-blue-300/80 hover:bg-blue-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+          to="/new-product"
+        >
+          Novo Produto
+        </Link>
+
+
+        <Link
+          className="dashboard-button bg-sky-300/80 hover:bg-sky-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+          to="/messages"
+        >
+          Mensagens
+        </Link>
+        <button
+          onClick={logout}
+          className="dashboard-button bg-red-400/80 hover:bg-red-500 text-white font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+        >
+          Sair
+        </button>
+       
+      </div>
+
+      {/* SEÇÃO DE MENSAGENS */}
+      <section className="dashboard-messages bg-white/80 backdrop-blur-sm shadow-md rounded-lg p-4 sm:p-6">
+        <header className="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+            Notificações de mensagens
+          </h2>
+          <Link
+            to="/messages"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Ver todas
+          </Link>
+        </header>
+
+        {conversations.length ? (
+          <ul className="space-y-3">
+            {conversations.slice(0, 5).map((conversation) => (
+              <li
+                key={conversation.id}
+                className="border border-gray-200 rounded-md p-3 hover:bg-gray-50 transition"
+              >
+                <span className="font-semibold text-gray-800 block">
+                  {conversation.product_title || `Produto #${conversation.product_id}`}
+                </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  {conversation.content?.slice(0, 80) || 'Sem conteúdo recente.'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-center py-4">
+            Nenhuma mensagem nova no momento.
+          </p>
+        )}
+      </section>
+
+      <p className="text-gray-500 text-center mt-6 text-sm">
+        Aqui você poderá gerenciar seus produtos e acompanhar suas vendas.
+      </p> 
+    </section>
+    
+  );
+}
+
+```
+
+frontend/src/pages/Login.jsx:
+```jsx
+//frontend/src/pages/Login.jsx
+import { useContext, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      login(res.data.data);
+      navigate('/');
+    } catch (err) {
+      const message = err.response?.data?.message ?? 'E-mail ou senha inválidos.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="auth-page">
+      <h1 className="page-title">Login</h1>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label htmlFor="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="seu@email.com"
+          required
+        />
+
+        <label htmlFor="password">Senha</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Digite sua senha"
+          required
+        />
+
+        {error && <p className="form-error">{error}</p>}
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Entrando...' : 'Entrar'}
+        </button>
+      </form>
+      <p className="auth-extra">
+        Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
+      </p>
+    </section>
+  );
+}
+
+```
+
+frontend/src/pages/Register.jsx:
+```jsx
+// frontend/src/pages/Register.jsx
+import { useContext, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+// ISO-3166-1 alpha-2
+const COUNTRY_OPTIONS = [
+  { label: 'Brasil', value: 'BR' },
+  { label: 'Estados Unidos', value: 'US' },
+  { label: 'Itália', value: 'IT' },
+  { label: 'Portugal', value: 'PT' },
+  { label: 'Espanha', value: 'ES' },
+  { label: 'França', value: 'FR' },
+  { label: 'Alemanha', value: 'DE' },
+  { label: 'Reino Unido', value: 'GB' },
+  { label: 'Canadá', value: 'CA' },
+  { label: 'México', value: 'MX' },
+  { label: 'Argentina', value: 'AR' },
+  { label: 'Chile', value: 'CL' },
+  { label: 'Colômbia', value: 'CO' },
+  { label: 'Peru', value: 'PE' },
+  { label: 'Japão', value: 'JP' },
+  { label: 'China', value: 'CN' },
+  { label: 'Índia', value: 'IN' },
+];
+
+export default function Register() {
+  const [username, setUsername] = useState('');
+  const [country, setCountry] = useState('BR');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // 1) Registrar com país já incluso
+      await api.post('/auth/register', {
+        username: username.trim(),
+        email: email.trim(),
+        password,
+        country,
+      });
+
+      // 2) Autenticar e popular contexto
+      const logRes = await api.post('/auth/login', {
+        email: email.trim(),
+        password,
+      });
+
+      const data = logRes.data?.data; // esperado { user, token }
+      if (!data?.token || !data?.user) {
+        throw new Error('Resposta de login inválida.');
+      }
+
+      login(data);
+      navigate('/');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Não foi possível criar sua conta.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="auth-page">
+      <h1 className="page-title">Cadastre-se</h1>
+
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label htmlFor="username" className="block">
+          Nome
+          <div className="input-with-action">
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Digite seu nome"
+              required
+            />
+          </div>
+        </label>
+
+        <label htmlFor="email" className="block">
+          E-mail
+          <div className="input-with-action">
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+              required
+            />
+          </div>
+        </label>
+
+        <label htmlFor="password" className="block">
+          Senha
+          <div className="input-with-action">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Crie uma senha"
+              minLength={6}
+              autoComplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {showPassword ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
+        </label>
+
+        <label htmlFor="country" className="block font-medium text-[15px] text-gray-900">
+          País de origem
+          <div className="select-wrapper" style={{ position: 'relative' }}>
+            <select
+              id="country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              aria-describedby="country-help"
+              autoComplete="country-name"
+              className="block w-full min-h-[44px] px-3 py-2 rounded-md border border-gray-500 bg-white text-gray-900 text-[15px] font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 hover:border-gray-600"
+              required
+            >
+              {COUNTRY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <small id="country-help" className="field-help block mt-1 text-[12px] text-gray-700">
+            Selecione um país da lista.
+          </small>
+        </label>
+
+        {error && <p className="form-error">{error}</p>}
+
+        <div className="auth-actions">
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Enviando...' : 'Criar conta'}
+          </button>
+        </div>
+      </form>
+
+      <p className="auth-extra">
+        Já tem conta? <Link to="/login">Faça login</Link>
+      </p>
+    </section>
+  );
+}
+
+```
+
+frontend/src/pages/SellerProfile.jsx:
+```jsx
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import api from '../api/api.js';
+
+export default function SellerProfile() {
+  const { id } = useParams();
+  const [seller, setSeller] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [showProducts, setShowProducts] = useState(false);
+  const [loadingSeller, setLoadingSeller] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    api
+      .get(`/users/${id}`)
+      .then((res) => {
+        if (active) setSeller(res.data.data);
+      })
+      .catch(() => {
+        if (active) setError('Vendedor não encontrado.');
+      })
+      .finally(() => {
+        if (active) setLoadingSeller(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const handleToggleProducts = async () => {
+    if (!showProducts) {
+      setLoadingProducts(true);
+      try {
+        const res = await api.get('/products');
+        const sellerProducts = (res.data?.data ?? []).filter(
+          (product) => Number(product.user_id) === Number(id)
+        );
+        setProducts(sellerProducts);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingProducts(false);
+      }
+    }
+    setShowProducts((prev) => !prev);
+  };
+
+  if (loadingSeller) return <div className="page-loading">Carregando perfil...</div>;
+
+  if (error || !seller)
+    return (
+      <div className="page-error">
+        <p>{error || 'Vendedor não encontrado.'}</p>
+      </div>
+    );
+
+  return (
+    <section className="seller-profile">
+      <header className="seller-profile__header">
+        <h1>{seller.username || 'Vendedor'}</h1>
+        <button
+          type="button"
+          className="seller-profile__button"
+          onClick={handleToggleProducts}
+          disabled={loadingProducts && !showProducts}
+        >
+          {showProducts ? 'Ocultar produtos' : 'Ver produtos deste vendedor'}
+        </button>
+      </header>
+      <div className="seller-profile__details">
+        <p>
+          <strong>E-mail:</strong> {seller.email}
+        </p>
+        {seller.phone && (
+          <p>
+            <strong>Telefone:</strong> {seller.phone}
+          </p>
+        )}
+        <p>
+          <strong>Localização:</strong>{' '}
+          {[seller.city, seller.state, seller.country].filter(Boolean).join(' / ') || 'Não informada'}
+        </p>
+      </div>
+
+      {showProducts && (
+        <section className="seller-profile__products">
+          {loadingProducts ? (
+            <p>Carregando produtos...</p>
+          ) : products.length > 0 ? (
+            products.map((product) => (
+              <article key={product.id} className="seller-profile__product-card">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.title} />
+                ) : (
+                  <div className="seller-profile__product-placeholder">Sem imagem</div>
+                )}
+                <div className="seller-profile__product-body">
+                  <h3>{product.title}</h3>
+                  <p>
+                    {Number(product.price ?? 0).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    })}
+                  </p>
+                  <Link to={`/product/${product.id}`}>Ver anúncio</Link>
+                </div>
+              </article>
+            ))
+          ) : (
+            <p>Este vendedor ainda não possui produtos.</p>
+          )}
+        </section>
+      )}
+    </section>
+  );
+}
+
+```
+
+frontend/src/pages/EditProfile.jsx:
+```jsx
+//frontend/src/pages/EditProfile.jsx
+//aqui fica os dados pessoais 
+import { useContext, useEffect, useMemo, useState } from 'react';
+import api from '../api/api.js';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+export default function EditProfile() {
+  const { token, user, login } = useContext(AuthContext);
+  const initialFormState = useMemo(
+    () => ({
+      username: user?.username ?? '',
+      phone: user?.phone ?? '',
+      country: user?.country ?? '',
+      state: user?.state ?? '',
+      city: user?.city ?? '',
+      district: user?.district ?? '',
+      street: user?.street ?? '',
+      zip: user?.zip ?? ''
+    }),
+    [user]
+  );
+
+  const [form, setForm] = useState(initialFormState);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(initialFormState);
+  }, [initialFormState]);
+
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
+  };
+
+  const handleReset = () => {
+    setForm(initialFormState);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    try {
+      const response = await api.put(
+        '/auth/update',
+        { ...form },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      const updatedUser = response.data?.data;
+      if (updatedUser) {
+        login({ user: updatedUser, token });
+      }
+
+      alert('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao atualizar perfil. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="edit-profile-page">
+      <div className="edit-profile-card">
+        <header className="edit-profile-header">
+          <h1>Atualize seus dados</h1>
+          <p>Personalize suas informações de contato para facilitar a negociação com outros usuários.</p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="edit-profile-form">
+          <label>
+            Nome completo
+            <input name="username" value={form.username} onChange={handleChange} placeholder="Seu nome" />
+          </label>
+
+          <div className="edit-profile-grid">
+            <label>
+              Telefone
+              <input
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="(00) 00000-0000"
+              />
+            </label>
+            <label>
+              CEP
+              <input name="zip" value={form.zip} onChange={handleChange} placeholder="00000-000" />
+            </label>
+          </div>
+
+          <div className="edit-profile-grid">
+            <label>
+              País
+              <input name="country" value={form.country} onChange={handleChange} placeholder="Brasil" />
+            </label>
+            <label>
+              Estado
+              <input name="state" value={form.state} onChange={handleChange} placeholder="São Paulo" />
+            </label>
+            <label>
+              Cidade
+              <input name="city" value={form.city} onChange={handleChange} placeholder="São Paulo" />
+            </label>
+          </div>
+
+          <div className="edit-profile-grid">
+            <label>
+              Bairro
+              <input name="district" value={form.district} onChange={handleChange} placeholder="Centro" />
+            </label>
+            <label>
+              Rua
+              <input name="street" value={form.street} onChange={handleChange} placeholder="Rua Principal" />
+            </label>
+          </div>
+
+          <div className="edit-profile-actions">
+            <button type="button" className="btn-secondary" onClick={handleReset} disabled={saving}>
+              Restaurar dados
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+```
+
+frontend/src/styles/global.css:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1f2933;
+  background-color: #f2f5f9;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  @apply bg-gray-50 text-gray-800;
+  margin: 0;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.5rem;
+  flex-wrap: wrap;
+  min-height: 64px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  box-sizing: border-box;
+}
+
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #f8fafc;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  position: relative;
+}
+
+.app-logo__text {
+  color: #f8fafc;
+  font-weight: 700;
+  font-size: 1.8rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  display: inline-block;
+}
+
+.app-shell {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.app-logo__mark {
+  display: block;
+  height: 56px;
+  width: auto;
+}
+
+.app-menu-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.app-menu-toggle span {
+  width: 22px;
+  height: 2px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.app-menu-toggle.is-active span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.app-menu-toggle.is-active span:nth-child(2) {
+  opacity: 0;
+}
+
+.app-menu-toggle.is-active span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.nav-link {
+  color: #e2e8f0;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #60a5fa;
+}
+
+.nav-danger {
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 999px;
+  padding: 0.45rem 1.2rem;
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.nav-danger:hover {
+  color: #ffffff;
+  background: rgba(248, 113, 113, 0.3);
+}
+
+.nav-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-icon-button svg {
+  width: 22px;
+  height: 22px;
+  color: inherit;
+}
+
+.nav-icon-button:hover {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #f8fafc;
+}
+
+.nav-icon-button--danger {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
+.nav-icon-button--danger:hover {
+  background: rgba(248, 113, 113, 0.22);
+  color: #ffffff;
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.nav-notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-notifications {
+  border: none;
+  color: #94a3b8;
+}
+
+.nav-notifications svg {
+  color: inherit;
+}
+
+.nav-notifications.has-unread {
+  border-color: rgba(37, 99, 235, 0.45);
+  color: #bfdbfe;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.nav-notifications__badge {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.35rem;
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  line-height: 1;
+  padding: 0.15rem 0.4rem;
+  font-weight: 700;
+}
+
+.nav-notifications__drawer {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.75rem);
+  width: 18rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+  transform: translateY(-8px);
+  opacity: 0;
+  animation: fadeSlideIn 0.25s ease-out forwards;
+  backdrop-filter: blur(10px);
+}
+
+.nav-notifications__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.nav-notifications__header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.nav-notifications__header button {
+  border: none;
+  background: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #475569;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-notifications__header button:hover {
+  color: #2563eb;
+  transform: rotate(90deg);
+}
+
+.nav-notifications__body {
+  max-height: 18rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  scroll-behavior: smooth;
+}
+
+.nav-notifications__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.nav-notifications__item-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.nav-notifications__item-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.nav-notifications__item-preview {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.nav-notifications__item:hover {
+  background: rgba(37, 99, 235, 0.06);
+  transform: translateX(3px);
+}
+
+.nav-notifications__empty {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .app-logo__mark {
+    height: 35px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0.75rem 0.85rem;
+    gap: 0.75rem;
+  }
+
+  .app-shell {
+    gap: 1rem;
+    flex: none;
+  }
+
+  .app-logo__mark {
+    height: 40px;
+  }
+  
+  .app-logo__text {
+    font-size: 1.5rem;
+  }
+
+  .app-nav {
+    gap: 0.6rem;
+  }
+
+  .nav-icon-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .nav-notifications__drawer {
+    width: min(90vw, 18rem);
+  }
+}
+
+.new-product-page {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(14, 116, 144, 0.08));
+}
+
+.new-product-card {
+  width: 100%;
+  max-width: 780px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 2.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.new-product-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.new-product-header p {
+  margin: 0.5rem 0 0;
+  color: #475569;
+  font-size: 1rem;
+}
+
+.new-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.new-product-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.new-product-form input,
+.new-product-form textarea,
+.new-product-form select {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #cbd5f5;
+  background: rgba(148, 163, 184, 0.08);
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.new-product-form input:focus,
+.new-product-form textarea:focus,
+.new-product-form select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  outline: none;
+}
+
+.new-product-form textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.new-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 2.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(120deg, #6366f1, #0ea5e9);
+  color: #ffffff;
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.35);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.35);
+}
+
+.btn-primary:disabled {
+  background: linear-gradient(120deg, #a5b4fc, #bae6fd);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: rgba(99, 102, 241, 0.12);
+  color: #3730a3;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-profile-page {
+  min-height: calc(100vh - 64px);
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.08));
+}
+
+.edit-profile-card {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+}
+
+.edit-profile-header {
+  padding: 2.25rem 2rem 1.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(120deg, rgba(59, 130, 246, 0.12), rgba(20, 184, 166, 0.12));
+}
+
+.edit-profile-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.edit-profile-header p {
+  margin: 0.65rem 0 0;
+  color: #475569;
+  font-size: 1rem;
+}
+
+.edit-profile-form {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.edit-profile-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.edit-profile-form input {
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(241, 245, 249, 0.82);
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-profile-form input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+}
+
+.edit-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.edit-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.product-grid {
+  flex: 1;
+  padding: 2rem;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.product-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.product-card__image {
+  height: 180px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.product-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-card__placeholder {
+  height: 180px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.product-card__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #102a43;
+}
+
+.product-card__price {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.product-card__link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.product-grid__empty {
+  grid-column: 1 / -1;
+  padding: 3rem;
+  margin: 0;
+  text-align: center;
+  color: #64748b;
+  border: 2px dashed #cbd5f5;
+  border-radius: 16px;
+  background: #f8fafc;
+  font-weight: 500;
+}
+
+.page-loading,
+.page-error {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+  color: #334155;
+}
+
+.page-error button {
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+}
+
+.auth-page {
+  flex: 1;
+  max-width: 420px;
+  margin: 3rem auto;
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #102a43;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-form label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.auth-form input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #d9e2ec;
+  font-size: 1rem;
+  transition: border 0.2s ease;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.auth-form button {
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.auth-form button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.auth-form button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.form-error {
+  color: #d64545;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.auth-extra {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #52606d;
+}
+
+.auth-extra a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.product-detail {
+  flex: 1;
+  width: min(960px, 100%);
+  margin: 2.5rem auto;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  align-items: start;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 18px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.product-detail__image {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+  min-height: 280px;
+  aspect-ratio: 4 / 3;
+}
+
+.product-detail__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-detail__placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-weight: 600;
+}
+
+.product-detail__info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-detail__info h1 {
+  font-size: 2rem;
+  margin: 0;
+  color: #102a43;
+}
+
+.product-detail__price {
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+.product-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #475569;
+}
+
+.product-detail__seller {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.product-detail__message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.product-detail__textarea {
+  min-height: 120px;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #d9e2ec;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.product-detail__textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.product-detail__button {
+  align-self: flex-end;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.product-detail__button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.product-detail__button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .product-detail {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.75rem;
+  }
+
+  .product-detail__image {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-detail {
+    margin: 1.75rem auto;
+    padding: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  .product-detail__image {
+    min-height: 220px;
+  }
+
+  .product-detail__info {
+    gap: 0.85rem;
+  }
+
+  .product-detail__info h1 {
+    font-size: 1.6rem;
+    text-align: center;
+  }
+
+  .product-detail__price {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .product-detail__meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    text-align: center;
+  }
+
+  .product-detail__seller {
+    text-align: center;
+  }
+
+  .product-detail__button {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+.seller-profile {
+  max-width: 720px;
+  margin: 2.5rem auto;
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 18px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.seller-profile h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #1f2937;
+}
+
+.seller-profile p {
+  margin: 0;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.seller-profile__header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.seller-profile__details {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.seller-profile__button {
+  align-self: flex-start;
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.seller-profile__button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.seller-profile__button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.seller-profile__products {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.seller-profile__product-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.seller-profile__product-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.seller-profile__product-placeholder {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+}
+
+.seller-profile__product-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.seller-profile__product-body h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.seller-profile__product-body p {
+  margin: 0;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.seller-profile__product-body a {
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.seller-profile__product-body a:hover {
+  color: #2563eb;
+}
+
+.dashboard {
+  flex: 1;
+  max-width: 720px;
+  margin: 2.5rem auto;
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 18px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dashboard-button {
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.dashboard-messages {
+  background: #f8fafc;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-messages__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-messages__header a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.dashboard-messages__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-messages__list li {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dashboard-messages__list span {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dashboard-messages__list p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.dashboard-placeholder {
+  color: #64748b;
+  margin: 0;
+}
+
+.my-products-grid {
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.my-products-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #475569;
+}
+
+.my-product-card {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.my-product-card__image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.my-product-card__placeholder {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+}
+
+.my-product-card__body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.my-product-card__body h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.my-product-card__body p {
+  margin: 0;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.my-product-card__edit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  align-self: flex-start;
+}
+
+.my-product-card__edit:hover {
+  text-decoration: underline;
+}
+
+.edit-product-page {
+  max-width: 480px;
+  margin: 2.5rem auto;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid #d9e2ec;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.edit-product-page h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #102a43;
+}
+
+.edit-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.edit-product-form input,
+.edit-product-form textarea {
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-product-form textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.edit-product-form input:focus,
+.edit-product-form textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.edit-product-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.edit-product-actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-product-actions button[type='submit'] {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.edit-product-actions button[type='submit']:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.edit-product-actions button[type='submit']:disabled {
+  background: #a7f3d0;
+  cursor: not-allowed;
+}
+
+.edit-product-actions .danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.edit-product-actions .danger:hover {
+  background: #b91c1c;
+}
+
+.messages-layout {
+  display: flex;
+  min-height: 70vh;
+  background: #ffffff;
+  margin: 2rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.messages-sidebar {
+  width: 280px;
+  border-right: 1px solid #e2e8f0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #f8fafc;
+}
+
+.messages-sidebar h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.messages-conversation {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: #1f2937;
+  font-size: 0.95rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.messages-conversation:hover,
+.messages-conversation.is-active {
+  background: #e0ecff;
+  border-color: #2563eb;
+}
+
+.messages-conversation span {
+  font-weight: 600;
+}
+
+.messages-conversation small {
+  color: #475569;
+}
+
+.messages-content {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.messages-content header h3 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.messages-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.messages-thread__item {
+  margin: 0;
+  color: #1f2937;
+}
+
+.messages-thread__item.is-own {
+  text-align: right;
+}
+
+.messages-composer {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.messages-composer__input {
+  flex: 1;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
+.messages-composer__button {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+}
+
+.messages-composer__button:hover {
+  background: #1d4ed8;
+}
+
+.messages-empty {
+  margin: auto;
+  color: #64748b;
+}
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.8);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(5px) scale(1.05);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.animate-slideIn {
+  animation: slideIn 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.8);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(5px) scale(1.05);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.animate-slideIn {
+  animation: slideIn 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Nova animação da logo */
+@keyframes logoEntry {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-20deg);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) rotate(5deg);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+.animate-logoEntry {
+  animation: logoEntry 1.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+```
+
+  
