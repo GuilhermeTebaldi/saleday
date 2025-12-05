@@ -1150,7 +1150,16 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="home-card__content p-3 flex flex-col gap-1.5">
+                  <div className="home-card__content p-3 flex flex-col gap-1.5"> <div
+                      className="home-card__metrics flex items-center gap-2 text-gray-500 text-xs mt-1"
+                      aria-label="Curtidas"
+                    >
+                      
+                        <span className="home-card__metric-icon text-red-500">♥</span>
+                        <span className="home-card__metric-value">{likeCount}</span>
+                       
+                    
+                    </div>
                     <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
                       {product.title}
                     </p>
@@ -1166,16 +1175,7 @@ export default function Home() {
                     <p className="home-card__location text-xs text-gray-500">
                       {product.city}
                     </p>
-                    <div
-                      className="home-card__metrics flex items-center gap-2 text-gray-500 text-xs mt-1"
-                      aria-label="Curtidas"
-                    >
-                      <span className="home-card__metric">
-                        <span className="home-card__metric-icon text-red-500">♥</span>
-                        <span className="home-card__metric-value">{likeCount}</span>
-                        <span className="home-card__metric-label">Curtidas</span>
-                      </span>
-                    </div>
+                   
 
                   </div>
                 </Link>
