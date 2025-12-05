@@ -789,14 +789,25 @@ export default function Home() {
       ? '1 favorito'
       : `${favoriteIds.length} favoritos`;
 
+  const hasProfile = Boolean(token);
+  const searchRowStyle = {
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '0.75rem'
+  };
+  const searchWrapperStyle = {
+    position: 'relative',
+    paddingRight: hasProfile ? '72px' : 0
+  };
+
   return (
     <div className="home-page">
       <section className="home-hero">
 
         <div className="home-hero__tools">
-          <div className="home-hero__searchrow">
+          <div className="home-hero__searchrow" style={searchRowStyle}>
             {/* bloco SearchBar existente */}
-            <div className="home-hero__search">
+            <div className="home-hero__search" style={searchWrapperStyle}>
               <SearchBar
                 onProductsLoaded={handleProductsLoaded}
                 onFiltersChange={handleSearchFilters}
@@ -810,85 +821,82 @@ export default function Home() {
                 onCategorySelect={handleCategoryFilter}
                 locationSummary={locationSummary}
               />
-            </div>
+              {token && (
+                <div className="home-profile home-profile--inline" ref={profileMenuRef}>
+                  <button
+                    type="button"
+                    className="home-profile__avatarbtn"
+                    onClick={() => setShowProfileMenu((v) => !v)}
+                    aria-label="Abrir menu do perfil"
+                  >
+                    {user?.profile_image_url ? (
+                      <img
+                        src={user.profile_image_url}
+                        alt={user.username || 'Perfil'}
+                        className="home-profile__avatarimg"
+                        onError={(e) => {
+                          e.currentTarget.src = '';
+                          e.currentTarget.classList.add('home-profile__avatarimg--fallback');
+                        }}
+                      />
+                    ) : (
+                      <span className="home-profile__avatarfallback">
+                        {(user?.username || 'U')
+                          .trim()
+                          .charAt(0)
+                          .toUpperCase()}
+                      </span>
+                    )}
+                  </button>
 
-            {/* avatar + menu (só mostra se estiver logado) */}
-            {token && (
-              <div className="home-profile" ref={profileMenuRef}>
-                <button
-                  type="button"
-                  className="home-profile__avatarbtn"
-                  onClick={() => setShowProfileMenu((v) => !v)}
-                  aria-label="Abrir menu do perfil"
-                >
-                  {user?.profile_image_url ? (
-                    <img
-                      src={user.profile_image_url}
-                      alt={user.username || 'Perfil'}
-                      className="home-profile__avatarimg"
-                      onError={(e) => {
-                        e.currentTarget.src = '';
-                        e.currentTarget.classList.add('home-profile__avatarimg--fallback');
-                      }}
-                    />
-                  ) : (
-                    <span className="home-profile__avatarfallback">
-                      {(user?.username || 'U')
-                        .trim()
-                        .charAt(0)
-                        .toUpperCase()}
-                    </span>
-                  )}
-                </button>
+                  {showProfileMenu && (
+                    <div className="home-profile__menu">
+                      <div className="home-profile__menu-header">
+                        <div className="home-profile__menu-avatar">
+                          {user?.profile_image_url ? (
+                            <img
+                              src={user.profile_image_url}
+                              alt={user.username || 'Perfil'}
+                              className="home-profile__menu-avatarimg"
+                              onError={(e) => {
+                                e.currentTarget.src = '';
+                                e.currentTarget.classList.add('home-profile__menu-avatarimg--fallback');
+                              }}
+                            />
+                          ) : (
+                            <span className="home-profile__menu-avatarfallback">
+                              {(user?.username || 'U')
+                                .trim()
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="home-profile__menu-info">
+                          <p className="home-profile__menu-name">{user?.username || 'Usuário'}</p>
+                          {user?.city ? (
+                            <p className="home-profile__menu-meta">{user.city}</p>
+                          ) : (
+                            <p className="home-profile__menu-meta">Perfil incompleto</p>
+                          )}
+                        </div>
+                      </div>
 
-                {showProfileMenu && (
-                  <div className="home-profile__menu">
-                    <div className="home-profile__menu-header">
-                      <div className="home-profile__menu-avatar">
-                        {user?.profile_image_url ? (
-                          <img
-                            src={user.profile_image_url}
-                            alt={user.username || 'Perfil'}
-                            className="home-profile__menu-avatarimg"
-                            onError={(e) => {
-                              e.currentTarget.src = '';
-                              e.currentTarget.classList.add('home-profile__menu-avatarimg--fallback');
-                            }}
-                          />
-                        ) : (
-                          <span className="home-profile__menu-avatarfallback">
-                            {(user?.username || 'U')
-                              .trim()
-                              .charAt(0)
-                              .toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="home-profile__menu-info">
-                        <p className="home-profile__menu-name">{user?.username || 'Usuário'}</p>
-                        {user?.city ? (
-                          <p className="home-profile__menu-meta">{user.city}</p>
-                        ) : (
-                          <p className="home-profile__menu-meta">Perfil incompleto</p>
-                        )}
-                      </div>
+                      <Link
+                        to="/edit-profile"
+                        className="home-profile__menu-item"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        Editar perfil
+                      </Link>
+                 
+                     
                     </div>
-
-                    <Link
-                      to="/edit-profile"
-                      className="home-profile__menu-item"
-                      onClick={() => setShowProfileMenu(false)}
-                    >
-                      Editar perfil
-                    </Link>
-
-                    {/* no futuro pode entrar "Sair" aqui */}
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-
           <div className="home-hero__toolbar">
   <div className="home-hero__row-scroll">
     {/* Grupo ESQUERDA: Todos / Gratuitos */}

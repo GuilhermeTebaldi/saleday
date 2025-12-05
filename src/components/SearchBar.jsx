@@ -472,8 +472,8 @@ export default function SearchBar({
   return (
     <div className="relative" ref={popRef}>
       {/* Barra de busca fixa */}
-      <div className="mb-2">
-        <div className="flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
+      <div className="mb-2 home-search-bar">
+        <div className="home-search-bar__inner flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
           <Search size={18} className="text-gray-500 ml-1" />
           <input
             ref={searchInputRef}

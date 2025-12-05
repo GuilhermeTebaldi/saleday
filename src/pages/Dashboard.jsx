@@ -34,6 +34,30 @@ const formatLegalDate = (timestamp) => {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+const privacyHighlights = [
+  {
+    title: 'Como usamos',
+    description:
+      'Suas informações identificam você para compradores e vendedores, autenticações e relatórios fiscais. Garantimos acesso seguro, criptografado e auditado em todas as camadas.'
+  },
+  {
+    title: 'Bases legais',
+    list: [
+      'Execução de contrato (compra, venda e entrega).',
+      'Consentimento para combinações comerciais e marketing.',
+      'Obrigações legais e prevenção a fraudes.'
+    ]
+  },
+  {
+    title: 'Seus direitos',
+    list: [
+      'Acessar, corrigir ou excluir seus dados.',
+      'Solicitar portabilidade ou oposição ao tratamento.',
+      'Revogar o consentimento a qualquer momento.'
+    ]
+  }
+];
+
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -402,22 +426,7 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        <Link
-          to="/edit-profile"
-          className="dashboard-header__edit bg-blue-600/90 backdrop-blur-sm text-white font-medium text-sm py-2.5 px-5 rounded-xl shadow-md hover:bg-blue-700 active:scale-[0.97] transition"
-        >
-          Editar Perfil
-        </Link>
-        <Link
-          to="#configuracoes"
-          onClick={(event) => {
-            event.preventDefault();
-            setIsConfigPanelOpen((state) => !state);
-          }}
-          className="dashboard-header__edit bg-slate-200 text-slate-700 font-medium text-sm py-2.5 px-5 rounded-xl shadow-sm hover:bg-slate-300 active:scale-[0.97] transition"
-        >
-          Configurações
-        </Link>
+       
       </header>
 
       {/* RESUMO DE PEDIDOS */}
@@ -469,7 +478,22 @@ export default function Dashboard() {
         >
           Meus Anúncios
         </Link>
-
+        <Link
+          to="/edit-profile"
+          className="dashboard-button bg-gradient-to-b from-white to-gray-50 border border-gray-200 text-gray-300 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
+          >
+          Editar Perfil
+        </Link>
+        <Link
+          to="#configuracoes"
+          onClick={(event) => {
+            event.preventDefault();
+            setIsConfigPanelOpen((state) => !state);
+          }}
+          className="dashboard-button bg-gradient-to-b from-white to-gray-500 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
+          >
+          Configurações
+        </Link>
         <Link
           className="dashboard-button bg-fuchsia-300/80 hover:bg-fuchsia-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
           to="/dashboard/impulsiona"
@@ -835,12 +859,12 @@ export default function Dashboard() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsTermsPanelOpen(false)}
           />
-          <aside className="relative z-10 w-full max-w-3xl rounded-3xl border border-gray-200 bg-white p-6 shadow-2xl">
+          <aside className="relative z-10 w-full max-w-md rounded-3xl border border-gray-200 bg-white p-4 shadow-2xl text-[11px] sm:text-xs">
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.4em] text-gray-400">Termos e Política</p>
-                <h3 className="text-2xl font-semibold text-gray-900">Documentos aceitos</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Documentos aceitos</h3>
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
                   Aqui estão as versões e datas que você validou para continuar usando a plataforma.
                 </p>
               </div>
@@ -854,19 +878,27 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-3 space-y-2">
               {legalEntries.map((entry) => (
-                <article key={entry.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4 shadow-sm">
-                  <header className="flex items-center justify-between gap-3">
-                    <h4 className="text-sm font-semibold text-gray-900">{entry.label}</h4>
-                    <span className="rounded-full bg-white px-3 py-0.5 text-[11px] uppercase tracking-[0.3em] text-gray-500">
+                <details
+                  key={entry.label}
+                  className="group rounded-2xl border border-gray-100 bg-gray-50 p-2 shadow-sm text-[11px] sm:text-xs"
+                >
+                  <summary className="flex items-center justify-between gap-2 list-none cursor-pointer text-gray-900">
+                    <span className="font-semibold">{entry.label}</span>
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-gray-500">
                       {entry.version ?? 'Versão desconhecida'}
                     </span>
-                  </header>
-                  <p className="mt-1 text-xs text-gray-500">Atualizado em {formatLegalDate(entry.date)}</p>
-                </article>
+                    <span className="text-[10px] font-semibold text-gray-500 transition-transform duration-150 group-open:rotate-180">
+                      ⌄
+                    </span>
+                  </summary>
+                  <div className="mt-2 text-gray-500">
+                    <p className="text-[10px]">Atualizado em {formatLegalDate(entry.date)}</p>
+                  </div>
+                </details>
               ))}
-              <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 p-4 text-sm text-gray-600">
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 p-3 text-[10px] sm:text-[11px] text-gray-600">
                 <p className="font-semibold text-gray-800">Compromisso de uso responsável</p>
                 <p className="mt-2">
                   Mantenha seus dados atualizados e leia as alterações sempre que forem publicadas. Ao continuar
@@ -875,9 +907,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <section className="mt-6 rounded-2xl border border-gray-100 bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white shadow-xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">Garantia</p>
-              <p className="mt-2 text-sm">
+            <section className="mt-4 rounded-2xl border border-gray-100 bg-gradient-to-r from-slate-900 to-slate-800 p-4 text-white shadow-xl">
+              <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em] text-white/80">Garantia</p>
+              <p className="mt-2 text-[10px] sm:text-xs">
                 Esses documentos são regulamentados pela nossa equipe de compliance. Caso surjam dúvidas ou
                 divergências, entre em contato com o suporte e solicite revisão oficial do termo.
               </p>
@@ -900,13 +932,14 @@ export default function Dashboard() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setIsPrivacyPanelOpen(false)}
           />
-          <aside className="relative z-10 w-full max-w-3xl rounded-3xl border border-gray-200 bg-white p-6 shadow-2xl">
+          <aside className="relative z-10 w-full max-w-md rounded-3xl border border-gray-200 bg-white p-4 shadow-2xl text-[11px] sm:text-xs">
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-400">Central de Privacidade</p>
-                <h3 className="text-2xl font-semibold text-gray-900">Você no controle dos dados</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Consolidamos abaixo tudo que a SaleDay faz com suas informações e como você pode agir sobre cada parte.
+                <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400">Central de Privacidade</p>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Você no controle dos dados</h3>
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
+                  Consolidamos abaixo tudo que a SaleDay faz com suas informações e como você pode agir sobre cada
+                  parte.
                 </p>
               </div>
               <button
@@ -919,53 +952,57 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <article className="rounded-2xl border border-gray-100 bg-gray-50 p-4 shadow-sm">
-                <h4 className="text-xs uppercase tracking-[0.4em] text-gray-400">Como usamos</h4>
-                <p className="mt-2 text-sm text-gray-700">
-                  Suas informações identificam você para compradores e vendedores, autenticações e relatórios fiscais.
-                  Garantimos acesso seguro, criptografado e auditado em todas as camadas.
-                </p>
-              </article>
-              <article className="rounded-2xl border border-gray-100 bg-gray-50 p-4 shadow-sm">
-                <h4 className="text-xs uppercase tracking-[0.4em] text-gray-400">Bases legais</h4>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                  <li>· Execução de contrato (compra, venda e entrega).</li>
-                  <li>· Consentimento para combinações comerciais e marketing.</li>
-                  <li>· Obrigações legais e prevenção a fraudes.</li>
-                </ul>
-              </article>
-              <article className="rounded-2xl border border-gray-100 bg-gray-50 p-4 shadow-sm">
-                <h4 className="text-xs uppercase tracking-[0.4em] text-gray-400">Seus direitos</h4>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                  <li>· Acessar, corrigir ou excluir seus dados.</li>
-                  <li>· Solicitar portabilidade ou oposição ao tratamento.</li>
-                  <li>· Revogar o consentimento a qualquer momento.</li>
-                </ul>
-              </article>
+            <div className="mt-4 space-y-2">
+              {privacyHighlights.map((section) => (
+                <details
+                  key={section.title}
+                  className="group rounded-2xl border border-gray-100 bg-gray-50 p-2 shadow-sm text-[11px] sm:text-xs"
+                >
+                  <summary className="flex items-center justify-between gap-2 list-none cursor-pointer text-gray-900">
+                    <span className="font-semibold">{section.title}</span>
+                    <span className="text-[10px] font-semibold text-gray-500 transition-transform duration-150 group-open:rotate-180">
+                      ⌄
+                    </span>
+                  </summary>
+                  <div className="mt-2 space-y-1 text-gray-600">
+                    {section.description && (
+                      <p className="text-[10px] sm:text-xs text-gray-700">{section.description}</p>
+                    )}
+                    {section.list && (
+                      <ul className="space-y-1 pl-3 text-[10px] sm:text-xs text-gray-700 list-disc">
+                        {section.list.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </details>
+              ))}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-700">
+            <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-white p-3 text-[10px] sm:text-[11px] text-gray-700">
               <p className="font-semibold text-gray-800">Gerencie o que compartilha</p>
-              <p className="mt-2">
+              <p className="mt-2 text-[10px] sm:text-xs">
                 Acesse o perfil para revisar seus dados, desabilitar comunicações promocionais ou enviar documentos
                 para atualização. A transparência começa por aqui.
               </p>
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-[9px] text-gray-500">
                 Cookies são usados somente para manter sessão, melhorar recomendações e proteger contra abusos.
               </p>
             </div>
 
-            <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gradient-to-r from-slate-900 to-slate-800 p-5 text-white shadow-xl">
+            <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gradient-to-r from-slate-900 to-slate-800 p-4 text-white shadow-xl">
               <div>
-                <h5 className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">Precisa de ajuda?</h5>
-                <p className="mt-2 text-sm text-white/90">
+                <h5 className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+                  Precisa de ajuda?
+                </h5>
+                <p className="mt-2 text-[10px] sm:text-xs text-white/90">
                   Fale com nosso encarregado de privacidade e receba o dossiê completo dos registros tratados.
                 </p>
               </div>
               <a
                 href="mailto:privacidade@saleday.com"
-                className="rounded-2xl border border-white/30 bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-900 shadow-lg shadow-black/20 transition hover:bg-white"
+                className="rounded-2xl border border-white/30 bg-white/90 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-900 shadow-lg shadow-black/20 transition hover:bg-white"
               >
                 Enviar solicitação
               </a>

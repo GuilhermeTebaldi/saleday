@@ -1,7 +1,7 @@
 // frontend/src/pages/SellerProfile.jsx
 // rede social
 // Página com o perfil público de um vendedor e seus produtos.
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -66,6 +66,8 @@ export default function SellerProfile() {
 
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState('');
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const avatarMenuRef = useRef(null);
 
   // modal avaliar
   const [rateOpen, setRateOpen] = useState(false);
@@ -182,6 +184,27 @@ export default function SellerProfile() {
       active = false;
     };
   }, [id, user, reviewStatusTrigger]);
+
+  useEffect(() => {
+    if (!showAvatarMenu || typeof document === 'undefined') return undefined;
+    const handleClickOutside = (event) => {
+      if (typeof event.target === 'object' && event.target !== null) {
+        if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
+          setShowAvatarMenu(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAvatarMenu]);
+
+  useEffect(() => {
+    if (!isSelf && showAvatarMenu) {
+      setShowAvatarMenu(false);
+    }
+  }, [isSelf, showAvatarMenu]);
 
   const reloadSellerProfile = useCallback(async () => {
     try {
@@ -345,6 +368,10 @@ export default function SellerProfile() {
   const locationStr =
     [city, state, country].filter(Boolean).join(', ') ||
     'Localização não informada';
+  const handleAvatarClick = () => {
+    if (!isSelf) return;
+    setShowAvatarMenu((prev) => !prev);
+  };
 
   function registerClick(productId) {
     if (!productId) return;
@@ -420,22 +447,40 @@ export default function SellerProfile() {
           <header className="flex flex-col md:flex-row md:items-center gap-6 p-6">
             {/* Avatar */}
             <div className="flex justify-center md:block">
-              <div className="relative">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={seller.username || 'Usuário'}
-                    className="h-24 w-24 md:h-28 md:w-28 rounded-full object-cover border-2 border-slate-200 shadow-sm"
-                  />
-                ) : (
-                  <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-slate-200 flex items-center justify-center text-3xl font-semibold text-slate-700 border border-slate-300">
-                    {initials}
-                  </div>
-                )}
+              <div className="relative" ref={avatarMenuRef}>
+                <button
+                  type="button"
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  onClick={handleAvatarClick}
+                  aria-label={isSelf ? 'Editar foto do perfil' : 'Foto do perfil'}
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={seller.username || 'Usuário'}
+                      className="h-24 w-24 md:h-28 md:w-28 rounded-full object-cover border-2 border-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-slate-200 flex items-center justify-center text-3xl font-semibold text-slate-700 border border-slate-300">
+                      {initials}
+                    </div>
+                  )}
+                </button>
                 {isSellerOnline && (
                   <span className="absolute -bottom-1 -right-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-[10px] font-medium text-white shadow">
                     • Online agora
                   </span>
+                )}
+                {isSelf && showAvatarMenu && (
+                  <div className="absolute left-1/2 top-full z-10 mt-2 w-48 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
+                    <Link
+                      to="/edit-profile"
+                      className="mx-2 inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-3 py-1 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      onClick={() => setShowAvatarMenu(false)}
+                    >
+                      Editar foto
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

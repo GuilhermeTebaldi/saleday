@@ -4843,11 +4843,45 @@ button {
   position: relative;
 }
 
-/* reaproveita teu cartão branco da SearchBar:
-   garante que ele estique e não deixe buraco */
 .home-hero__search {
   flex: 1 1 auto;
   min-width: 0;
+  position: relative;
+}
+
+/* garante que o botão da busca fique preso dentro da cápsula */
+.home-search-bar {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.home-search-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.home-search-bar__inner input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home-search-bar__inner button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* quando o avatar fica sobre a barra, adiciona um “pé” invisível */
+.home-profile--inline::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  pointer-events: none;
 }
 
 /* bloco do avatar na direita da barra */
@@ -4857,6 +4891,14 @@ button {
   display: inline-flex;
   align-items: flex-start;
   justify-content: center;
+}
+
+.home-profile--inline {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-110%);
+  z-index: 60;
 }
 
 /* botão do avatar que aparece na barra */
