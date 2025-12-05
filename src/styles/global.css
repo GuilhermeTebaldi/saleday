@@ -4847,6 +4847,7 @@ button {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
+  z-index: 12;
 }
 
 /* garante que o botão da busca fique preso dentro da cápsula */
@@ -4891,6 +4892,7 @@ button {
   display: inline-flex;
   align-items: flex-start;
   justify-content: center;
+  isolation: isolate;
 }
 
 .home-profile--inline {
@@ -4898,7 +4900,7 @@ button {
   top: 50%;
   right: 12px;
   transform: translateY(-110%);
-  z-index: 60;
+  z-index: 8;
 }
 
 /* botão do avatar que aparece na barra */
