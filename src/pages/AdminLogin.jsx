@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -81,14 +82,23 @@ export default function AdminLogin() {
               <label className="block text-xs font-medium text-slate-200">
                 Senha
               </label>
-              <input
-                className="w-full rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500 transition"
-                placeholder="Digite sua senha"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2.5 pr-20 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500 transition"
+                  placeholder="Digite sua senha"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 inline-flex items-center text-xs font-semibold text-slate-400 hover:text-slate-200 transition"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? 'Ocultar' : 'Ver'}
+                </button>
+              </div>
             </div>
 
             <button
