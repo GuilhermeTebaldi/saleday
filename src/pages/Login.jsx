@@ -3,6 +3,8 @@
 import { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/api.js';
+import Auth0LoginActions from '../components/Auth0LoginActions.jsx';
+import { AUTH0_ENABLED } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { localeFromCountry } from '../i18n/localeMap.js';
 
@@ -14,6 +16,15 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
+  const handleLoginSuccess = (payload) => {
+    login(payload);
+    const userCountry = payload?.user?.country;
+    if (userCountry) {
+      localStorage.setItem('saleday.locale', localeFromCountry(userCountry));
+    }
+    navigate('/');
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -21,10 +32,7 @@ export default function Login() {
 
     try {
       const res = await api.post('/auth/login', { email, password });
-      login(res.data.data);
-      const userCountry = res.data?.data?.user?.country;
-      if (userCountry) localStorage.setItem('saleday.locale', localeFromCountry(userCountry));
-      navigate('/');
+      handleLoginSuccess(res.data.data);
     } catch (err) {
       const message = err.response?.data?.message ?? 'E-mail ou senha inválidos.';
       setError(message);
@@ -63,6 +71,7 @@ export default function Login() {
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
+      {AUTH0_ENABLED && <Auth0LoginActions onLoginSuccess={handleLoginSuccess} />}
       <p className="auth-extra">
         Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
       </p>

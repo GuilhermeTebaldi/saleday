@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GeoProvider } from './context/GeoContext.jsx';
+import Auth0ProviderWrapper from './context/Auth0Provider.jsx';
 import Header from './components/Header.jsx';
 import BanBanner from './components/BanBanner.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -46,119 +47,121 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <GeoProvider>
-        <BrowserRouter>
-          <AutoI18n />
-          <BanBanner message={banMessage} />
-          <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/politica-de-privacidade" element={<Legal />} />
-            <Route path="/users/:id" element={<SellerProfile />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminProtectedRoute>
-                  <AdminLayout />
-                </AdminProtectedRoute>
-              }
-            >
-              <Route index element={<AdminOverview />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="ranking" element={<AdminRanking />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="support" element={<AdminSupport />} />
-              <Route path="history" element={<AdminHistory />} />
-            </Route>
-            <Route
-              path="/product/:id"
-              element={
-                <ProtectedRoute>
-                  <ProductDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/impulsiona"
-              element={
-                <ProtectedRoute>
-                  <DashboardBoost />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/impulsiona/:productId"
-              element={
-                <ProtectedRoute>
-                  <DashboardBoostPlan />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-products"
-              element={
-                <ProtectedRoute>
-                  <MyProducts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/new-product"
-              element={
-                <ProtectedRoute>
-                  <NewProduct />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/edit-profile"
-              element={
-                <ProtectedRoute>
-                  <EditProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute>
-                  <Messages />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/sales-requests"
-              element={
-                <ProtectedRoute>
-                  <SalesRequests />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/sellers/search" element={<SellerSearch />} />
-            <Route
-              path="/edit-product/:id"
-              element={
-                <ProtectedRoute>
-                  <EditProduct />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-          <Toaster position="top-center" />
-        </BrowserRouter>
-      </GeoProvider>
-    </AuthProvider>
+    <Auth0ProviderWrapper>
+      <AuthProvider>
+        <GeoProvider>
+          <BrowserRouter>
+            <AutoI18n />
+            <BanBanner message={banMessage} />
+            <Header />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/politica-de-privacidade" element={<Legal />} />
+              <Route path="/users/:id" element={<SellerProfile />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminProtectedRoute>
+                    <AdminLayout />
+                  </AdminProtectedRoute>
+                }
+              >
+                <Route index element={<AdminOverview />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="ranking" element={<AdminRanking />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="support" element={<AdminSupport />} />
+                <Route path="history" element={<AdminHistory />} />
+              </Route>
+              <Route
+                path="/product/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/impulsiona"
+                element={
+                  <ProtectedRoute>
+                    <DashboardBoost />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/impulsiona/:productId"
+                element={
+                  <ProtectedRoute>
+                    <DashboardBoostPlan />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-products"
+                element={
+                  <ProtectedRoute>
+                    <MyProducts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/new-product"
+                element={
+                  <ProtectedRoute>
+                    <NewProduct />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit-profile"
+                element={
+                  <ProtectedRoute>
+                    <EditProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <Messages />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sales-requests"
+                element={
+                  <ProtectedRoute>
+                    <SalesRequests />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/sellers/search" element={<SellerSearch />} />
+              <Route
+                path="/edit-product/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditProduct />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+            <Toaster position="top-center" />
+          </BrowserRouter>
+        </GeoProvider>
+      </AuthProvider>
+    </Auth0ProviderWrapper>
   );
 }
