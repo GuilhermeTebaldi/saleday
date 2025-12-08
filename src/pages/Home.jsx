@@ -375,28 +375,7 @@ export default function Home() {
     } catch {
       /* silencioso */
     }
-    const scope = { type: 'country', country: preferredCountry };
-    try {
-      const { data } = await api.get('/products', {
-        params: { sort: 'rank', ...geoScopeToParams(scope, preferredCountry) }
-      });
-      if (data.success) {
-        const allProducts = handleProductsLoaded(data.data);
-
-        if (!token) {
-          setFavoriteIds((prev) => {
-            const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-            if (valid.length !== prev.length) {
-              localStorage.setItem('favorites', JSON.stringify(valid));
-            }
-            return valid;
-          });
-        }
-      }
-    } catch {
-      /* silencioso */
-    }
-  }, [preferredCountry, handleProductsLoaded, token]);
+  }, [preferredCountry, handleProductsLoaded]);
 
   // carregar produtos iniciais
   useEffect(() => {
