@@ -364,14 +364,20 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
-        setFavoriteIds((prev) => {
-          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
-          }
-          return valid;
-        });
+
+        // Importante: só “limpamos” favoritos locais quando o usuário NÃO está logado.
+        // Quando há token, os favoritos vêm da API (/favorites) e não devem ser alterados aqui.
+        if (!token) {
+          setFavoriteIds((prev) => {
+            const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
+            if (valid.length !== prev.length) {
+              localStorage.setItem('favorites', JSON.stringify(valid));
+            }
+            return valid;
+          });
+        }
       }
+
     } catch {
       /* silencioso */
     }
