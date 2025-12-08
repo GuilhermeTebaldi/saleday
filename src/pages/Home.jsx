@@ -16,10 +16,15 @@ import { isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
 
-const regionDisplay =
-  typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
-    ? new Intl.DisplayNames(['pt-BR', 'en'], { type: 'region' })
-    : null;
+let regionDisplay = null;
+if (typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function') {
+  try {
+    regionDisplay = new Intl.DisplayNames(['pt-BR', 'en'], { type: 'region' });
+  } catch {
+    // se o navegador não suportar ou lançar erro, seguimos sem regionDisplay
+    regionDisplay = null;
+  }
+}
 
 const FLAG_BASE_URL = 'https://flagcdn.com';
 const getFlagUrl = (code) => {
@@ -208,6 +213,7 @@ const safeStorage = {
 };
 
 export default function Home() {
+  console.log('[Home] render start');
   const { token, user } = useContext(AuthContext);
   const { country: detectedCountry } = useContext(GeoContext);
   const navigate = useNavigate();
@@ -314,6 +320,10 @@ export default function Home() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
     };
+  }, []);
+
+  useEffect(() => {
+    console.log('[Home] mounted');
   }, []);
 
   const deriveCategoryOptions = useCallback((list = []) => {
