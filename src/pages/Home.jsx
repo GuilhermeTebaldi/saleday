@@ -178,9 +178,22 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved =
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem('favorites')
+          : null;
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('favorites');
+      }
+      return [];
+    }
   });
+
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -364,18 +377,29 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
-        setFavoriteIds((prev) => {
-          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
-          }
-          return valid;
-        });
+
+        // Só limpa favoritos pelo conjunto de produtos visíveis quando NÃO está logado
+        if (!token) {
+          setFavoriteIds((prev) => {
+            const valid = prev.filter((id) =>
+              allProducts.some((p) => p.id === id)
+            );
+            if (valid.length !== prev.length) {
+              try {
+                localStorage.setItem('favorites', JSON.stringify(valid));
+              } catch {
+                // ignora falha de escrita em localStorage
+              }
+            }
+            return valid;
+          });
+        }
       }
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded]);
+  }, [preferredCountry, handleProductsLoaded, token]);
+
 
   // carregar produtos iniciais
   useEffect(() => {
