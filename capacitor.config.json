@@ -1,0 +1,9 @@
+{
+  "appId": "com.saleday.app",
+  "appName": "SaleDay",
+  "webDir": "dist",
+  "server": {
+    "url": "https://www.saleday.com.br",
+    "cleartext": false
+  }
+}

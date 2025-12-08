@@ -1,6 +1,6 @@
 // frontend/src/pages/NewProduct.jsx
 // Página de cadastro de um novo produto.
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -16,6 +16,38 @@ const BOUNDS = {
 };
 
 const MAX_PRODUCT_PHOTOS = 10;
+
+const PUBLISH_STAGE_META = {
+  uploading: {
+    title: 'Carregando imagens...',
+    detail: 'Enviando arquivos e metadados...'
+  },
+  processing: {
+    title: 'Processando o anúncio...',
+    detail: 'Processando o anúncio...'
+  }
+};
+
+const PROGRESS_DETAIL_STEPS = [
+  { threshold: 0, message: 'Ajustando...' },
+  { threshold: 10, message: 'Preparando as imagens...' },
+  { threshold: 30, message: 'Preparando legendas...' },
+  { threshold: 50, message: 'Quase tudo pronto...' },
+  { threshold: 60, message: 'Finalizando...' },
+  { threshold: 90, message: 'Publicando...' },
+  { threshold: 95, message: 'Aguarde...' }
+];
+
+const PROCESSING_STEPS = [
+  'Aguardando confirmação...',
+  'Validando dados...',
+  'Processando imagens...',
+  'Atualizando o banco...',
+  'Concluído.'
+];
+
+const UPLOAD_PHASE_WEIGHT = 0.7;
+const SERVER_PHASE_WEIGHT = 1 - UPLOAD_PHASE_WEIGHT;
 
 const inBounds = (code, lat, lng) => {
   const b = BOUNDS[code];
@@ -230,6 +262,13 @@ export default function NewProduct() {
   const [images, setImages] = useState([]);
   const previewsRef = useRef(new Set());
   const [sending, setSending] = useState(false);
+  const [publishStage, setPublishStage] = useState('idle');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [hasUploadProgress, setHasUploadProgress] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const [serverProgress, setServerProgress] = useState(0);
+  const [serverStep, setServerStep] = useState('');
+  const [serverStatus, setServerStatus] = useState('idle');
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingZip, setLoadingZip] = useState(false);
   const [showFieldErrors, setShowFieldErrors] = useState(false);
@@ -259,6 +298,98 @@ export default function NewProduct() {
       return normalized === prev.price ? prev : { ...prev, price: normalized };
     });
   }, [currencyCode, form.isFree]);
+
+  const resetImagePreviews = useCallback(() => {
+    previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewsRef.current.clear();
+    setImages([]);
+  }, []);
+
+  useEffect(() => () => {
+    resetImagePreviews();
+  }, [resetImagePreviews]);
+
+  const resetPublishState = useCallback(() => {
+    setPublishStage('idle');
+    setUploadProgress(0);
+    setHasUploadProgress(false);
+    setJobId(null);
+    setServerProgress(0);
+    setServerStep('');
+    setServerStatus('idle');
+  }, []);
+
+  const finalizePublishSuccess = useCallback(() => {
+    toast.success('Produto publicado com sucesso!');
+    resetImagePreviews();
+    resetPublishState();
+    setForm(baseForm);
+    setShowFieldErrors(false);
+    setSending(false);
+    navigate('/dashboard');
+  }, [baseForm, navigate, resetImagePreviews, resetPublishState]);
+
+  useEffect(() => {
+    if (!jobId) return undefined;
+    let active = true;
+    let intervalId;
+
+    const fetchStatus = async () => {
+      try {
+        const { data } = await api.get(`/products/publish-status/${jobId}`);
+        if (!active) return;
+        const payload = data?.data || {};
+        const status = payload?.status || 'processing';
+        setServerProgress(typeof payload?.percent === 'number' ? payload.percent : 0);
+        setServerStep(payload?.step || 'Processando o anúncio...');
+        setServerStatus(status);
+
+        if (status === 'done') {
+          if (intervalId) clearInterval(intervalId);
+          finalizePublishSuccess();
+          return;
+        }
+
+        if (status === 'error') {
+          if (intervalId) clearInterval(intervalId);
+          toast.error(payload?.error || 'Erro ao processar o anúncio.');
+          setSending(false);
+          resetPublishState();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchStatus();
+    intervalId = setInterval(fetchStatus, 900);
+    return () => {
+      active = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [jobId, finalizePublishSuccess, resetPublishState]);
+
+  const isOverlayVisible = sending && publishStage !== 'idle';
+  const uploadPhasePercent = Math.round(uploadProgress * UPLOAD_PHASE_WEIGHT);
+  const serverPhasePercent = Math.round(serverProgress * SERVER_PHASE_WEIGHT);
+  const totalProgress =
+    publishStage === 'uploading'
+      ? Math.min(100, uploadPhasePercent)
+      : Math.min(100, 70 + serverPhasePercent);
+  const stageMeta = PUBLISH_STAGE_META[publishStage] ?? PUBLISH_STAGE_META.processing;
+  const stageTitle = stageMeta.title;
+  const currentStageProgress = publishStage === 'uploading' ? uploadProgress : serverProgress;
+  const progressDetailMessage =
+    PROGRESS_DETAIL_STEPS.filter((step) => currentStageProgress >= step.threshold).slice(-1)[0]
+      ?.message ?? PROGRESS_DETAIL_STEPS[0].message;
+  const stageDetail =
+    publishStage === 'processing'
+      ? serverStep || progressDetailMessage
+      : progressDetailMessage;
+  const progressWidth = totalProgress;
+  const normalizedProcessingStep = serverStep || PROCESSING_STEPS[0];
+  const processingStepIndex = PROCESSING_STEPS.findIndex((step) => step === normalizedProcessingStep);
+  const processingActiveIndex = processingStepIndex === -1 ? 0 : processingStepIndex;
   const pricePreview = useMemo(() => {
     if (form.isFree) return 'Grátis';
     const parsed = parsePriceFlexible(form.price);
@@ -393,28 +524,6 @@ export default function NewProduct() {
       toast.error('Limite de 10 fotos por anúncio. Algumas imagens ficaram de fora.');
     }
   };
-
-  const handleRemoveImage = (id) => {
-    setImages((prev) => {
-      const target = prev.find((img) => img.id === id);
-      if (target?.preview) {
-        URL.revokeObjectURL(target.preview);
-        previewsRef.current.delete(target.preview);
-      }
-      return prev.filter((img) => img.id !== id);
-    });
-  };
-
-  const resetImagePreviews = () => {
-    previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
-    previewsRef.current.clear();
-    setImages([]);
-  };
-
-  useEffect(() => () => {
-    resetImagePreviews();
-  }, []);
-
 
   // GPS -> normaliza país para sigla e UF
   async function handleDetectLocation() {
@@ -578,7 +687,15 @@ export default function NewProduct() {
     }
     if (!token) return toast.error('Você precisa estar logado para publicar.');
 
+    setPublishStage(images.length > 0 ? 'uploading' : 'processing');
+    setUploadProgress(0);
+    setHasUploadProgress(false);
+    setJobId(null);
+    setServerProgress(0);
+    setServerStep('');
+    setServerStatus('idle');
     setSending(true);
+
     try {
       const payload = buildPayload();
       const formData = new FormData();
@@ -596,17 +713,42 @@ export default function NewProduct() {
         formData.append('images', image.file);
       });
 
-      await api.post('/products', formData);
-      toast.success('Produto publicado com sucesso!');
-      resetImagePreviews();
-      setForm(baseForm);
-      setShowFieldErrors(false);
-      navigate('/dashboard');
+      const { data } = await api.post('/products', formData, {
+        onUploadProgress: (progressEvent) => {
+          const total = progressEvent?.total ?? 0;
+          const loaded = progressEvent?.loaded ?? 0;
+          if (total > 0) {
+            setHasUploadProgress(true);
+            const percent = Math.min(100, Math.round((loaded / total) * 100));
+            setUploadProgress(percent);
+            return;
+          }
+          setHasUploadProgress(true);
+          setUploadProgress((prev) => Math.min(99, prev + 6));
+        }
+      });
+
+      const jobIdentifier = data?.jobId ?? null;
+      if (!jobIdentifier) {
+        toast.success('Produto publicado com sucesso!');
+        resetPublishState();
+        setSending(false);
+        resetImagePreviews();
+        setForm(baseForm);
+        setShowFieldErrors(false);
+        navigate('/dashboard');
+        return;
+      }
+
+      setJobId(jobIdentifier);
+      setPublishStage('processing');
+      setServerStep('Aguardando confirmação...');
+      setServerStatus('queued');
     } catch (error) {
       console.error(error);
       toast.error('Erro ao publicar produto.');
-    } finally {
       setSending(false);
+      resetPublishState();
     }
   };
 
@@ -894,6 +1036,61 @@ export default function NewProduct() {
           </footer>
         </form>
       </div>
+      {isOverlayVisible && (
+        <div className="new-product-publish-overlay" role="status" aria-live="polite">
+          <div className="new-product-publish-card">
+            <p className="new-product-publish-card__title">{stageTitle}</p>
+            <p
+              key={stageDetail}
+              className="new-product-publish-card__detail"
+            >
+              {stageDetail}
+            </p>
+            {(publishStage === 'uploading' && !hasUploadProgress) ||
+            publishStage === 'processing' ? (
+              <div className="new-product-publish-spinner" aria-hidden="true" />
+            ) : null}
+            <div
+              className={`new-product-publish-progress ${
+                publishStage === 'processing' ? 'is-processing' : ''
+              }`}
+            >
+              <div
+                className="new-product-publish-progress__fill"
+                style={{ width: `${progressWidth}%` }}
+              />
+            </div>
+            {publishStage === 'processing' && (
+              <>
+                <div className="new-product-publish-progress--detail">
+                  <div
+                    className="new-product-publish-progress__fill--inner"
+                    style={{ width: `${Math.min(100, Math.max(0, serverProgress))}%` }}
+                  />
+                </div>
+                <div className="new-product-publish-step-list">
+                  {PROCESSING_STEPS.map((step, index) => {
+                    const isActive = index === processingActiveIndex;
+                    const isComplete = index < processingActiveIndex;
+                    const pillClasses = [
+                      'new-product-publish-step',
+                      isComplete ? 'is-complete' : '',
+                      isActive ? 'is-active' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+                    return (
+                      <span key={step} className={pillClasses}>
+                        {step}
+                      </span>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
