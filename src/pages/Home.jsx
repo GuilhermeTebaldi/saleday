@@ -177,7 +177,22 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
-  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = window.localStorage.getItem('favorites');
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      try {
+        window.localStorage.removeItem('favorites');
+      } catch {
+        // ignore
+      }
+      return [];
+    }
+  });
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -212,22 +227,6 @@ export default function Home() {
 
   // botão "voltar ao topo"
   const [showTop, setShowTop] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const saved = window.localStorage.getItem('favorites');
-      const parsed = saved ? JSON.parse(saved) : [];
-      if (Array.isArray(parsed)) {
-        setFavoriteIds(parsed);
-      } else {
-        setFavoriteIds([]);
-      }
-    } catch (err) {
-      console.error('Erro ao ler favoritos do localStorage', err);
-      setFavoriteIds([]);
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -404,9 +403,24 @@ export default function Home() {
   // carregar favoritos
   useEffect(() => {
     if (!token) {
-      const saved = localStorage.getItem('favorites');
-      const ids = saved ? JSON.parse(saved) : [];
-      setFavoriteIds(ids);
+      try {
+        const saved =
+          typeof window !== 'undefined'
+            ? window.localStorage.getItem('favorites')
+            : null;
+        const parsed = saved ? JSON.parse(saved) : [];
+        const ids = Array.isArray(parsed) ? parsed : [];
+        setFavoriteIds(ids);
+      } catch {
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.removeItem('favorites');
+          } catch {
+            // ignore
+          }
+        }
+        setFavoriteIds([]);
+      }
       setFavoriteLoading(false);
       return;
     }
@@ -452,21 +466,23 @@ export default function Home() {
         const confirmed = list.filter((o) => o.status === 'confirmed');
         setBuyerOrders(confirmed);
 
-        // detectar novidade pra badge verde (protege localStorage)
         if (buyerNotifKey) {
+          let seenIds = [];
           try {
-            const seenRaw =
-              typeof window !== 'undefined' && window.localStorage
-                ? window.localStorage.getItem(buyerNotifKey)
-                : null;
-            const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
-            const confirmedIds = confirmed.map((o) => o.id);
-            const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
-            setHasNewConfirmed(unseen.length > 0);
-          } catch (err) {
-            console.error('Erro ao ler badge de pedidos no localStorage', err);
-            setHasNewConfirmed(false);
+            const seenRaw = localStorage.getItem(buyerNotifKey);
+            const parsed = seenRaw ? JSON.parse(seenRaw) : [];
+            seenIds = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            try {
+              localStorage.removeItem(buyerNotifKey);
+            } catch {
+              // ignore
+            }
+            seenIds = [];
           }
+          const confirmedIds = confirmed.map((o) => o.id);
+          const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
+          setHasNewConfirmed(unseen.length > 0);
         }
       })
       .catch((err) => {
