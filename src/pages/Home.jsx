@@ -165,7 +165,9 @@ const updateLikesInCollection = (collection, productId, delta) => {
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
-  const { country: detectedCountry } = useContext(GeoContext);
+  const geoValue = useContext(GeoContext) || {};
+  const detectedCountry = geoValue.country;
+
   const navigate = useNavigate();
   const preferredCountry = useMemo(
     () => detectPreferredCountry(user?.country, detectedCountry),
@@ -178,9 +180,15 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      // Se o JSON estiver corrompido ou localStorage não disponível, não quebra a tela
+      return [];
+    }
   });
+
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
