@@ -178,8 +178,13 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = window.localStorage.getItem('favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
@@ -217,51 +222,7 @@ export default function Home() {
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const refreshKey = 'saleday.home_mobile_refresh';
-    const getStorage = () => {
-      try {
-        return window.sessionStorage;
-      } catch {
-        return null;
-      }
-    };
-    const hasRefreshed = () => getStorage()?.getItem(refreshKey) === '1';
-    const markRefreshed = () => getStorage()?.setItem(refreshKey, '1');
-    const clearRefreshed = () => getStorage()?.removeItem(refreshKey);
-    const isMobileViewport = () => window.innerWidth <= MOBILE_BREAKPOINT;
-
-    let lastWasMobile = isMobileViewport();
-
-    const reloadForMobile = () => {
-      if (hasRefreshed()) return;
-      markRefreshed();
-      window.location.reload();
-    };
-
-    if (lastWasMobile) {
-      reloadForMobile();
-      return undefined;
-    }
-
-    const handleResize = () => {
-      const currentlyMobile = isMobileViewport();
-      if (currentlyMobile && !lastWasMobile) {
-        reloadForMobile();
-        return;
-      }
-      lastWasMobile = currentlyMobile;
-      if (!currentlyMobile && hasRefreshed()) {
-        clearRefreshed();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
+    // Reload automático desativado para evitar loop/tela branca em produção
   }, []);
 
   const deriveCategoryOptions = useCallback((list = []) => {
@@ -305,8 +266,11 @@ export default function Home() {
   }, [products]);
 
   useEffect(() => {
-    if (preferredCountry && typeof window !== 'undefined') {
-      localStorage.setItem('saleday.preferredCountry', preferredCountry);
+    if (!preferredCountry || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('saleday.preferredCountry', preferredCountry);
+    } catch {
+      // ignora falha de storage (modo privado, quota, etc.)
     }
   }, [preferredCountry]);
 
@@ -366,8 +330,12 @@ export default function Home() {
         const allProducts = handleProductsLoaded(data.data);
         setFavoriteIds((prev) => {
           const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
+          if (valid.length !== prev.length && typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('favorites', JSON.stringify(valid));
+            } catch {
+              // ignora erro de storage
+            }
           }
           return valid;
         });
@@ -385,8 +353,15 @@ export default function Home() {
   // carregar favoritos
   useEffect(() => {
     if (!token) {
-      const saved = localStorage.getItem('favorites');
-      const ids = saved ? JSON.parse(saved) : [];
+      let ids = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = window.localStorage.getItem('favorites');
+          ids = saved ? JSON.parse(saved) : [];
+        } catch {
+          ids = [];
+        }
+      }
       setFavoriteIds(ids);
       setFavoriteLoading(false);
       return;
@@ -434,9 +409,14 @@ export default function Home() {
         setBuyerOrders(confirmed);
 
         // detectar novidade pra badge verde
-        if (buyerNotifKey) {
-          const seenRaw = localStorage.getItem(buyerNotifKey);
-          const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+        if (buyerNotifKey && typeof window !== 'undefined') {
+          let seenIds = [];
+          try {
+            const seenRaw = window.localStorage.getItem(buyerNotifKey);
+            seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+          } catch {
+            seenIds = [];
+          }
           const confirmedIds = confirmed.map((o) => o.id);
           const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
           setHasNewConfirmed(unseen.length > 0);
@@ -469,9 +449,13 @@ export default function Home() {
   const openOrdersDrawer = useCallback(() => {
     setDrawerTab('orders');
     setActiveDrawer(true);
-    if (buyerNotifKey && buyerOrders.length) {
+    if (buyerNotifKey && buyerOrders.length && typeof window !== 'undefined') {
       const ids = buyerOrders.map((o) => o.id);
-      localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      try {
+        window.localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      } catch {
+        // ignora erro de storage
+      }
       setHasNewConfirmed(false);
     }
   }, [buyerNotifKey, buyerOrders]);
@@ -485,12 +469,25 @@ export default function Home() {
   const registerView = useCallback(async (productId) => {
     if (!productId) return;
     const key = `viewed:${productId}`;
-    if (sessionStorage.getItem(key)) return;
+
+    let storage = null;
+    if (typeof window !== 'undefined') {
+      try {
+        storage = window.sessionStorage;
+      } catch {
+        storage = null;
+      }
+    }
+
+    if (storage && storage.getItem(key)) return;
+
     try {
       await api.put(`/products/${productId}/view`);
-      sessionStorage.setItem(key, '1');
+      if (storage) {
+        storage.setItem(key, '1');
+      }
     } catch {
-      /* ignore */
+      // ignore
     }
   }, []);
 
@@ -678,7 +675,13 @@ export default function Home() {
       setFavoriteIds((prev) => {
         const exists = prev.includes(id);
         const updated = exists ? prev.filter((f) => f !== id) : [...prev, id];
-        localStorage.setItem('favorites', JSON.stringify(updated));
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem('favorites', JSON.stringify(updated));
+          } catch {
+            // ignora erro de storage
+          }
+        }
         setFavoriteItems(products.filter((p) => updated.includes(p.id)));
         return updated;
       });
@@ -724,7 +727,11 @@ export default function Home() {
   // observar produtos visíveis para contar view
   useEffect(() => {
     if (!products.length) return;
-    const observer = new IntersectionObserver(
+    if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+      return;
+    }
+
+    const observer = new window.IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
@@ -830,16 +837,17 @@ export default function Home() {
                     aria-label="Abrir menu do perfil"
                   >
                     {user?.profile_image_url ? (
-                      <img
-                        src={user.profile_image_url}
-                        alt={user.username || 'Perfil'}
-                        className="home-profile__avatarimg"
-                        onError={(e) => {
-                          e.currentTarget.src = '';
-                          e.currentTarget.classList.add('home-profile__avatarimg--fallback');
-                        }}
-                      />
-                    ) : (
+  <img
+    src={user.profile_image_url}
+    alt={user.username || 'Perfil'}
+    className="home-profile__avatarimg"
+    onError={(e) => {
+      e.currentTarget.src = IMG_PLACEHOLDER;
+      e.currentTarget.classList.add('home-profile__avatarimg--fallback');
+    }}
+  />
+) : (
+
                       <span className="home-profile__avatarfallback">
                         {(user?.username || 'U')
                           .trim()
@@ -853,17 +861,19 @@ export default function Home() {
                     <div className="home-profile__menu">
                       <div className="home-profile__menu-header">
                         <div className="home-profile__menu-avatar">
-                          {user?.profile_image_url ? (
-                            <img
-                              src={user.profile_image_url}
-                              alt={user.username || 'Perfil'}
-                              className="home-profile__menu-avatarimg"
-                              onError={(e) => {
-                                e.currentTarget.src = '';
-                                e.currentTarget.classList.add('home-profile__menu-avatarimg--fallback');
-                              }}
-                            />
-                          ) : (
+                        {user?.profile_image_url ? (
+  <img
+    src={user.profile_image_url}
+    alt={user.username || 'Perfil'}
+    className="home-profile__menu-avatarimg"
+    onError={(e) => {
+      e.currentTarget.src = IMG_PLACEHOLDER;
+      e.currentTarget.classList.add('home-profile__menu-avatarimg--fallback');
+    }}
+  />
+) : (
+
+
                             <span className="home-profile__menu-avatarfallback">
                               {(user?.username || 'U')
                                 .trim()
@@ -1092,35 +1102,33 @@ export default function Home() {
                   >
                   <div className="home-card__media relative w-full h-36 sm:h-40 lg:h-52 xl:h-56 overflow-hidden rounded-t-xl">
                     <div className="home-card__slideshow absolute inset-0 w-full h-full overflow-hidden">
-                      <img
-                        src={mainImage || IMG_PLACEHOLDER}
-                        alt={product.title}
-                        className="home-card__image w-full h-full object-cover transition-opacity duration-300"
-                        loading="lazy"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          e.currentTarget.src = IMG_PLACEHOLDER;
-                          e.currentTarget.onerror = null;
-                        }}
-                      />
+                    <img
+  src={mainImage || IMG_PLACEHOLDER}
+  alt={product.title}
+  className="home-card__image w-full h-full object-cover transition-opacity duration-300"
+  loading="lazy"
+  decoding="async"
+  onError={(e) => {
+    e.currentTarget.src = IMG_PLACEHOLDER;
+    e.currentTarget.onerror = null;
+  }}
+/>
 
-                      {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
-                        <img
-                          src={product.image_urls[1] || IMG_PLACEHOLDER}
-                          alt=""
-                          className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                          loading="lazy"
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            e.currentTarget.src = IMG_PLACEHOLDER;
-                            e.currentTarget.onerror = null;
-                          }}
-                        />
-                      )}
+
+{Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
+  <img
+    src={product.image_urls[1] || IMG_PLACEHOLDER}
+    alt=""
+    className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+    loading="lazy"
+    decoding="async"
+    onError={(e) => {
+      e.currentTarget.src = IMG_PLACEHOLDER;
+      e.currentTarget.onerror = null;
+    }}
+  />
+)}
+
                     </div>
                     {freeTag && (
                       <span className="home-card__badge absolute top-2 left-2 bg-green-600 text-white text-[11px] px-2 py-[2px] rounded-md shadow">
@@ -1259,23 +1267,22 @@ export default function Home() {
                             }}
                           >
                             <div className="home-fav-card__image-wrapper">
-                              <img
-                                src={
-                                  product.image_urls?.[0] ||
-                                  product.image_url ||
-                                  IMG_PLACEHOLDER
-                                }
-                                alt={product.title}
-                                className="home-fav-card__image"
-                                loading="eager"
-                                decoding="async"
-                                referrerPolicy="no-referrer"
-                                crossOrigin="anonymous"
-                                onError={(e) => {
-                                  e.currentTarget.src = IMG_PLACEHOLDER;
-                                  e.currentTarget.onerror = null;
-                                }}
-                              />
+                            <img
+  src={
+    product.image_urls?.[0] ||
+    product.image_url ||
+    IMG_PLACEHOLDER
+  }
+  alt={product.title}
+  className="home-fav-card__image"
+  loading="eager"
+  decoding="async"
+  onError={(e) => {
+    e.currentTarget.src = IMG_PLACEHOLDER;
+    e.currentTarget.onerror = null;
+  }}
+/>
+
                             </div>
                             <div className="home-fav-card__details">
                               <p className="home-fav-card__title">{product.title}</p>
