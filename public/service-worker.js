@@ -42,15 +42,34 @@ const navigationRequest = (event) => {
       .catch(() => caches.match(event.request))
   );
 };
-
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+
+  // Navegação SPA: sempre network-first (e cacheia o index)
   if (event.request.mode === 'navigate') {
     navigationRequest(event);
     return;
   }
 
+  // API / backend: network-first para não travar curtidas, favoritos, etc.
+  const isApiRequest =
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/products') ||
+    url.pathname.startsWith('/favorites');
+
+  if (isApiRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => cacheResponse(event.request, networkResponse))
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Demais arquivos estáticos (CSS, JS, imagens): cache-first
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
