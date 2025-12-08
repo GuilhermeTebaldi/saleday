@@ -1002,7 +1002,7 @@ export default function Home() {
         aria-label="Abrir favoritos"
       >
         <span className="home-hero__iconchip-icon">♥</span>
-         <span className="home-hero__iconchip-label">{favoriteIds.length}</span>
+         
       </button>
 
       {/* Confirmados */}
