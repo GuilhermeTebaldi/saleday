@@ -104,19 +104,31 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
   if (normalizedGeo) return normalizedGeo;
   if (typeof window !== 'undefined') {
     try {
-      const storedPref = normalizeCountryCode(localStorage.getItem('saleday.preferredCountry'));
+      const storedPref = normalizeCountryCode(
+        window.localStorage.getItem('saleday.preferredCountry')
+      );
       if (storedPref) return storedPref;
+
       const candidates = [];
-      const storedLocale = localStorage.getItem('saleday.locale');
+
+      const storedLocale = window.localStorage.getItem('saleday.locale');
       if (storedLocale) candidates.push(storedLocale);
-      if (typeof navigator !== 'undefined') {
-        if (navigator.language) candidates.push(navigator.language);
-        if (Array.isArray(navigator.languages)) candidates.push(...navigator.languages);
+
+      if (typeof window.navigator !== 'undefined') {
+        if (window.navigator.language) candidates.push(window.navigator.language);
+        if (Array.isArray(window.navigator.languages)) {
+          candidates.push(...window.navigator.languages);
+        }
       }
-      if (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function') {
-        const intlLocale = Intl.DateTimeFormat().resolvedOptions?.().locale;
+
+      if (
+        typeof window.Intl !== 'undefined' &&
+        typeof window.Intl.DateTimeFormat === 'function'
+      ) {
+        const intlLocale = window.Intl.DateTimeFormat().resolvedOptions?.().locale;
         if (intlLocale) candidates.push(intlLocale);
       }
+
       for (const candidate of candidates) {
         const region = extractRegionFromLocale(candidate);
         const normalizedRegion = normalizeCountryCode(region);
@@ -807,7 +819,10 @@ export default function Home() {
     paddingRight: hasProfile ? '72px' : 0
   };
 
-  return (
+  let content;
+
+  try {
+    content = (
     <div className="home-page">
       <section className="home-hero">
 
@@ -1419,5 +1434,21 @@ export default function Home() {
         )}
       </AnimatePresence>
     </div>
-  );
+    );
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Erro ao renderizar Home:', err);
+    content = (
+      <div className="home-page">
+        <section className="home-hero">
+          <div className="home-empty-state">
+            <h2>Erro ao carregar a página inicial</h2>
+            <p>Tente recarregar a página ou voltar novamente em instantes.</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return content;
 }
