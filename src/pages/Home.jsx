@@ -177,10 +177,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
-  const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [favoriteIds, setFavoriteIds] = useState([]);
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -215,6 +212,22 @@ export default function Home() {
 
   // botão "voltar ao topo"
   const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = window.localStorage.getItem('favorites');
+      const parsed = saved ? JSON.parse(saved) : [];
+      if (Array.isArray(parsed)) {
+        setFavoriteIds(parsed);
+      } else {
+        setFavoriteIds([]);
+      }
+    } catch (err) {
+      console.error('Erro ao ler favoritos do localStorage', err);
+      setFavoriteIds([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -439,13 +452,21 @@ export default function Home() {
         const confirmed = list.filter((o) => o.status === 'confirmed');
         setBuyerOrders(confirmed);
 
-        // detectar novidade pra badge verde
+        // detectar novidade pra badge verde (protege localStorage)
         if (buyerNotifKey) {
-          const seenRaw = localStorage.getItem(buyerNotifKey);
-          const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
-          const confirmedIds = confirmed.map((o) => o.id);
-          const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
-          setHasNewConfirmed(unseen.length > 0);
+          try {
+            const seenRaw =
+              typeof window !== 'undefined' && window.localStorage
+                ? window.localStorage.getItem(buyerNotifKey)
+                : null;
+            const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+            const confirmedIds = confirmed.map((o) => o.id);
+            const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
+            setHasNewConfirmed(unseen.length > 0);
+          } catch (err) {
+            console.error('Erro ao ler badge de pedidos no localStorage', err);
+            setHasNewConfirmed(false);
+          }
         }
       })
       .catch((err) => {
@@ -477,7 +498,13 @@ export default function Home() {
     setActiveDrawer(true);
     if (buyerNotifKey && buyerOrders.length) {
       const ids = buyerOrders.map((o) => o.id);
-      localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+        }
+      } catch (err) {
+        console.error('Erro ao gravar badge de pedidos no localStorage', err);
+      }
       setHasNewConfirmed(false);
     }
   }, [buyerNotifKey, buyerOrders]);
@@ -491,10 +518,29 @@ export default function Home() {
   const registerView = useCallback(async (productId) => {
     if (!productId) return;
     const key = `viewed:${productId}`;
-    if (sessionStorage.getItem(key)) return;
+
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        window.sessionStorage &&
+        window.sessionStorage.getItem(key)
+      ) {
+        return;
+      }
+    } catch (err) {
+      console.error('Erro ao ler sessionStorage', err);
+    }
+
     try {
       await api.put(`/products/${productId}/view`);
-      sessionStorage.setItem(key, '1');
+
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem(key, '1');
+        }
+      } catch (err) {
+        console.error('Erro ao gravar sessionStorage', err);
+      }
     } catch {
       /* ignore */
     }
