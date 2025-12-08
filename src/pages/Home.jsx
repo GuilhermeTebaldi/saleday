@@ -205,6 +205,20 @@ export default function Home() {
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
   const drawerRef = useRef(null);
   const mapOpenRef = useRef(null);
+  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
+  const refreshFavorites = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await api.get('/favorites');
+      const items = response.data?.data ?? [];
+      setFavoriteItems(items);
+      setFavoriteIds(items.map((item) => item.id));
+    } catch (err) {
+      console.error(err);
+      toast.error('Não foi possível atualizar seus favoritos.');
+    }
+  }, [token]);
 
   // pedidos confirmados do comprador
   const [buyerOrders, setBuyerOrders] = useState([]); // só pedidos confirmados
@@ -703,7 +717,7 @@ export default function Home() {
       return;
     }
     if (favoriteLoading || pendingFavorite === id) return;
-    const willFavorite = !favoriteIds.includes(id);
+    const willFavorite = !favoriteSet.has(id);
     setPendingFavorite(id);
     const request = willFavorite
       ? api.post('/favorites', { product_id: id })
@@ -731,6 +745,7 @@ export default function Home() {
             ? 'Produto adicionado aos favoritos.'
             : 'Produto removido dos favoritos.'
         );
+        void refreshFavorites();
       })
       .catch((err) => {
         console.error(err);
@@ -1107,7 +1122,7 @@ export default function Home() {
             {displayedProducts.map((product) => {
               const mainImage = product.image_urls?.[0] || product.image_url;
               const freeTag = isProductFree(product);
-              const isFavorited = favoriteIds.includes(product.id);
+              const isFavorited = favoriteSet.has(product.id);
               const likeCount = getProductLikes(product);
 
               return (
