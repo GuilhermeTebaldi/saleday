@@ -364,18 +364,20 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
-        setFavoriteIds((prev) => {
-          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
-          }
-          return valid;
-        });
+        if (!token) {
+          setFavoriteIds((prev) => {
+            const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
+            if (valid.length !== prev.length) {
+              localStorage.setItem('favorites', JSON.stringify(valid));
+            }
+            return valid;
+          });
+        }
       }
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded]);
+  }, [preferredCountry, handleProductsLoaded, token]);
 
   // carregar produtos iniciais
   useEffect(() => {
