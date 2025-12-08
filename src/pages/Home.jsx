@@ -163,6 +163,50 @@ const updateLikesInCollection = (collection, productId, delta) => {
   );
 };
 
+// helper seguro para localStorage / sessionStorage
+const safeStorage = {
+  getLocal(key) {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return null;
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setLocal(key, value) {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      window.localStorage.setItem(key, value);
+    } catch {
+      // ignore
+    }
+  },
+  removeLocal(key) {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return;
+      window.localStorage.removeItem(key);
+    } catch {
+      // ignore
+    }
+  },
+  getSession(key) {
+    try {
+      if (typeof window === 'undefined' || !window.sessionStorage) return null;
+      return window.sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setSession(key, value) {
+    try {
+      if (typeof window === 'undefined' || !window.sessionStorage) return;
+      window.sessionStorage.setItem(key, value);
+    } catch {
+      // ignore
+    }
+  }
+};
+
 export default function Home() {
   const { token, user } = useContext(AuthContext);
   const { country: detectedCountry } = useContext(GeoContext);
@@ -178,8 +222,16 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+    const saved = safeStorage.getLocal('favorites');
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      // dado antigo/corrompido
+      safeStorage.removeLocal('favorites');
+      return [];
+    }
   });
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
@@ -305,8 +357,8 @@ export default function Home() {
   }, [products]);
 
   useEffect(() => {
-    if (preferredCountry && typeof window !== 'undefined') {
-      localStorage.setItem('saleday.preferredCountry', preferredCountry);
+    if (preferredCountry) {
+      safeStorage.setLocal('saleday.preferredCountry', preferredCountry);
     }
   }, [preferredCountry]);
 
@@ -367,7 +419,7 @@ export default function Home() {
         setFavoriteIds((prev) => {
           const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
           if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
+            safeStorage.setLocal('favorites', JSON.stringify(valid));
           }
           return valid;
         });
@@ -385,8 +437,18 @@ export default function Home() {
   // carregar favoritos
   useEffect(() => {
     if (!token) {
-      const saved = localStorage.getItem('favorites');
-      const ids = saved ? JSON.parse(saved) : [];
+      const saved = safeStorage.getLocal('favorites');
+      let ids = [];
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          ids = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          // limpar favoritos corrompidos
+          safeStorage.removeLocal('favorites');
+          ids = [];
+        }
+      }
       setFavoriteIds(ids);
       setFavoriteLoading(false);
       return;
@@ -435,8 +497,17 @@ export default function Home() {
 
         // detectar novidade pra badge verde
         if (buyerNotifKey) {
-          const seenRaw = localStorage.getItem(buyerNotifKey);
-          const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+          let seenIds = [];
+          const seenRaw = safeStorage.getLocal(buyerNotifKey);
+          if (seenRaw) {
+            try {
+              const parsed = JSON.parse(seenRaw);
+              seenIds = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              safeStorage.removeLocal(buyerNotifKey);
+              seenIds = [];
+            }
+          }
           const confirmedIds = confirmed.map((o) => o.id);
           const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
           setHasNewConfirmed(unseen.length > 0);
@@ -471,7 +542,7 @@ export default function Home() {
     setActiveDrawer(true);
     if (buyerNotifKey && buyerOrders.length) {
       const ids = buyerOrders.map((o) => o.id);
-      localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      safeStorage.setLocal(buyerNotifKey, JSON.stringify(ids));
       setHasNewConfirmed(false);
     }
   }, [buyerNotifKey, buyerOrders]);
@@ -485,10 +556,10 @@ export default function Home() {
   const registerView = useCallback(async (productId) => {
     if (!productId) return;
     const key = `viewed:${productId}`;
-    if (sessionStorage.getItem(key)) return;
+    if (safeStorage.getSession(key)) return;
     try {
       await api.put(`/products/${productId}/view`);
-      sessionStorage.setItem(key, '1');
+      safeStorage.setSession(key, '1');
     } catch {
       /* ignore */
     }
@@ -678,7 +749,7 @@ export default function Home() {
       setFavoriteIds((prev) => {
         const exists = prev.includes(id);
         const updated = exists ? prev.filter((f) => f !== id) : [...prev, id];
-        localStorage.setItem('favorites', JSON.stringify(updated));
+        safeStorage.setLocal('favorites', JSON.stringify(updated));
         setFavoriteItems(products.filter((p) => updated.includes(p.id)));
         return updated;
       });
@@ -1098,8 +1169,6 @@ export default function Home() {
                         className="home-card__image w-full h-full object-cover transition-opacity duration-300"
                         loading="lazy"
                         decoding="async"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
                         onError={(e) => {
                           e.currentTarget.src = IMG_PLACEHOLDER;
                           e.currentTarget.onerror = null;
@@ -1113,8 +1182,6 @@ export default function Home() {
                           className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                           loading="lazy"
                           decoding="async"
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
                           onError={(e) => {
                             e.currentTarget.src = IMG_PLACEHOLDER;
                             e.currentTarget.onerror = null;
@@ -1269,8 +1336,6 @@ export default function Home() {
                                 className="home-fav-card__image"
                                 loading="eager"
                                 decoding="async"
-                                referrerPolicy="no-referrer"
-                                crossOrigin="anonymous"
                                 onError={(e) => {
                                   e.currentTarget.src = IMG_PLACEHOLDER;
                                   e.currentTarget.onerror = null;
