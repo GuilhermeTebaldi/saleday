@@ -54,10 +54,15 @@ export default function EditProduct() {
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const previewsRef = useRef(new Set());
+  const isMountedRef = useRef(true);
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const totalImages = existingImages.length + newImages.length;
+  const isActionLoading = isSubmitting || isDeleting;
+  const overlayLabel = isSubmitting ? 'Salvando produto' : 'Excluindo produto';
 
   const cleanupPreviews = () => {
     previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -69,8 +74,11 @@ export default function EditProduct() {
     setNewImages([]);
   };
 
-  useEffect(() => () => {
-    cleanupPreviews();
+  useEffect(() => {
+    return () => {
+      cleanupPreviews();
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -306,6 +314,7 @@ export default function EditProduct() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const payload = buildPayload();
       const formData = new FormData();
@@ -330,12 +339,18 @@ export default function EditProduct() {
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar produto.');
+    } finally {
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleDelete = async () => {
     const confirmDelete = window.confirm('Deseja realmente excluir este produto?');
     if (!confirmDelete) return;
+
+    setIsDeleting(true);
 
     try {
       await api.delete(`/products/${id}`);
@@ -345,6 +360,10 @@ export default function EditProduct() {
     } catch (err) {
       console.error(err);
       toast.error('Erro ao excluir produto.');
+    } finally {
+      if (isMountedRef.current) {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -352,6 +371,18 @@ export default function EditProduct() {
 
   return (
     <div className="edit-product-page">
+      {isActionLoading && (
+        <div
+          className="edit-product-page__overlay"
+          role="status"
+          aria-live="polite"
+          aria-label={overlayLabel}
+          aria-hidden={false}
+        >
+          <span className="edit-product-page__spinner" aria-hidden="true" />
+          <span className="sr-only">{overlayLabel}</span>
+        </div>
+      )}
       <h2>Editar Produto</h2>
       <form onSubmit={handleSubmit} className="edit-product-form space-y-3">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
@@ -496,12 +527,23 @@ export default function EditProduct() {
         </p>
 
         <div className="edit-product-actions">
-          <button type="submit" disabled={!isValid}>
+          <button type="submit" disabled={!isValid || isActionLoading}>
             Salvar
           </button>
-          <button type="button" className="danger" onClick={handleDelete}>
+          <button type="button" className="danger" onClick={handleDelete} disabled={isActionLoading}>
             Excluir
           </button>
+          {isActionLoading && (
+            <div
+              className="edit-product-actions__loader"
+              role="status"
+              aria-live="polite"
+              aria-label={isSubmitting ? 'Salvando produto' : 'Excluindo produto'}
+            >
+              <span className="edit-product-actions__spinner" aria-hidden="true" />
+              <span className="sr-only">{isSubmitting ? 'Salvando produto' : 'Excluindo produto'}</span>
+            </div>
+          )}
         </div>
       </form>
     </div>
