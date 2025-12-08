@@ -215,6 +215,9 @@ export default function Home() {
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
   const drawerRef = useRef(null);
   const mapOpenRef = useRef(null);
+  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const [pulseTarget, setPulseTarget] = useState(null);
+  const pulseTimerRef = useRef(null);
 
   // pedidos confirmados do comprador
   const [buyerOrders, setBuyerOrders] = useState([]); // só pedidos confirmados
@@ -420,6 +423,14 @@ export default function Home() {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    return () => {
+      if (pulseTimerRef.current) {
+        clearTimeout(pulseTimerRef.current);
+      }
+    };
+  }, []);
 
   // NOVO: carregar pedidos confirmados do comprador
   useEffect(() => {
@@ -702,12 +713,24 @@ export default function Home() {
     activeFilters.push({ id: 'free', label: 'Somente gratuitos' });
   }
 
+  const triggerFavoritePulse = useCallback((id) => {
+    if (!id) return;
+    if (pulseTimerRef.current) {
+      clearTimeout(pulseTimerRef.current);
+    }
+    setPulseTarget(id);
+    pulseTimerRef.current = setTimeout(() => {
+      setPulseTarget(null);
+      pulseTimerRef.current = null;
+    }, 520);
+  }, []);
+
   function toggleFavorite(id) {
     if (!id) return;
     if (!token) {
-      setFavoriteIds((prev) => {
-        const targetId = normalizeId(id);
-        const exists = prev.includes(targetId);
+    setFavoriteIds((prev) => {
+      const targetId = normalizeId(id);
+      const exists = prev.includes(targetId);
         const updated = exists
           ? prev.filter((f) => f !== targetId)
           : [...prev, targetId];
@@ -725,6 +748,7 @@ export default function Home() {
         );
         return updated;
       });
+      triggerFavoritePulse(normalizeId(id));
       return;
     }
     
@@ -765,14 +789,15 @@ export default function Home() {
         );
       });
     
-      setProducts((prev) => updateLikesInCollection(prev, targetId, delta));
-    
-      toast.success(
-        willFavorite
-          ? 'Produto adicionado aos favoritos.'
-          : 'Produto removido dos favoritos.'
-      );
-    })
+        setProducts((prev) => updateLikesInCollection(prev, targetId, delta));
+
+        toast.success(
+          willFavorite
+            ? 'Produto adicionado aos favoritos.'
+            : 'Produto removido dos favoritos.'
+        );
+        triggerFavoritePulse(targetId);
+      })
     
       .catch((err) => {
         console.error(err);
@@ -1150,7 +1175,8 @@ export default function Home() {
               const mainImage = product.image_urls?.[0] || product.image_url;
               const freeTag = isProductFree(product);
               const productId = normalizeId(product.id);
-              const isFavorited = favoriteIds.includes(productId);
+              const isFavorited = favoriteSet.has(productId);
+              const isPulsed = pulseTarget === productId;
               const likeCount = getProductLikes(product);
               
 
@@ -1212,12 +1238,13 @@ export default function Home() {
                         e.stopPropagation();
                         toggleFavorite(product.id);
                       }}
-                      
                       className={`home-card__favorite absolute top-2 right-2 bg-white/80 border border-gray-200 w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow transition ${
                         pendingFavorite === product.id ? 'is-loading' : ''
-                      } ${isFavorited ? 'is-active' : ''}`}
+                      } ${isFavorited ? 'is-active' : ''} ${isPulsed ? 'is-pulsed' : ''}`}
                     >
-                      ♥
+                      <span className="home-card__favorite-icon" aria-hidden="true">
+                        ♥
+                      </span>
                     </button>
                   </div>
 

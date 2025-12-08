@@ -71,8 +71,7 @@ export default function Login() {
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
-      {AUTH0_ENABLED && <Auth0LoginActions onLoginSuccess={handleLoginSuccess} />}
-      <p className="auth-extra">
+       <p className="auth-extra">
         Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
       </p>
     </section>
