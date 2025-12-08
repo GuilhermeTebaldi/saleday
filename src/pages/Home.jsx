@@ -178,8 +178,13 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = window.localStorage.getItem('favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
@@ -216,55 +221,8 @@ export default function Home() {
   // botão "voltar ao topo"
   const [showTop, setShowTop] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    let storage;
-    try {
-      storage = window.sessionStorage;
-    } catch {
-      return undefined;
-    }
-
-    const refreshKey = 'saleday.home_mobile_refresh';
-    const hasRefreshed = () => storage.getItem(refreshKey) === '1';
-    const markRefreshed = () => storage.setItem(refreshKey, '1');
-    const clearRefreshed = () => storage.removeItem(refreshKey);
-    const isMobileViewport = () => window.innerWidth <= MOBILE_BREAKPOINT;
-
-    let lastWasMobile = isMobileViewport();
-
-    const reloadForMobile = () => {
-      if (process.env.NODE_ENV === 'production') return;
-      if (hasRefreshed()) return;
-      markRefreshed();
-      window.location.reload();
-    };
-
-    if (lastWasMobile) {
-      reloadForMobile();
-      return undefined;
-    }
-
-    const handleResize = () => {
-      const currentlyMobile = isMobileViewport();
-      if (currentlyMobile && !lastWasMobile) {
-        reloadForMobile();
-        return;
-      }
-      lastWasMobile = currentlyMobile;
-      if (!currentlyMobile && hasRefreshed()) {
-        clearRefreshed();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, []);
+  // Efeito de reload automático desativado para evitar problemas em produção
+  useEffect(() => {}, []);
 
   const deriveCategoryOptions = useCallback((list = []) => {
     const counts = new Map();
