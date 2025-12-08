@@ -353,21 +353,7 @@ export default function Home() {
         params: { sort: 'rank', ...geoScopeToParams(scope, preferredCountry) }
       });
       if (data.success) {
-        const allProducts = handleProductsLoaded(data.data);
-        setFavoriteIds((prev) => {
-          if (token) {
-            return prev;
-          }
-          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length && typeof window !== 'undefined') {
-            try {
-              window.localStorage.setItem('favorites', JSON.stringify(valid));
-            } catch {
-              // ignora erro de storage
-            }
-          }
-          return valid;
-        });
+        handleProductsLoaded(data.data);
       }
     } catch {
       /* silencioso */
