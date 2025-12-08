@@ -364,6 +364,25 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
+        setFavoriteIds((prev) => {
+          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
+          if (valid.length !== prev.length) {
+            localStorage.setItem('favorites', JSON.stringify(valid));
+          }
+          return valid;
+        });
+      }
+    } catch {
+      /* silencioso */
+    }
+    const scope = { type: 'country', country: preferredCountry };
+    try {
+      const { data } = await api.get('/products', {
+        params: { sort: 'rank', ...geoScopeToParams(scope, preferredCountry) }
+      });
+      if (data.success) {
+        const allProducts = handleProductsLoaded(data.data);
+
         if (!token) {
           setFavoriteIds((prev) => {
             const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
