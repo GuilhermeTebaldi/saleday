@@ -416,18 +416,20 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
-        setFavoriteIds((prev) => {
-          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            safeStorage.setLocal('favorites', JSON.stringify(valid));
-          }
-          return valid;
-        });
+        if (!token) {
+          setFavoriteIds((prev) => {
+            const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
+            if (valid.length !== prev.length) {
+              safeStorage.setLocal('favorites', JSON.stringify(valid));
+            }
+            return valid;
+          });
+        }
       }
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded]);
+  }, [preferredCountry, handleProductsLoaded, token]);
 
   // carregar produtos iniciais
   useEffect(() => {
@@ -723,6 +725,10 @@ export default function Home() {
 
   const freeProducts = products.filter((p) => isProductFree(p));
   const displayedProducts = viewMode === 'free' ? freeProducts : products;
+
+  // Contador único de favoritos para usar em todos os pontos da Home.
+  const favoritesTotal = favoriteItems.length || favoriteIds.length;
+
   const activeFilters = [];
   if (searchSummary) {
     activeFilters.push({ id: 'search', label: `Busca: ${searchSummary}` });
@@ -1003,7 +1009,7 @@ export default function Home() {
         aria-label="Abrir favoritos"
       >
         <span className="home-hero__iconchip-icon">♥</span>
-        <span className="home-hero__iconchip-label">{favoriteIds.length}</span>
+        <span className="home-hero__iconchip-label">{favoritesTotal}</span>
       </button>
 
       {/* Confirmados */}
@@ -1148,7 +1154,11 @@ export default function Home() {
         ) : (
           <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 p-1">
             {displayedProducts.map((product) => {
-              const mainImage = product.image_urls?.[0] || product.image_url;
+              const imageList = parseImageList(product.image_urls);
+              const mainImage =
+                imageList[0] ||
+                toAbsoluteImageUrl(product.image_url) ||
+                IMG_PLACEHOLDER;
               const freeTag = isProductFree(product);
               const isFavorited = favoriteIds.includes(product.id);
               const likeCount = getProductLikes(product);
@@ -1175,9 +1185,9 @@ export default function Home() {
                         }}
                       />
 
-                      {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
+                      {imageList.length > 1 && (
                         <img
-                          src={product.image_urls[1] || IMG_PLACEHOLDER}
+                          src={toAbsoluteImageUrl(imageList[1]) || IMG_PLACEHOLDER}
                           alt=""
                           className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                           loading="lazy"
@@ -1278,7 +1288,7 @@ export default function Home() {
                     onClick={() => setDrawerTab('favorites')}
                     className={`home-drawer__tab ${drawerTab === 'favorites' ? 'is-active' : ''}`}
                   >
-                    Favoritos <span>({favoriteIds.length})</span>
+                    Favoritos <span>({favoritesTotal})</span>
                   </button>
                   <button
                     type="button"
@@ -1302,8 +1312,8 @@ export default function Home() {
                   <div className="home-drawer__section">
                     <p className="home-drawer__eyebrow">Coleção pessoal</p>
                     <h2 className="home-drawer__title">
-                      {favoriteIds.length
-                        ? `Você tem ${favoriteIds.length} favorit${favoriteIds.length > 1 ? 'os' : 'o'}`
+                      {favoritesTotal
+                        ? `Você tem ${favoritesTotal} favorit${favoritesTotal > 1 ? 'os' : 'o'}`
                         : 'Nenhum favorito salvo'}
                     </h2>
 
@@ -1315,61 +1325,65 @@ export default function Home() {
                           Marque produtos como favoritos para acessá-los rapidamente aqui.
                         </p>
                       ) : (
-                        favoriteItems.map((product) => (
-                          <Link
-                            key={product.id}
-                            to={`/product/${product.id}`}
-                            className="home-fav-card"
-                            onClick={() => {
-                              registerClick(product.id);
-                              setActiveDrawer(false);
-                            }}
-                          >
-                            <div className="home-fav-card__image-wrapper">
-                              <img
-                                src={
-                                  product.image_urls?.[0] ||
-                                  product.image_url ||
-                                  IMG_PLACEHOLDER
-                                }
-                                alt={product.title}
-                                className="home-fav-card__image"
-                                loading="eager"
-                                decoding="async"
-                                onError={(e) => {
-                                  e.currentTarget.src = IMG_PLACEHOLDER;
-                                  e.currentTarget.onerror = null;
+                        favoriteItems.map((product) => {
+                          const imageList = parseImageList(product.image_urls);
+                          const productImage =
+                            imageList[0] ||
+                            toAbsoluteImageUrl(product.image_url) ||
+                            IMG_PLACEHOLDER;
+
+                          return (
+                            <Link
+                              key={product.id}
+                              to={`/product/${product.id}`}
+                              className="home-fav-card"
+                              onClick={() => {
+                                registerClick(product.id);
+                                setActiveDrawer(false);
+                              }}
+                            >
+                              <div className="home-fav-card__image-wrapper">
+                                <img
+                                  src={productImage}
+                                  alt={product.title}
+                                  className="home-fav-card__image"
+                                  loading="eager"
+                                  decoding="async"
+                                  onError={(e) => {
+                                    e.currentTarget.src = IMG_PLACEHOLDER;
+                                    e.currentTarget.onerror = null;
+                                  }}
+                                />
+                              </div>
+                              <div className="home-fav-card__details">
+                                <p className="home-fav-card__title">{product.title}</p>
+                                <p
+                                  className={`home-fav-card__price ${
+                                    isProductFree(product) ? 'is-free' : ''
+                                  }`}
+                                >
+                                  {isProductFree(product)
+                                    ? 'Grátis'
+                                    : formatProductPrice(product.price, product.country)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={pendingFavorite === product.id}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleFavorite(product.id);
                                 }}
-                              />
-                            </div>
-                            <div className="home-fav-card__details">
-                              <p className="home-fav-card__title">{product.title}</p>
-                              <p
-                                className={`home-fav-card__price ${
-                                  isProductFree(product) ? 'is-free' : ''
+                                className={`home-fav-card__favorite ${
+                                  pendingFavorite === product.id ? 'is-loading' : ''
                                 }`}
                               >
-                                {isProductFree(product)
-                                  ? 'Grátis'
-                                  : formatProductPrice(product.price, product.country)}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={pendingFavorite === product.id}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                toggleFavorite(product.id);
-                              }}
-                              className={`home-fav-card__favorite ${
-                                pendingFavorite === product.id ? 'is-loading' : ''
-                              }`}
-                            >
-                              ♥
-                            </button>
-                          </Link>
-                        ))
+                                ♥
+                              </button>
+                            </Link>
+                          );
+                        })
                       )}
                     </div>
                   </div>
