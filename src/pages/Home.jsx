@@ -266,7 +266,11 @@ export default function Home() {
 
   useEffect(() => {
     if (preferredCountry && typeof window !== 'undefined') {
-      localStorage.setItem('saleday.preferredCountry', preferredCountry);
+      try {
+        window.localStorage.setItem('saleday.preferredCountry', preferredCountry);
+      } catch {
+        // ignora erro de storage
+      }
     }
   }, [preferredCountry]);
 
@@ -326,8 +330,12 @@ export default function Home() {
         const allProducts = handleProductsLoaded(data.data);
         setFavoriteIds((prev) => {
           const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-          if (valid.length !== prev.length) {
-            localStorage.setItem('favorites', JSON.stringify(valid));
+          if (valid.length !== prev.length && typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('favorites', JSON.stringify(valid));
+            } catch {
+              // ignora erro de storage
+            }
           }
           return valid;
         });
@@ -345,8 +353,15 @@ export default function Home() {
   // carregar favoritos
   useEffect(() => {
     if (!token) {
-      const saved = localStorage.getItem('favorites');
-      const ids = saved ? JSON.parse(saved) : [];
+      let ids = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = window.localStorage.getItem('favorites');
+          ids = saved ? JSON.parse(saved) : [];
+        } catch {
+          ids = [];
+        }
+      }
       setFavoriteIds(ids);
       setFavoriteLoading(false);
       return;
@@ -394,9 +409,14 @@ export default function Home() {
         setBuyerOrders(confirmed);
 
         // detectar novidade pra badge verde
-        if (buyerNotifKey) {
-          const seenRaw = localStorage.getItem(buyerNotifKey);
-          const seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+        if (buyerNotifKey && typeof window !== 'undefined') {
+          let seenIds = [];
+          try {
+            const seenRaw = window.localStorage.getItem(buyerNotifKey);
+            seenIds = seenRaw ? JSON.parse(seenRaw) : [];
+          } catch {
+            seenIds = [];
+          }
           const confirmedIds = confirmed.map((o) => o.id);
           const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
           setHasNewConfirmed(unseen.length > 0);
@@ -429,9 +449,13 @@ export default function Home() {
   const openOrdersDrawer = useCallback(() => {
     setDrawerTab('orders');
     setActiveDrawer(true);
-    if (buyerNotifKey && buyerOrders.length) {
+    if (buyerNotifKey && buyerOrders.length && typeof window !== 'undefined') {
       const ids = buyerOrders.map((o) => o.id);
-      localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      try {
+        window.localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
+      } catch {
+        // ignora erro de storage
+      }
       setHasNewConfirmed(false);
     }
   }, [buyerNotifKey, buyerOrders]);
@@ -444,13 +468,24 @@ export default function Home() {
 
   const registerView = useCallback(async (productId) => {
     if (!productId) return;
+    if (typeof window === 'undefined') return;
     const key = `viewed:${productId}`;
-    if (sessionStorage.getItem(key)) return;
+
+    try {
+      if (window.sessionStorage.getItem(key)) return;
+    } catch {
+      // se storage falhar, segue sem cache local
+    }
+
     try {
       await api.put(`/products/${productId}/view`);
-      sessionStorage.setItem(key, '1');
+      try {
+        window.sessionStorage.setItem(key, '1');
+      } catch {
+        // ignora erro de storage
+      }
     } catch {
-      /* ignore */
+      /* ignore erro da API de view */
     }
   }, []);
 
@@ -638,7 +673,13 @@ export default function Home() {
       setFavoriteIds((prev) => {
         const exists = prev.includes(id);
         const updated = exists ? prev.filter((f) => f !== id) : [...prev, id];
-        localStorage.setItem('favorites', JSON.stringify(updated));
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem('favorites', JSON.stringify(updated));
+          } catch {
+            // ignora erro de storage
+          }
+        }
         setFavoriteItems(products.filter((p) => updated.includes(p.id)));
         return updated;
       });
