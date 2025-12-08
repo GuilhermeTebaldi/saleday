@@ -51,6 +51,12 @@ const isActive = (p) => (p?.status || 'active') !== 'sold';
 const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
 
+const normalizeId = (value) => {
+  const num = Number(value);
+  return Number.isNaN(num) ? String(value) : num;
+};
+
+
 const getProductLikes = (product) => {
   if (!product) return 0;
   const raw = Number(
@@ -170,10 +176,12 @@ const buildBoundsFromPoint = (lat, lng, delta = 0.05) => {
 
 const updateLikesInCollection = (collection, productId, delta) => {
   if (!Array.isArray(collection) || !productId || !delta) return collection;
+  const targetId = normalizeId(productId);
   return collection.map((item) =>
-    item.id === productId ? applyLikeDelta(item, delta) : item
+    normalizeId(item.id) === targetId ? applyLikeDelta(item, delta) : item
   );
 };
+
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
@@ -193,11 +201,13 @@ export default function Home() {
     if (typeof window === 'undefined') return [];
     try {
       const saved = window.localStorage.getItem('favorites');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed.map(normalizeId) : [];
     } catch {
       return [];
     }
   });
+  
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -205,20 +215,6 @@ export default function Home() {
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
   const drawerRef = useRef(null);
   const mapOpenRef = useRef(null);
-  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
-
-  const refreshFavorites = useCallback(async () => {
-    if (!token) return;
-    try {
-      const response = await api.get('/favorites');
-      const items = response.data?.data ?? [];
-      setFavoriteItems(items);
-      setFavoriteIds(items.map((item) => item.id));
-    } catch (err) {
-      console.error(err);
-      toast.error('Não foi possível atualizar seus favoritos.');
-    }
-  }, [token]);
 
   // pedidos confirmados do comprador
   const [buyerOrders, setBuyerOrders] = useState([]); // só pedidos confirmados
@@ -353,12 +349,26 @@ export default function Home() {
         params: { sort: 'rank', ...geoScopeToParams(scope, preferredCountry) }
       });
       if (data.success) {
-        handleProductsLoaded(data.data);
+        const allProducts = handleProductsLoaded(data.data);
+        setFavoriteIds((prev) => {
+          const valid = prev.filter((id) =>
+            allProducts.some((p) => normalizeId(p.id) === id)
+          );
+          if (valid.length !== prev.length && typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('favorites', JSON.stringify(valid));
+            } catch {
+              // ignora erro de storage
+            }
+          }
+          return valid;
+        });
       }
+      
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded, token]);
+  }, [preferredCountry, handleProductsLoaded]);
 
   // carregar produtos iniciais
   useEffect(() => {
@@ -384,13 +394,18 @@ export default function Home() {
     let active = true;
     setFavoriteLoading(true);
     api
-      .get('/favorites')
-      .then((res) => {
-        if (!active) return;
-        const items = res.data?.data ?? [];
-        setFavoriteItems(items);
-        setFavoriteIds(items.map((item) => item.id));
-      })
+  .get('/favorites')
+  .then((res) => {
+    if (!active) return;
+    const items = res.data?.data ?? [];
+    setFavoriteItems(items);
+    setFavoriteIds(
+      items.map((item) =>
+        normalizeId(item.product_id ?? item.id)
+      )
+    );
+  })
+
       .catch((err) => {
         if (!active) return;
         console.error(err);
@@ -659,8 +674,11 @@ export default function Home() {
       setFavoriteItems([]);
       return;
     }
-    setFavoriteItems(products.filter((p) => favoriteIds.includes(p.id)));
+    setFavoriteItems(
+      products.filter((p) => favoriteIds.includes(normalizeId(p.id)))
+    );
   }, [token, products, favoriteIds]);
+  
 
   const freeProducts = products.filter((p) => isProductFree(p));
   const displayedProducts = viewMode === 'free' ? freeProducts : products;
@@ -688,8 +706,12 @@ export default function Home() {
     if (!id) return;
     if (!token) {
       setFavoriteIds((prev) => {
-        const exists = prev.includes(id);
-        const updated = exists ? prev.filter((f) => f !== id) : [...prev, id];
+        const targetId = normalizeId(id);
+        const exists = prev.includes(targetId);
+        const updated = exists
+          ? prev.filter((f) => f !== targetId)
+          : [...prev, targetId];
+    
         if (typeof window !== 'undefined') {
           try {
             window.localStorage.setItem('favorites', JSON.stringify(updated));
@@ -697,42 +719,61 @@ export default function Home() {
             // ignora erro de storage
           }
         }
-        setFavoriteItems(products.filter((p) => updated.includes(p.id)));
+    
+        setFavoriteItems(
+          products.filter((p) => updated.includes(normalizeId(p.id)))
+        );
         return updated;
       });
       return;
     }
+    
     if (favoriteLoading || pendingFavorite === id) return;
-    const willFavorite = !favoriteSet.has(id);
+    const willFavorite = !favoriteIds.includes(id);
     setPendingFavorite(id);
     const request = willFavorite
       ? api.post('/favorites', { product_id: id })
       : api.delete(`/favorites/${id}`);
     request
-      .then(() => {
-        const delta = willFavorite ? 1 : -1;
-        setFavoriteIds((prev) =>
-          willFavorite ? [...prev, id] : prev.filter((favId) => favId !== id)
-        );
-        setFavoriteItems((prev) => {
-          const updatedPrev = updateLikesInCollection(prev, id, delta);
-          if (willFavorite) {
-            if (prev.some((item) => item.id === id)) return updatedPrev;
-            const product = products.find((p) => p.id === id);
-            return product
-              ? [applyLikeDelta(product, delta), ...updatedPrev]
-              : updatedPrev;
+    .then(() => {
+      const delta = willFavorite ? 1 : -1;
+      const targetId = normalizeId(id);
+    
+      setFavoriteIds((prev) => {
+        if (willFavorite) {
+          if (prev.includes(targetId)) return prev;
+          return [...prev, targetId];
+        }
+        return prev.filter((favId) => favId !== targetId);
+      });
+    
+      setFavoriteItems((prev) => {
+        const updatedPrev = updateLikesInCollection(prev, targetId, delta);
+        if (willFavorite) {
+          if (prev.some((item) => normalizeId(item.id) === targetId)) {
+            return updatedPrev;
           }
-          return updatedPrev.filter((item) => item.id !== id);
-        });
-        setProducts((prev) => updateLikesInCollection(prev, id, delta));
-        toast.success(
-          willFavorite
-            ? 'Produto adicionado aos favoritos.'
-            : 'Produto removido dos favoritos.'
+          const product = products.find(
+            (p) => normalizeId(p.id) === targetId
+          );
+          return product
+            ? [applyLikeDelta(product, delta), ...updatedPrev]
+            : updatedPrev;
+        }
+        return updatedPrev.filter(
+          (item) => normalizeId(item.id) !== targetId
         );
-        void refreshFavorites();
-      })
+      });
+    
+      setProducts((prev) => updateLikesInCollection(prev, targetId, delta));
+    
+      toast.success(
+        willFavorite
+          ? 'Produto adicionado aos favoritos.'
+          : 'Produto removido dos favoritos.'
+      );
+    })
+    
       .catch((err) => {
         console.error(err);
         toast.error('Não foi possível atualizar seus favoritos.');
@@ -961,7 +1002,7 @@ export default function Home() {
         aria-label="Abrir favoritos"
       >
         <span className="home-hero__iconchip-icon">♥</span>
-        <span className="home-hero__iconchip-label">{favoriteIds.length}</span>
+        
       </button>
 
       {/* Confirmados */}
@@ -1108,8 +1149,10 @@ export default function Home() {
             {displayedProducts.map((product) => {
               const mainImage = product.image_urls?.[0] || product.image_url;
               const freeTag = isProductFree(product);
-              const isFavorited = favoriteSet.has(product.id);
+              const productId = normalizeId(product.id);
+              const isFavorited = favoriteIds.includes(productId);
               const likeCount = getProductLikes(product);
+              
 
               return (
                   <Link
@@ -1169,6 +1212,7 @@ export default function Home() {
                         e.stopPropagation();
                         toggleFavorite(product.id);
                       }}
+                      
                       className={`home-card__favorite absolute top-2 right-2 bg-white/80 border border-gray-200 w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow transition ${
                         pendingFavorite === product.id ? 'is-loading' : ''
                       } ${isFavorited ? 'is-active' : ''}`}
@@ -1323,6 +1367,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 toggleFavorite(product.id);
                               }}
+                              
                               className={`home-fav-card__favorite ${
                                 pendingFavorite === product.id ? 'is-loading' : ''
                               }`}
