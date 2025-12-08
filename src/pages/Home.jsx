@@ -165,9 +165,7 @@ const updateLikesInCollection = (collection, productId, delta) => {
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
-  const geoValue = useContext(GeoContext) || {};
-  const detectedCountry = geoValue.country;
-
+  const { country: detectedCountry } = useContext(GeoContext);
   const navigate = useNavigate();
   const preferredCountry = useMemo(
     () => detectPreferredCountry(user?.country, detectedCountry),
@@ -180,15 +178,9 @@ export default function Home() {
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      // Se o JSON estiver corrompido ou localStorage não disponível, não quebra a tela
-      return [];
-    }
+    const saved = localStorage.getItem('favorites');
+    return saved ? JSON.parse(saved) : [];
   });
-
   const [favoriteItems, setFavoriteItems] = useState([]);
   const [pendingFavorite, setPendingFavorite] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
@@ -372,24 +364,18 @@ export default function Home() {
       });
       if (data.success) {
         const allProducts = handleProductsLoaded(data.data);
-
-        // Importante: só “limpa” favoritos pelo conjunto de produtos visíveis
-        // quando o usuário NÃO está logado (modo offline/localStorage).
-        if (!token) {
-          setFavoriteIds((prev) => {
-            const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
-            if (valid.length !== prev.length) {
-              localStorage.setItem('favorites', JSON.stringify(valid));
-            }
-            return valid;
-          });
-        }
+        setFavoriteIds((prev) => {
+          const valid = prev.filter((id) => allProducts.some((p) => p.id === id));
+          if (valid.length !== prev.length) {
+            localStorage.setItem('favorites', JSON.stringify(valid));
+          }
+          return valid;
+        });
       }
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded, token]);
-
+  }, [preferredCountry, handleProductsLoaded]);
 
   // carregar produtos iniciais
   useEffect(() => {
