@@ -62,7 +62,7 @@ export default function SoldBadge({ className = '' }) {
         <rect
           x="-20"
           y="65"
-          width="200"
+          width="200" 
           height="32"
           transform="rotate(-20 80 80)"
           fill="rgba(0,0,0,0.35)"
