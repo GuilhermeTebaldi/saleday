@@ -136,6 +136,7 @@ export default function Messages() {
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const [deletingConversationKey, setDeletingConversationKey] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [activeConversationKey, setActiveConversationKey] = useState(null);
   const [searchParams] = useSearchParams();
   const [previewContext, setPreviewContext] = useState(null);
   const sendSoundRef = useRef(null);
@@ -149,6 +150,7 @@ export default function Messages() {
   const longPressTimerRef = useRef(null);
   const lastNotificationTokenRef = useRef(null);
   const forcedChatRef = useRef(null);
+  const activeConversationRef = useRef({ counterpartId: null, productId: null });
   const userId = user?.id;
   const userDisplayName = user?.username || user?.name || 'Usuário SaleDay';
   const threadContainerRef = useRef(null);
@@ -278,15 +280,28 @@ export default function Messages() {
           ? Number(targetCounterpartId)
           : null;
       if (!normalizedCounterpart) return [];
+      const normalizedContextProductId =
+        contextProductId !== null &&
+        contextProductId !== undefined &&
+        Number.isFinite(Number(contextProductId))
+          ? Number(contextProductId)
+          : null;
       try {
         const suffix =
-          contextProductId && Number.isFinite(Number(contextProductId))
-            ? `?productId=${Number(contextProductId)}`
+          normalizedContextProductId
+            ? `?productId=${normalizedContextProductId}`
             : '';
         const response = await api.get(`/messages/seller/${normalizedCounterpart}${suffix}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = response.data?.data ?? [];
+        const activeConversation = activeConversationRef.current;
+        const isActiveConversation =
+          activeConversation.counterpartId === normalizedCounterpart &&
+          activeConversation.productId === normalizedContextProductId;
+        if (!isActiveConversation) {
+          return data;
+        }
         const profile = resolveCounterpartProfile(data, conversation, normalizedCounterpart);
 
         if (
@@ -309,11 +324,11 @@ export default function Messages() {
             previewPayload = pendingContextRef.current.payload;
           }
         }
-        if (!previewPayload && contextProductId) {
-          const contextPreview = findLatestContextPreview(data, contextProductId);
+        if (!previewPayload && normalizedContextProductId) {
+          const contextPreview = findLatestContextPreview(data, normalizedContextProductId);
           if (contextPreview) {
             const shouldQueue =
-              lastContextProductId == null || lastContextProductId !== contextProductId;
+              lastContextProductId == null || lastContextProductId !== normalizedContextProductId;
             if (shouldQueue) {
               pendingContextRef.current = {
                 productId: contextPreview.productId,
@@ -403,6 +418,27 @@ export default function Messages() {
             ? fallbackCounterpartNumeric
             : null;
       if (!resolvedCounterpart) return;
+      activeConversationRef.current = {
+        counterpartId: resolvedCounterpart,
+        productId: hasProduct ? parsedProductId : null
+      };
+      const conversationKeyFromData = conversation
+        ? getConversationKey(conversation, userId)
+        : null;
+      const fallbackKey =
+        userId && resolvedCounterpart
+          ? getConversationKey(
+              { sender_id: userId, receiver_id: resolvedCounterpart },
+              userId
+            )
+          : null;
+      const resolvedKey = conversationKeyFromData || fallbackKey;
+      if (resolvedKey) {
+        setActiveConversationKey(resolvedKey);
+      }
+      setMessages([]);
+      pendingContextRef.current = null;
+      setPreviewContext(null);
       const contextKey =
         hasProduct && resolvedCounterpart
           ? buildContextSetKey(parsedProductId, resolvedCounterpart)
@@ -990,6 +1026,8 @@ export default function Messages() {
           setMessages([]);
           setSelectedProductInfo(null);
           setCounterpartId(null);
+          setActiveConversationKey(null);
+          activeConversationRef.current = { counterpartId: null, productId: null };
         }
         toast.success('Conversa apagada.');
         await loadConversations();
@@ -1054,6 +1092,7 @@ export default function Messages() {
             const previewOffer = parseOfferMessage(c.content);
             const previewResponse = parseOfferResponse(c.content);
             let previewText = c.content;
+            const conversationKey = getConversationKey(c, userId);
             const conversationCounterpartId = getConversationCounterpartId(c, userId);
             const normalizedConversationCounterpart =
               conversationCounterpartId !== null && conversationCounterpartId !== undefined
@@ -1061,10 +1100,13 @@ export default function Messages() {
                 : NaN;
             const normalizedCounterpart =
               counterpartId !== null && counterpartId !== undefined ? Number(counterpartId) : NaN;
-            const isActive =
+            const fallbackActive =
               Number.isFinite(normalizedConversationCounterpart) &&
               Number.isFinite(normalizedCounterpart) &&
               normalizedConversationCounterpart === normalizedCounterpart;
+            const isActive =
+              (activeConversationKey && conversationKey === activeConversationKey) ||
+              (!activeConversationKey && fallbackActive);
             const isUnread = Boolean(userId && c.receiver_id === userId && c.is_read === false);
             const isSender = userId && c.sender_id === userId;
             const counterpartName = isSender
@@ -1086,7 +1128,7 @@ export default function Messages() {
 
             return (
               <button
-                key={getConversationKey(c, userId)}
+                key={conversationKey || getConversationKey(c, userId)}
               onClick={() => handleConversationClick(c)}
               onContextMenu={(event) =>
                 openContextMenu(event, { type: 'conversation', conversation: c })
@@ -1288,65 +1330,74 @@ export default function Messages() {
                   return (
                     <div
                       key={m.id}
-                          className={`messages-thread__row flex items-end gap-2 ${isSender ? 'justify-end' : 'justify-start'}`}
+                      className={`messages-thread__row flex items-end gap-2 ${
+                        isSender ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {leftAvatar}
+                      <div className="flex w-full max-w-[95%] sm:max-w-[75%] items-stretch gap-2">
+                        <span
+                          className={`messages-thread__accent h-full min-h-[32px] w-1 rounded-full self-stretch ${
+                            isSender ? 'bg-blue-100' : 'bg-amber-100'
+                          }`}
+                        />
+                        <div
+                          className={`messages-offer flex-1 ${
+                            isSender ? 'messages-offer--self' : 'messages-offer--other'
+                          }`}
                         >
-                          {leftAvatar}
-                          <div
-                            className={`messages-offer max-w-[95%] sm:max-w-[75%] ${
-                              isSender ? 'messages-offer--self' : 'messages-offer--other'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-xs uppercase tracking-wide font-semibold">Proposta enviada</p>
-                              <span className="text-sm font-semibold">
-                                {formatOfferAmount(offerData.amount, offerData.currency)}
-                              </span>
-                            </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs uppercase tracking-wide font-semibold">Proposta enviada</p>
+                            <span className="text-sm font-semibold">
+                              {formatOfferAmount(offerData.amount, offerData.currency)}
+                            </span>
+                          </div>
 
-                            {offerData.message && (
-                              <p className="mt-2 text-sm">{offerData.message}</p>
+                          {offerData.message && (
+                            <p className="mt-2 text-sm">{offerData.message}</p>
+                          )}
+
+                          <div className="mt-3 flex flex-col gap-2">
+                            {responseStatus && (
+                              <span
+                                className={`inline-flex items-center justify-start gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+                                  isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
+                                }`}
+                              >
+                                {isAccepted ? 'Oferta aceita! Venda confirmada.' : 'Oferta recusada.'}
+                              </span>
                             )}
 
-                            <div className="mt-3 flex flex-col gap-2">
-                              {responseStatus && (
-                                <span
-                                  className={`inline-flex items-center justify-start gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                                    isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
-                                  }`}
+                            {awaitingSellerAction && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => respondToOffer(m, 'accept')}
+                                  disabled={respondingOfferId === m.id}
+                                  className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
                                 >
-                                  {isAccepted ? 'Oferta aceita! Venda confirmada.' : 'Oferta recusada.'}
-                                </span>
-                              )}
+                                  {respondingOfferId === m.id ? 'Confirmando...' : 'Aceitar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => respondToOffer(m, 'decline')}
+                                  disabled={respondingOfferId === m.id}
+                                  className="rounded-full bg-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-300 disabled:opacity-60"
+                                >
+                                  {respondingOfferId === m.id ? 'Atualizando...' : 'Não aceitar'}
+                                </button>
+                              </div>
+                            )}
 
-                              {awaitingSellerAction && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => respondToOffer(m, 'accept')}
-                                    disabled={respondingOfferId === m.id}
-                                    className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
-                                  >
-                                    {respondingOfferId === m.id ? 'Confirmando...' : 'Aceitar'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => respondToOffer(m, 'decline')}
-                                    disabled={respondingOfferId === m.id}
-                                    className="rounded-full bg-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-300 disabled:opacity-60"
-                                  >
-                                    {respondingOfferId === m.id ? 'Atualizando...' : 'Não aceitar'}
-                                  </button>
-                                </div>
-                              )}
-
-                              {awaitingBuyer && (
-                                <span className="text-xs font-medium">Aguardando resposta do vendedor...</span>
-                              )}
-                            </div>
+                            {awaitingBuyer && (
+                              <span className="text-xs font-medium">Aguardando resposta do vendedor...</span>
+                            )}
                           </div>
-                          {rightAvatar}
                         </div>
-                      );
+                      </div>
+                      {rightAvatar}
+                    </div>
+                  );
                     }
 
                     return (
@@ -1366,17 +1417,24 @@ export default function Messages() {
                         onTouchCancel={cancelLongPress}
                       >
                         {leftAvatar}
-                        <div
-                          className={`flex max-w-[85%] sm:max-w-[70%] flex-col gap-1 ${
-                            isSender ? 'items-end' : 'items-start'
-                          }`}
-                        >
+                        <div className="flex w-full max-w-[85%] sm:max-w-[70%] items-stretch gap-2">
+                          <span
+                            className={`messages-thread__accent h-full min-h-[32px] w-1 rounded-full self-stretch ${
+                              isSender ? 'bg-blue-100' : 'bg-amber-100'
+                            }`}
+                          />
                           <div
-                            className={`messages-bubble w-full ${
-                              isSender ? 'messages-bubble--self' : 'messages-bubble--other'
+                            className={`flex flex-1 flex-col gap-1 ${
+                              isSender ? 'items-end' : 'items-start'
                             }`}
                           >
-                            {m.content}
+                            <div
+                              className={`messages-bubble w-full ${
+                                isSender ? 'messages-bubble--self' : 'messages-bubble--other'
+                              }`}
+                            >
+                              {m.content}
+                            </div>
                           </div>
                         </div>
                         {rightAvatar}
