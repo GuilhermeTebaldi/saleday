@@ -1089,7 +1089,7 @@
 
     return (
       <>
-      <div className="flex h-screen flex-col overflow-hidden bg-slate-50 pt-[calc(var(--home-header-height,64px)+2rem)]">
+    <div className="flex h-screen flex-col overflow-x-hidden overflow-y-hidden bg-slate-50 pt-[var(--home-header-height,64px)]">
 
 
           <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-4 py-4 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
@@ -1099,7 +1099,7 @@
             <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
             {hasActiveConversation ? (
                   <>
-            <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5 shadow backdrop-blur-lg">
+          <header className="z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5 shadow backdrop-blur-lg">
 
     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20">
@@ -1141,9 +1141,11 @@
 
                     <div
   ref={threadContainerRef}
-  className="flex-1 overflow-y-auto overscroll-y-contain px-4 pt-[104px] transition-all duration-300"
+  className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-6 transition-all duration-300 touch-pan-y"
   style={{ scrollPaddingBottom: '160px', paddingBottom: '160px' }}
 >
+
+
 
 
 
