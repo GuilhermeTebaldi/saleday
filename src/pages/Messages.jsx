@@ -1073,30 +1073,343 @@ export default function Messages() {
   const viewportHeight = `calc(100vh - ${headerOffset})`;
 
   const renderConversationList = () => (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
-      <div className="flex items-center justify-between border-b bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-white">
-        <span className="text-lg font-semibold">Conversas</span>
+    <ConversationSidebar
+      conversations={conversations}
+      userId={userId}
+      counterpartId={counterpartId}
+      activeConversationKey={activeConversationKey}
+      deletingConversationKey={deletingConversationKey}
+      onConversationClick={handleConversationClick}
+      onContextMenu={openContextMenu}
+      onStartLongPress={startLongPress}
+      onCancelLongPress={cancelLongPress}
+      onCloseSidebar={() => setSidebarOpen(false)}
+    />
+  );
+
+  return (
+    <>
+      <div
+        className="flex h-screen flex-col overflow-hidden bg-slate-50"
+        style={{ paddingTop: headerOffset }}
+      >
+        <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-5 px-4 py-5 lg:flex-row lg:gap-6 lg:px-6 lg:py-6">
+          <aside className="hidden lg:flex lg:w-full lg:max-w-xs">{renderConversationList()}</aside>
+
+          <section className="flex flex-1 flex-col gap-4 min-h-0">
+            <div className="flex flex-1 flex-col min-h-0 overflow-visible lg:overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
+              {hasActiveConversation ? (
+                <>
+                  <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur-sm">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20">
+                        {selectedMeta.avatar ? (
+                          <img
+                            src={selectedMeta.avatar}
+                            alt={
+                              selectedMeta.counterpart || selectedMeta.seller || 'Usuário SaleDay'
+                            }
+                            className="h-full w-full rounded-2xl object-cover"
+                          />
+                        ) : (
+                          getInitial(selectedMeta.counterpart || selectedMeta.seller || 'SaleDay')
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="truncate text-xl font-semibold text-slate-900">
+                          {headerPartnerName}
+                        </h2>
+                        <p className="truncate text-sm text-slate-500">{headerSubtitle}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {productSold && (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-inner">
+                          Produto vendido
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-600 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 lg:hidden"
+                        onClick={() => setSidebarOpen(true)}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        Conversas
+                      </button>
+                    </div>
+                  </header>
+
+                  <div
+                    ref={threadContainerRef}
+                    className="flex-1 overflow-y-auto px-4 py-6 transition-all duration-300"
+                    style={{ scrollPaddingBottom: '120px' }}
+                  >
+                    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
+                      {mergedFeedItems.map((item) => {
+                        if (item.type === 'context') {
+                          const context = item.context;
+                          return <ProductContextCard key={context.id} context={context} />;
+                        }
+
+                        const m = item.message;
+                        const offerData = parseOfferMessage(m.content);
+                        const offerResponse = parseOfferResponse(m.content);
+                        if (offerResponse) {
+                          return null;
+                        }
+
+                        const isSender = m.sender_id === userId;
+                        const senderName = isSender
+                          ? userDisplayName
+                          : m.sender_name ||
+                            selectedMeta.counterpart ||
+                            selectedMeta.seller ||
+                            'Usuário SaleDay';
+                        const senderAvatar = isSender
+                          ? userAvatar
+                          : m.sender_avatar || selectedMeta.avatar || null;
+                        const senderInitial = isSender ? userInitial : getInitial(senderName);
+                        const leftAvatar = !isSender ? (
+                          <AvatarBadge avatar={senderAvatar} label={senderName} />
+                        ) : null;
+                        const rightAvatar = isSender ? (
+                          <AvatarBadge avatar={userAvatar} label={userDisplayName} />
+                        ) : null;
+
+                        if (offerData) {
+                          const response = offerResponses[m.id];
+                          return (
+                            <div
+                              key={`offer-${m.id}`}
+                              className={`flex items-end gap-3 ${
+                                isSender ? 'justify-end' : 'justify-start'
+                              }`}
+                            >
+                              {leftAvatar}
+                              <div className="flex w-full max-w-[90%] items-stretch gap-3">
+                                <span
+                                  className={`h-full w-1 rounded-full ${
+                                    isSender ? 'bg-blue-100' : 'bg-amber-100'
+                                  }`}
+                                />
+                                <OfferBubble
+                                  offerData={offerData}
+                                  response={response}
+                                  offerMessage={m}
+                                  isSender={isSender}
+                                  isSeller={isSeller}
+                                  productSold={productSold}
+                                  respondToOffer={respondToOffer}
+                                  respondingOfferId={respondingOfferId}
+                                />
+                              </div>
+                              {rightAvatar}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={`msg-${m.id}`}
+                            className={`flex items-end gap-3 ${
+                              isSender ? 'justify-end' : 'justify-start'
+                            }`}
+                            onContextMenu={(event) =>
+                              openContextMenu(event, { type: 'message', messageId: m.id })
+                            }
+                            onTouchStart={(event) =>
+                              startLongPress(event, { type: 'message', messageId: m.id })
+                            }
+                            onTouchEnd={cancelLongPress}
+                            onTouchMove={cancelLongPress}
+                            onTouchCancel={cancelLongPress}
+                          >
+                            {leftAvatar}
+                            <div className="flex w-full max-w-[85%] items-stretch gap-3">
+                              <span
+                                className={`h-full w-1 rounded-full ${
+                                  isSender ? 'bg-blue-100' : 'bg-amber-100'
+                                }`}
+                              />
+                              <MessageBubble content={m.content} isSender={isSender} />
+                            </div>
+                            {rightAvatar}
+                          </div>
+                        );
+                      })}
+                      <span ref={messagesEndRef} />
+                    </div>
+                  </div>
+
+                  {!isSeller && previewContext && <ProductPreview context={previewContext} />}
+
+                  <form
+                    onSubmit={handleSend}
+                    className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:items-center"
+                  >
+                    <label htmlFor="message-input" className="sr-only">
+                      Digite sua mensagem
+                    </label>
+                    <input
+                      id="message-input"
+                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed"
+                      value={newMsg}
+                      onChange={(e) => setNewMsg(e.target.value)}
+                      placeholder="Digite sua mensagem..."
+                      disabled={sending}
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={sending || !newMsg.trim()}
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 10.5l11-6.5a1 1 0 011.4 1.1L13 11l2.4 5.9a1 1 0 01-1.4 1.1l-11-6.5a1 1 0 010-1.8z" />
+                      </svg>
+                      {sending ? 'Enviando...' : 'Enviar'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center text-slate-500">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+                    <span className="text-2xl font-semibold">💬</span>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">Conversa privada</p>
+                    <p className="text-sm text-slate-500">
+                      Escolha uma conversa ou envie uma proposta para começar.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 lg:hidden"
+                    onClick={() => setSidebarOpen(true)}
+                  >
+                    Abrir conversas
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <MobileSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+        {renderConversationList()}
+      </MobileSidebar>
+
+      {contextMenu && (
+        <div
+          className="fixed inset-0 z-50"
+          onClick={closeContextMenu}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            closeContextMenu();
+          }}
+        >
+          <div
+            className="absolute w-48 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
+            style={{
+              top:
+                typeof window !== 'undefined'
+                  ? Math.min(contextMenu.y, window.innerHeight - 80)
+                  : contextMenu.y,
+              left:
+                typeof window !== 'undefined'
+                  ? Math.min(contextMenu.x, window.innerWidth - 200)
+                  : contextMenu.x
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {contextMenu.type === 'message' && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeContextMenu();
+                  handleDeleteMessage(contextMenu.messageId);
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+                disabled={deletingMessageId === contextMenu.messageId}
+              >
+                <span>
+                  {deletingMessageId === contextMenu.messageId ? 'Removendo...' : 'Apagar mensagem!'}
+                </span>
+              </button>
+            )}
+            {contextMenu.type === 'conversation' && contextMenu.conversation && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeContextMenu();
+                  handleDeleteConversation(contextMenu.conversation);
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+                disabled={
+                  Boolean(deletingConversationKey) &&
+                  getConversationKey(contextMenu.conversation, userId) === deletingConversationKey
+                }
+              >
+                <span>
+                  {Boolean(deletingConversationKey) &&
+                  getConversationKey(contextMenu.conversation, userId) === deletingConversationKey
+                    ? 'Removendo...'
+                    : 'Apagar conversa!'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ConversationSidebar({
+  conversations,
+  userId,
+  counterpartId,
+  activeConversationKey,
+  deletingConversationKey,
+  onConversationClick,
+  onContextMenu,
+  onStartLongPress,
+  onCancelLongPress,
+  onCloseSidebar
+}) {
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-xl shadow-slate-200/40 transition-all duration-200">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div>
+          <p className="text-lg font-semibold text-slate-900">Conversas</p>
+          <p className="text-xs text-slate-500">Atualizado em tempo real</p>
+        </div>
         <button
           type="button"
-          className="inline-flex items-center rounded-full border border-white/40 px-3 py-1 text-xs font-semibold lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          className="rounded-full border border-white/40 bg-white/50 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm shadow-slate-200 transition-all duration-200 hover:bg-white lg:hidden"
+          onClick={onCloseSidebar}
         >
           Fechar
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {conversations.length === 0 && (
-          <p className="mt-10 text-center text-gray-400">Nenhuma conversa</p>
-        )}
-          {conversations.map((c) => {
-            const previewOffer = parseOfferMessage(c.content);
-            const previewResponse = parseOfferResponse(c.content);
-            let previewText = c.content;
-            const conversationKey = getConversationKey(c, userId);
-            const conversationCounterpartId = getConversationCounterpartId(c, userId);
+      <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+        {conversations.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-slate-400">Nenhuma conversa</p>
+        ) : (
+          conversations.map((conversation) => {
+            const conversationKey = getConversationKey(conversation, userId);
+            const conversationCounterpart = getConversationCounterpartId(conversation, userId);
             const normalizedConversationCounterpart =
-              conversationCounterpartId !== null && conversationCounterpartId !== undefined
-                ? Number(conversationCounterpartId)
+              conversationCounterpart !== null && conversationCounterpart !== undefined
+                ? Number(conversationCounterpart)
                 : NaN;
             const normalizedCounterpart =
               counterpartId !== null && counterpartId !== undefined ? Number(counterpartId) : NaN;
@@ -1107,491 +1420,284 @@ export default function Messages() {
             const isActive =
               (activeConversationKey && conversationKey === activeConversationKey) ||
               (!activeConversationKey && fallbackActive);
-            const isUnread = Boolean(userId && c.receiver_id === userId && c.is_read === false);
-            const isSender = userId && c.sender_id === userId;
-            const counterpartName = isSender
-              ? c.receiver_name || c.seller_name
-              : c.sender_name || c.seller_name;
-          const counterpartAvatar = isSender ? c.receiver_avatar : c.sender_avatar;
-          const counterpartInitial = getInitial(counterpartName || 'SaleDay');
-          const conversationTitle =
-            c.product_title || (!c.product_id ? 'Conversa direta' : `Produto #${c.product_id}`);
-
-          if (previewOffer) {
-            previewText = `Oferta: ${formatOfferAmount(previewOffer.amount, previewOffer.currency)}`;
-          } else if (previewResponse) {
-            previewText =
-              previewResponse.status === 'accepted'
-                ? 'Oferta aceita! Venda confirmada.'
-                : 'Oferta recusada.';
-          }
+            const isDeleting =
+              Boolean(deletingConversationKey) && deletingConversationKey === conversationKey;
 
             return (
-              <button
-                key={conversationKey || getConversationKey(c, userId)}
-              onClick={() => handleConversationClick(c)}
-              onContextMenu={(event) =>
-                openContextMenu(event, { type: 'conversation', conversation: c })
-              }
-              onTouchStart={(event) =>
-                startLongPress(event, { type: 'conversation', conversation: c })
-              }
-              onTouchEnd={cancelLongPress}
-              onTouchMove={cancelLongPress}
-              onTouchCancel={cancelLongPress}
-              disabled={
-                Boolean(deletingConversationKey) &&
-                getConversationKey(c, userId) === deletingConversationKey
-              }
-              className={`relative w-full rounded-xl border p-3 text-left transition ${
-                isActive
-                  ? 'bg-blue-100 border-blue-400 ring-1 ring-blue-200'
-                  : isUnread
-                  ? 'bg-emerald-50 border-emerald-400 hover:bg-emerald-100'
-                  : 'bg-gray-50 border-transparent hover:bg-gray-100'
-              } ${
-                Boolean(deletingConversationKey) &&
-                getConversationKey(c, userId) === deletingConversationKey
-                  ? 'opacity-60'
-                  : ''
-              }`}
-            >
-              {isUnread && (
-                <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 font-semibold text-blue-600">
-                  {counterpartAvatar ? (
-                    <img src={counterpartAvatar} alt={counterpartName || 'Usuário SaleDay'} className="h-full w-full rounded-2xl object-cover" />
-                  ) : (
-                    counterpartInitial
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-gray-900">
-                    {conversationTitle}
-                  </p>
-                  <p className="truncate text-xs text-gray-500">
-                    {counterpartName || 'Usuário SaleDay'}
-                  </p>
-                  <p className="truncate text-sm text-gray-700">{previewText}</p>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-   return (
-    <>
-    <div
-      className="bg-slate-100 overflow-hidden"
-      style={{ paddingTop: headerOffset, height: viewportHeight }}
-    >
-      <div className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-4 px-4 py-4 lg:flex-row">
-
-        <aside className="hidden h-[calc(100vh-var(--home-header-height,64px)-2rem)] w-full max-w-xs lg:block">
-          {renderConversationList()}
-        </aside>
-
-        <div className="flex h-[calc(100vh-var(--home-header-height,64px)-2rem)] flex-1 flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
-          {hasActiveConversation ? (
-            <>
-              <header className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700">
-                    {selectedMeta.avatar ? (
-                      <img src={selectedMeta.avatar} alt={selectedMeta.counterpart || selectedMeta.seller || 'Usuário SaleDay'} className="h-full w-full rounded-2xl object-cover" />
-                    ) : (
-                      getInitial(selectedMeta.counterpart || selectedMeta.seller || 'SaleDay')
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="truncate text-xl font-semibold text-gray-800">{headerPartnerName}</h2>
-                    <p className="truncate text-sm text-gray-500">{headerSubtitle}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {productSold && (
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                      Produto vendido
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-600 lg:hidden"
-                    onClick={() => setSidebarOpen(true)}
-                  >
-                    Conversas
-                  </button>
-                </div>
-              </header>
-
-              <div ref={threadContainerRef} className="flex-1 overflow-y-auto bg-slate-50 px-4 py-5">
-                <div className="messages-thread mx-auto flex w-full max-w-[1200px] flex-col gap-3 pb-8">
-                  {mergedFeedItems.map((item) => {
-                    if (item.type === 'context') {
-                      const context = item.context;
-                      return (
-                        <div
-                          key={context.id}
-                          className="messages-thread__row flex flex-col gap-2 border border-dashed border-slate-200 bg-white/80 p-4"
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Produto em foco
-                          </p>
-                          <div className="flex items-center gap-3">
-                            <div className="h-14 w-14 overflow-hidden rounded-lg border border-slate-200 bg-gray-100">
-                              {context.image ? (
-                                <img
-                                  src={context.image}
-                                  alt={context.title || 'Produto em foco'}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center text-xs text-gray-400">
-                                  Sem imagem
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">
-                                {context.title || 'Produto em foco'}
-                              </p>
-                              {context.price && (
-                                <p className="text-xs font-medium text-emerald-600">
-                                  {context.price}
-                                </p>
-                              )}
-                              {context.location && (
-                                <p className="text-xs text-gray-500">{context.location}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    const m = item.message;
-                    const offerData = parseOfferMessage(m.content);
-                    const offerResponse = parseOfferResponse(m.content);
-                    if (offerResponse) {
-                      return null;
-                    }
-
-                    const isSender = m.sender_id === userId;
-                    const senderName = isSender
-                      ? userDisplayName
-                      : m.sender_name || selectedMeta.counterpart || selectedMeta.seller || 'Usuário SaleDay';
-                    const senderAvatar = isSender
-                      ? userAvatar
-                      : m.sender_avatar || selectedMeta.avatar || null;
-                    const senderInitial = isSender ? userInitial : getInitial(senderName);
-
-                    const leftAvatar = !isSender ? (
-                      <div className="messages-thread__avatar flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 overflow-hidden">
-                        {senderAvatar ? (
-                          <img
-                            src={senderAvatar}
-                            alt={senderName}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span>{senderInitial}</span>
-                        )}
-                      </div>
-                    ) : null;
-
-                    const rightAvatar = isSender ? (
-                      <div className="messages-thread__avatar messages-thread__avatar--self flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 overflow-hidden">
-                        {userAvatar ? (
-                          <img
-                            src={userAvatar}
-                            alt={userDisplayName}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span>{userInitial}</span>
-                        )}
-                      </div>
-                    ) : null;
-
-                    if (offerData) {
-                      const response = offerResponses[m.id];
-                      const awaitingSellerAction = !response && isSeller && !isSender && !productSold;
-                      const awaitingBuyer = !response && isSender;
-                      const responseStatus = response?.status;
-                      const isAccepted = responseStatus === 'accepted';
-
-                  return (
-                    <div
-                      key={m.id}
-                      className={`messages-thread__row flex items-end gap-2 ${
-                        isSender ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      {leftAvatar}
-                      <div className="flex w-full max-w-[95%] sm:max-w-[75%] items-stretch gap-2">
-                        <span
-                          className={`messages-thread__accent h-full min-h-[32px] w-1 rounded-full self-stretch ${
-                            isSender ? 'bg-blue-100' : 'bg-amber-100'
-                          }`}
-                        />
-                        <div
-                          className={`messages-offer flex-1 ${
-                            isSender ? 'messages-offer--self' : 'messages-offer--other'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs uppercase tracking-wide font-semibold">Proposta enviada</p>
-                            <span className="text-sm font-semibold">
-                              {formatOfferAmount(offerData.amount, offerData.currency)}
-                            </span>
-                          </div>
-
-                          {offerData.message && (
-                            <p className="mt-2 text-sm">{offerData.message}</p>
-                          )}
-
-                          <div className="mt-3 flex flex-col gap-2">
-                            {responseStatus && (
-                              <span
-                                className={`inline-flex items-center justify-start gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-                                  isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
-                                }`}
-                              >
-                                {isAccepted ? 'Oferta aceita! Venda confirmada.' : 'Oferta recusada.'}
-                              </span>
-                            )}
-
-                            {awaitingSellerAction && (
-                              <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => respondToOffer(m, 'accept')}
-                                  disabled={respondingOfferId === m.id}
-                                  className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
-                                >
-                                  {respondingOfferId === m.id ? 'Confirmando...' : 'Aceitar'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => respondToOffer(m, 'decline')}
-                                  disabled={respondingOfferId === m.id}
-                                  className="rounded-full bg-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-300 disabled:opacity-60"
-                                >
-                                  {respondingOfferId === m.id ? 'Atualizando...' : 'Não aceitar'}
-                                </button>
-                              </div>
-                            )}
-
-                            {awaitingBuyer && (
-                              <span className="text-xs font-medium">Aguardando resposta do vendedor...</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {rightAvatar}
-                    </div>
-                  );
-                    }
-
-                    return (
-                      <div
-                        key={m.id}
-                        className={`messages-thread__row flex items-end gap-2 ${
-                          isSender ? 'justify-end' : 'justify-start'
-                        }`}
-                        onContextMenu={(event) =>
-                          openContextMenu(event, { type: 'message', messageId: m.id })
-                        }
-                        onTouchStart={(event) =>
-                          startLongPress(event, { type: 'message', messageId: m.id })
-                        }
-                        onTouchEnd={cancelLongPress}
-                        onTouchMove={cancelLongPress}
-                        onTouchCancel={cancelLongPress}
-                      >
-                        {leftAvatar}
-                        <div className="flex w-full max-w-[85%] sm:max-w-[70%] items-stretch gap-2">
-                          <span
-                            className={`messages-thread__accent h-full min-h-[32px] w-1 rounded-full self-stretch ${
-                              isSender ? 'bg-blue-100' : 'bg-amber-100'
-                            }`}
-                          />
-                          <div
-                            className={`flex flex-1 flex-col gap-1 ${
-                              isSender ? 'items-end' : 'items-start'
-                            }`}
-                          >
-                            <div
-                              className={`messages-bubble w-full ${
-                                isSender ? 'messages-bubble--self' : 'messages-bubble--other'
-                              }`}
-                            >
-                              {m.content}
-                            </div>
-                          </div>
-                        </div>
-                        {rightAvatar}
-                      </div>
-                    );
-                  })}
-                  <span ref={messagesEndRef} />
-
-                </div>
-              </div>
-
-              {!isSeller && previewContext && (
-                <div className="mx-4 mb-4 rounded-2xl border border-blue-200 bg-white shadow-sm">
-                  <div className="flex flex-col gap-3 p-3">
-                    <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                      <span>Prévia</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-16 w-16 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
-                        {previewContext.image ? (
-                          <img
-                            src={previewContext.image}
-                            alt={previewContext.title || 'Produto em foco'}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">Sem imagem</span>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {previewContext.title || `Produto #${previewContext.productId}`}
-                        </p>
-                        {previewContext.price && (
-                          <p className="text-xs font-medium text-emerald-600">
-                            {previewContext.price}
-                          </p>
-                        )}
-                        {previewContext.location && (
-                          <p className="text-xs text-gray-500">{previewContext.location}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            <form
-              onSubmit={handleSend}
-              className="p-4 bg-white border-t shadow flex flex-col sm:flex-row sm:items-center gap-3"
-            >
-              <input
-                className="w-full sm:flex-1 border rounded-full px-4 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                value={newMsg}
-                onChange={(e) => setNewMsg(e.target.value)}
-                placeholder="Digite sua mensagem..."
-                disabled={sending}
+              <ConversationCard
+                key={conversationKey || `conversation-${conversation.id}`}
+                conversation={conversation}
+                userId={userId}
+                isActive={isActive}
+                isDeleting={isDeleting}
+                onClick={() => onConversationClick(conversation)}
+                onContextMenu={onContextMenu}
+                onStartLongPress={onStartLongPress}
+                onCancelLongPress={onCancelLongPress}
               />
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-5 py-3 sm:py-2 rounded-full hover:bg-blue-700 transition disabled:opacity-60"
-                disabled={sending || !newMsg.trim()}
-              >
-                {sending ? 'Enviando...' : 'Enviar'}
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center text-gray-500">
-                  <p className="text-lg">Conversar privada</p>
-            <button
-              type="button"
-              className="inline-flex items-center rounded-full border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              Abrir conversas
-            </button>
-          </div>
+            );
+          })
         )}
       </div>
     </div>
+  );
+}
 
-    {sidebarOpen && (
-      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)}>
-        <div
-          className="absolute inset-x-4 top-[calc(var(--home-header-height,64px)+1rem)] h-[calc(100vh-var(--home-header-height,64px)-2rem)]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {renderConversationList()}
+function ConversationCard({
+  conversation,
+  userId,
+  isActive,
+  isDeleting,
+  onClick,
+  onContextMenu,
+  onStartLongPress,
+  onCancelLongPress
+}) {
+  const isSender = userId && conversation.sender_id === userId;
+  const counterpartName = isSender
+    ? conversation.receiver_name || conversation.seller_name
+    : conversation.sender_name || conversation.seller_name;
+  const counterpartAvatar = isSender ? conversation.receiver_avatar : conversation.sender_avatar;
+  const counterpartInitial = getInitial(counterpartName || 'SaleDay');
+  const conversationTitle =
+    conversation.product_title || (!conversation.product_id ? 'Conversa direta' : `Produto #${conversation.product_id}`);
+  const previewOffer = parseOfferMessage(conversation.content);
+  const previewResponse = parseOfferResponse(conversation.content);
+  let previewText = conversation.content || 'Nova mensagem';
+  if (previewOffer) {
+    previewText = `Oferta: ${formatOfferAmount(previewOffer.amount, previewOffer.currency)}`;
+  } else if (previewResponse) {
+    previewText =
+      previewResponse.status === 'accepted'
+        ? 'Oferta aceita! Venda confirmada.'
+        : 'Oferta recusada.';
+  }
+  const isUnread = Boolean(userId && conversation.receiver_id === userId && conversation.is_read === false);
+
+  const handleContextMenu = (event) =>
+    onContextMenu?.(event, { type: 'conversation', conversation });
+  const handleTouchStart = (event) =>
+    onStartLongPress?.(event, { type: 'conversation', conversation });
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={onCancelLongPress}
+      onTouchMove={onCancelLongPress}
+      onTouchCancel={onCancelLongPress}
+      disabled={isDeleting}
+      className={`relative w-full rounded-[26px] border px-3 py-3 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 ${
+        isActive
+          ? 'border-blue-300 bg-blue-50 ring-1 ring-blue-200'
+          : 'border-transparent bg-white hover:border-slate-200'
+      } ${isDeleting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      {isUnread && (
+        <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+      )}
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 font-semibold text-blue-600 shadow-inner shadow-slate-200">
+          {counterpartAvatar ? (
+            <img
+              src={counterpartAvatar}
+              alt={counterpartName || 'Usuário SaleDay'}
+              className="h-full w-full rounded-2xl object-cover"
+              loading="lazy"
+            />
+          ) : (
+            counterpartInitial
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900">{conversationTitle}</p>
+          <p className="truncate text-xs text-slate-500">{counterpartName || 'Usuário SaleDay'}</p>
+          <p className="truncate text-xs text-slate-600">{previewText}</p>
         </div>
       </div>
-    )}
+    </button>
+  );
+}
 
-    {contextMenu && (
+function AvatarBadge({ avatar, label, className = '' }) {
+  return (
+    <div
+      className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 overflow-hidden ${className}`}
+    >
+      {avatar ? (
+        <img src={avatar} alt={label || 'Usuário SaleDay'} className="h-full w-full object-cover" loading="lazy" />
+      ) : (
+        <span>{getInitial(label || 'SaleDay')}</span>
+      )}
+    </div>
+  );
+}
+
+function ProductContextCard({ context }) {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-200/50 transition-all duration-200">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+        Produto em foco
+      </p>
+      <div className="flex items-center gap-3">
+        <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+          {context.image ? (
+            <img
+              src={context.image}
+              alt={context.title || 'Produto em foco'}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+              Sem imagem
+            </span>
+          )}
+        </div>
+        <div className="flex-1 text-slate-900">
+          <p className="text-sm font-semibold">{context.title || 'Produto em foco'}</p>
+          {context.price && <p className="text-xs font-medium text-emerald-600">{context.price}</p>}
+          {context.location && <p className="text-xs">{context.location}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductPreview({ context }) {
+  return (
+    <div className="mx-4 rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm shadow-blue-500/10 transition-all duration-200">
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-blue-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+          Prévia
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+          {context.image ? (
+            <img
+              src={context.image}
+              alt={context.title || 'Produto em foco'}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+              Sem imagem
+            </span>
+          )}
+        </div>
+        <div className="flex-1 text-slate-900">
+          <p className="text-sm font-semibold">
+            {context.title || `Produto #${context.productId}`}
+          </p>
+          {context.price && <p className="text-xs font-medium text-emerald-600">{context.price}</p>}
+          {context.location && <p className="text-xs">{context.location}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({ content, isSender }) {
+  return (
+    <div
+      className={`flex-1 rounded-[26px] border border-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-900 transition-all duration-200 ${
+        isSender
+          ? 'bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
+          : 'bg-white shadow-inner shadow-slate-200'
+      }`}
+    >
+      <p className="whitespace-pre-wrap break-words">{content}</p>
+    </div>
+  );
+}
+
+function OfferBubble({
+  offerData,
+  response,
+  offerMessage,
+  isSender,
+  isSeller,
+  productSold,
+  respondToOffer,
+  respondingOfferId
+}) {
+  const responseStatus = response?.status;
+  const isAccepted = responseStatus === 'accepted';
+  const awaitingSellerAction = !response && isSeller && !isSender && !productSold;
+  const awaitingBuyer = !response && isSender;
+
+  return (
+    <div
+      className={`flex-1 rounded-[28px] border border-slate-200 bg-white p-4 text-sm text-slate-900 shadow-lg shadow-slate-200/60 transition-all duration-200`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Proposta enviada</p>
+        <span className="text-sm font-semibold text-slate-900">
+          {formatOfferAmount(offerData.amount, offerData.currency)}
+        </span>
+      </div>
+      {offerData.message && <p className="mt-2 text-sm leading-relaxed">{offerData.message}</p>}
+      <div className="mt-3 flex flex-col gap-2">
+        {responseStatus && (
+          <span
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+              isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
+            }`}
+          >
+            {isAccepted ? 'Oferta aceita! Venda confirmada.' : 'Oferta recusada.'}
+          </span>
+        )}
+
+        {awaitingSellerAction && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => respondToOffer(offerMessage, 'accept')}
+              disabled={respondingOfferId === offerMessage?.id}
+              className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {respondingOfferId === offerMessage?.id ? 'Confirmando...' : 'Aceitar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => respondToOffer(offerMessage, 'decline')}
+              disabled={respondingOfferId === offerMessage?.id}
+              className="rounded-full bg-rose-200 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-300 disabled:opacity-60"
+            >
+              {respondingOfferId === offerMessage?.id ? 'Atualizando...' : 'Não aceitar'}
+            </button>
+          </div>
+        )}
+
+        {awaitingBuyer && (
+          <span className="text-xs font-medium text-slate-500">
+            Aguardando resposta do vendedor...
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileSidebar({ open, onClose, children }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
       <div
-        className="fixed inset-0 z-50"
-        onClick={closeContextMenu}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          closeContextMenu();
-        }}
-      >
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300"
+        onClick={onClose}
+      />
+      <div className="relative mx-auto h-full w-full max-w-xs">
         <div
-          className="absolute w-48 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
-          style={{
-            top:
-              typeof window !== 'undefined'
-                ? Math.min(contextMenu.y, window.innerHeight - 80)
-                : contextMenu.y,
-            left:
-              typeof window !== 'undefined'
-                ? Math.min(contextMenu.x, window.innerWidth - 200)
-                : contextMenu.x
-          }}
+          className="absolute inset-x-4 top-[calc(var(--home-header-height,64px)+1rem)] h-[calc(100vh-var(--home-header-height,64px)-2rem)] transition-transform duration-300"
           onClick={(event) => event.stopPropagation()}
         >
-          {contextMenu.type === 'message' && (
-            <button
-              type="button"
-              onClick={() => {
-                closeContextMenu();
-                handleDeleteMessage(contextMenu.messageId);
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
-              disabled={deletingMessageId === contextMenu.messageId}
-            >
-              <span>
-                {deletingMessageId === contextMenu.messageId ? 'Removendo...' : 'Apagar mensagem!'}
-              </span>
-            </button>
-          )}
-          {contextMenu.type === 'conversation' && contextMenu.conversation && (
-            <button
-              type="button"
-              onClick={() => {
-                closeContextMenu();
-                handleDeleteConversation(contextMenu.conversation);
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
-              disabled={
-                Boolean(deletingConversationKey) &&
-                getConversationKey(contextMenu.conversation, userId) === deletingConversationKey
-              }
-            >
-              <span>
-                {Boolean(deletingConversationKey) &&
-                getConversationKey(contextMenu.conversation, userId) === deletingConversationKey
-                  ? 'Removendo...'
-                  : 'Apagar conversa!'}
-              </span>
-            </button>
-          )}
+          {children}
         </div>
       </div>
-    )}
-  </div>
-  </>
+    </div>
   );
 }
