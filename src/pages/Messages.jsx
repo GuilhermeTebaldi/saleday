@@ -1089,15 +1089,12 @@ export default function Messages() {
 
   return (
     <>
-      <div
-        className="flex h-screen flex-col overflow-hidden bg-slate-50"
-        style={{ paddingTop: headerOffset }}
-      >
+      <div className="flex h-screen flex-col overflow-hidden bg-slate-50 pt-[var(--home-header-height,64px)]">
         <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-5 px-4 py-5 lg:flex-row lg:gap-6 lg:px-6 lg:py-6">
           <aside className="hidden lg:flex lg:w-full lg:max-w-xs">{renderConversationList()}</aside>
 
-          <section className="flex flex-1 flex-col gap-4 min-h-0">
-            <div className="flex flex-1 flex-col min-h-0 overflow-visible lg:overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
+          <section className="flex flex-1 flex-col min-h-0 overflow-hidden">
+            <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
               {hasActiveConversation ? (
                 <>
                   <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur-sm">
@@ -1142,7 +1139,7 @@ export default function Messages() {
                   <div
                     ref={threadContainerRef}
                     className="flex-1 overflow-y-auto px-4 py-6 transition-all duration-300"
-                    style={{ scrollPaddingBottom: '120px' }}
+                    style={{ scrollPaddingBottom: '140px' }}
                   >
                     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
                       {mergedFeedItems.map((item) => {
