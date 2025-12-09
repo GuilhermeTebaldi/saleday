@@ -731,18 +731,6 @@ export default function ProductDetail() {
     });
   }, [activeReplyQuestionId]);
 
-  // Bloquear scroll quando viewer estiver aberto
-  useEffect(() => {
-    if (viewerOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [viewerOpen]);
-
   if (loading) return <div className="p-6 text-center">Carregando produto...</div>;
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
   if (!product) return null;
@@ -868,224 +856,211 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr,0.9fr] mt-4">
-        <div className="space-y-4">
-          <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg relative border border-gray-200">
-            {images.length > 0 ? (
-              <img
-                src={images[activeImageIndex]}
-                alt={product.title}
-                className="w-full h-64 md:h-[360px] object-cover cursor-zoom-in transition-all hover:scale-[1.02]"
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'instant' });
-                  setViewerOpen(true);
-                }}
-              />
-            ) : (
-              <div className="w-full h-72 md:h-[420px] flex items-center justify-center text-gray-400">
-                Sem imagem
-              </div>
-            )}
-
-            {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
-            {isFreeProduct && !isSold && (
-              <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                Grátis
-              </span>
-            )}
-
-            {images.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={goPrevImage}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
-                  aria-label="Imagem anterior"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={goNextImage}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
-                  aria-label="Próxima imagem"
-                >
-                  ›
-                </button>
-              </>
-            )}
+      {/* Galeria de imagens */}
+      <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg relative border border-gray-200">
+        {images.length > 0 ? (
+          <img
+            src={images[activeImageIndex]}
+            alt={product.title}
+            className="w-full h-72 md:h-[430px] object-cover cursor-zoom-in transition-all hover:scale-[1.02]"
+            onClick={() => setViewerOpen(true)}
+          />
+        ) : (
+          <div className="w-full h-72 md:h-[420px] flex items-center justify-center text-gray-400">
+            Sem imagem
           </div>
+        )}
 
-          {images.length > 1 && (
-            <div className="flex flex-wrap gap-2 pt-1 -mx-1 px-1 md:justify-start justify-center">
-              {images.map((image, index) => (
-                <button
-                  key={`${product.id}-${image}`}
-                  type="button"
-                  onClick={() => setActiveImageIndex(index)}
-                  className={`shrink-0 h-16 w-16 md:h-20 md:w-20 rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition
-              ${activeImageIndex === index ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-200'}`}
-                >
-                  <img src={image} alt={`${product.title} ${index + 1}`} className="h-full w-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
+        {isFreeProduct && !isSold && (
+          <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+            Grátis
+          </span>
+        )}
 
-        <div className="space-y-5">
-          <div className="space-y-3 rounded-2xl border border-gray-100 bg-white/95 p-4 shadow-sm">
-            <p className={`text-2xl md:text-3xl font-bold ${isFreeProduct ? 'text-emerald-600' : 'text-green-600'}`}>
-              {priceFmt}
-            </p>
-            {product.pickup_only && (
-              <p className="text-sm text-emerald-700">
-                Entrega: retirada em mãos combinada com o vendedor.
-              </p>
-            )}
-
-            {isSeller && buyerInfo && (
-              <div className="p-3 border rounded bg-gray-50 text-sm space-y-1">
-                <p>
-                  <strong>Status:</strong>{' '}
-                  {buyerInfo.status === 'confirmed'
-                    ? 'Compra confirmada'
-                    : 'Pedido pendente de confirmação'}
-                </p>
-                <p>
-                  <strong>Comprador:</strong> {buyerInfo.buyer_name}{' '}
-                  {buyerInfo.buyer_email ? `(${buyerInfo.buyer_email})` : ''}
-                </p>
-                {buyerInfo.confirmed_at && (
-                  <p>
-                    <strong>Confirmado em:</strong>{' '}
-                    {new Date(buyerInfo.confirmed_at).toLocaleString()}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <p className="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-line">
-              {product.description || 'Sem descrição disponível.'}
-            </p>
-
-            {specEntries.length > 0 && (
-              <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-y-1 md:gap-x-6 mt-2">
-                {specEntries.map((entry) => (
-                  <p key={entry.label}>
-                    {entry.label}: <span className="text-gray-800">{entry.value}</span>
-                  </p>
-                ))}
-              </div>
-            )}
-
-            <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-1 md:gap-y-0 md:gap-x-6">
-              <p>
-                Categoria:{' '}
-                <span className="text-gray-800">{product.category || 'Não informada'}</span>
-              </p>
-              <p>
-                CEP: <span className="text-gray-800">{product.zip || 'Não informado'}</span>
-              </p>
-              <p>
-                Rua: <span className="text-gray-800">{product.street || 'Não informada'}</span>
-              </p>
-              <p>
-                Bairro:{' '}
-                <span className="text-gray-800">{product.neighborhood || 'Não informado'}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 md:gap-3 justify-center lg:justify-start">
+        {images.length > 1 && (
+          <>
             <button
-              onClick={handleFavorite}
-              disabled={favoriteLoading}
-              className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm disabled:opacity-70 disabled:cursor-not-allowed ${
-                favorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700'
-              }`}
+              type="button"
+              onClick={goPrevImage}
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
+              aria-label="Imagem anterior"
             >
-              <Heart size={18} className={favoriteLoading ? 'animate-pulse' : ''} />{' '}
-              {favoriteLoading ? 'Atualizando...' : favorite ? 'Favorito' : 'Favoritar'}
+              ‹
             </button>
-
             <button
-              onClick={openOfferModal}
-              disabled={isSold || isOwner}
-              className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm ${
-                isSold || isOwner
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-              }`}
+              type="button"
+              onClick={goNextImage}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
+              aria-label="Próxima imagem"
             >
-              <Send size={18} />{' '}
-              {isSold
-                ? 'Produto vendido'
-                : isOwner
-                ? 'Você é o vendedor'
-                : isFreeProduct
-                ? 'Combinar retirada'
-                : 'Fazer oferta'}
+              ›
             </button>
-
-            {!isSeller && !isSold && user && (
-              <button
-                onClick={handleRequestPurchase}
-                disabled={ordering}
-                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-purple-600 text-white hover:bg-purple-700 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {ordering ? 'Solicitando...' : 'Solicitar compra'}
-              </button>
-            )}
-
-            {!isSeller && user && (
-              <button
-                onClick={handleOpenConversation}
-                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
-              >
-                <MessageCircle size={18} /> Abrir conversa com o vendedor
-              </button>
-            )}
-
-            <button
-              onClick={openShare}
-              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-blue-600 text-white hover:bg-blue-700 text-sm"
-            >
-              <Share2 size={18} /> Compartilhar
-            </button>
-
-            {isOwner && !isSold && (
-              <button
-                onClick={async () => {
-                  try {
-                    await api.put(
-                      `/products/${product.id}/status`,
-                      { status: 'sold' },
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    setProduct((prev) => ({ ...prev, status: 'sold' }));
-                    toast.success('Produto marcado como vendido.');
-                  } catch {
-                    toast.error('Falha ao marcar como vendido.');
-                  }
-                }}
-                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-gray-800 text-white text-sm"
-              >
-                Marcar como vendido
-              </button>
-            )}
-            {isOwner && !isSold && (
-              <Link
-                to={boostLinkTarget}
-                state={boostLinkState}
-                className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
-              >
-                Impulsionar anúncio
-              </Link>
-            )}
-          </div>
-        </div>
+          </>
+        )}
       </div>
+
+      {/* Tiras de miniaturas responsivas sem vazar largura */}
+      {images.length > 1 && (
+        <div className="flex flex-wrap gap-2 pt-1 -mx-1 px-1 md:justify-start justify-center">
+          {images.map((image, index) => (
+            <button
+              key={`${product.id}-${image}`}
+              type="button"
+              onClick={() => setActiveImageIndex(index)}
+              className={`shrink-0 h-16 w-16 md:h-20 md:w-20 rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition
+          ${activeImageIndex === index ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-200'}`}
+            >
+              <img src={image} alt={`${product.title} ${index + 1}`} className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Botões de ação */}
+      <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+        <button
+          onClick={handleFavorite}
+          disabled={favoriteLoading}
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm disabled:opacity-70 disabled:cursor-not-allowed ${
+            favorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700'
+          }`}
+        >
+          <Heart size={18} className={favoriteLoading ? 'animate-pulse' : ''} />{' '}
+          {favoriteLoading ? 'Atualizando...' : favorite ? 'Favorito' : 'Favoritar'}
+        </button>
+
+        <button
+          onClick={openOfferModal}
+          disabled={isSold || isOwner}
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm ${
+            isSold || isOwner
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          <Send size={18} />{' '}
+          {isSold
+            ? 'Produto vendido'
+            : isOwner
+            ? 'Você é o vendedor'
+            : isFreeProduct
+            ? 'Combinar retirada'
+            : 'Fazer oferta'}
+        </button>
+
+        {!isSeller && !isSold && user && (
+          <button
+            onClick={handleRequestPurchase}
+            disabled={ordering}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-purple-600 text-white hover:bg-purple-700 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {ordering ? 'Solicitando...' : 'Solicitar compra'}
+          </button>
+        )}
+
+        {!isSeller && user && (
+          <button
+            onClick={handleOpenConversation}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
+          >
+            <MessageCircle size={18} /> Abrir conversa com o vendedor
+          </button>
+        )}
+
+        <button
+          onClick={openShare}
+          className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-blue-600 text-white hover:bg-blue-700 text-sm"
+        >
+          <Share2 size={18} /> Compartilhar
+        </button>
+
+        {isOwner && !isSold && (
+          <button
+            onClick={async () => {
+              try {
+                await api.put(
+                  `/products/${product.id}/status`,
+                  { status: 'sold' },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setProduct((prev) => ({ ...prev, status: 'sold' }));
+                toast.success('Produto marcado como vendido.');
+              } catch {
+                toast.error('Falha ao marcar como vendido.');
+              }
+            }}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-gray-800 text-white text-sm"
+          >
+            Marcar como vendido
+          </button>
+        )}
+        
+        {false && isOwner && !isSold && (
+          // para voltar o botao é só tirar o : false && 
+          <Link
+            to={boostLinkTarget}
+            state={boostLinkState}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
+          >
+            Impulsionar anúncio
+          </Link>
+        )}
+      </div>
+
+      {/* Detalhes do produto */}
+      <section className="space-y-2 border-t pt-4">
+      <p className={`text-2xl md:text-3xl font-bold ${isFreeProduct ? 'text-emerald-600' : 'text-green-600'}`}>
+        {priceFmt}
+      </p>
+        {product.pickup_only && (
+          <p className="text-sm text-emerald-700">
+            Entrega: retirada em mãos combinada com o vendedor.
+          </p>
+        )}
+
+        {isSeller && buyerInfo && (
+          <div className="p-3 border rounded bg-gray-50 text-sm space-y-1">
+            <p>
+              <strong>Status:</strong>{' '}
+              {buyerInfo.status === 'confirmed'
+                ? 'Compra confirmada'
+                : 'Pedido pendente de confirmação'}
+            </p>
+            <p>
+              <strong>Comprador:</strong> {buyerInfo.buyer_name}{' '}
+              {buyerInfo.buyer_email ? `(${buyerInfo.buyer_email})` : ''}
+            </p>
+            {buyerInfo.confirmed_at && (
+              <p>
+                <strong>Confirmado em:</strong>{' '}
+                {new Date(buyerInfo.confirmed_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-line">
+          {product.description || 'Sem descrição disponível.'}
+        </p>
+
+        {specEntries.length > 0 && (
+          <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-y-1 md:gap-x-8 mt-2">
+            {specEntries.map((entry) => (
+              <p key={entry.label}>
+                {entry.label}: <span className="text-gray-800">{entry.value}</span>
+              </p>
+            ))}
+          </div>
+        )}
+
+        <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-1 md:gap-y-0 md:gap-x-6">
+          <p>Categoria: <span className="text-gray-800">{product.category || 'Não informada'}</span></p>
+          <p>CEP: <span className="text-gray-800">{product.zip || 'Não informado'}</span></p>
+          <p>Rua: <span className="text-gray-800">{product.street || 'Não informada'}</span></p>
+          <p>Bairro: <span className="text-gray-800">{product.neighborhood || 'Não informado'}</span></p>
+        </div>
+      </section>
 
       {/* Perguntas e respostas da publicação */}
       {!isSold && user && (
@@ -1300,84 +1275,89 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+
+
 {viewerOpen && (
   <div
-    className="fixed inset-0 z-50 bg-gradient-to-b from-white/80 via-white/60 to-white/80 backdrop-blur-[140px] select-none overflow-auto"
+    className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm select-none overflow-hidden flex items-center justify-center"
     onClick={() => setViewerOpen(false)}
   >
     <div
-      className="flex min-h-screen items-center lg:items-start justify-center px-4 pt-6 pb-10 lg:pt-4 lg:pb-12"
+      className="absolute inset-0 flex items-center justify-center px-4"
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Botão fechar */}
       <button
-        className="fixed top-5 right-5 bg-black/70 text-white rounded-full p-3 hover:bg-black/90 transition z-[999]"
+        className="fixed top-4 right-4 bg-black/70 text-white rounded-full p-3 hover:bg-black/90 transition z-[999]"
         onClick={(e) => {
           e.stopPropagation();
           setViewerOpen(false);
         }}
         aria-label="Fechar"
       >
-        <CloseIcon size={24} />
+        <CloseIcon size={26} />
       </button>
 
-      <div className="relative w-full max-w-[640px] product-detail__viewer-card -mt-3 lg:mt-0 lg:-mt-10">
-        <div className="relative px-6 pt-6">
-          <div className="relative flex items-center justify-center">
-            <img
-              src={images[activeImageIndex]}
-              alt={product.title}
-              className="w-full max-h-[calc(100vh-260px)] object-contain bg-white"
-            />
-            {images.length > 1 && (
-              <>
-                <button
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/70 text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-black/90 transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goPrevImage();
-                  }}
-                  aria-label="Imagem anterior"
-                >
-                  ‹
-                </button>
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/70 text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-black/90 transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goNextImage();
-                  }}
-                  aria-label="Próxima imagem"
-                >
-                  ›
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+      {/* IMAGEM PRINCIPAL AJUSTADA */}
+      <img
+        src={images[activeImageIndex]}
+        alt={product.title}
+        className="max-h-[50vh] max-w-[70vw] object-contain rounded-xl drop-shadow-lg transition-transform duration-300" draggable="false"
+      />
 
-        {images.length > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-3 px-6 py-5 overflow-x-auto">
-            {images.map((img, i) => (
-              <button
-                key={`${img}-${i}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveImageIndex(i);
-                }}
-                className={`h-14 w-14 rounded-[18px] overflow-hidden border transition
-                  ${i === activeImageIndex ? 'border-emerald-400 ring-2 ring-emerald-300' : 'border-white/40 hover:border-white'}
-                `}
-                aria-label={`Visualizar imagem ${i + 1}`}
-              >
-                <img src={img} alt="" className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* SETA ESQUERDA */}
+      {images.length > 1 && (
+        <button
+          className="absolute left-5 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition"
+          onClick={(e) => {
+            e.stopPropagation();
+            goPrevImage();
+          }}
+        >
+          ‹
+        </button>
+      )}
+
+      {/* SETA DIREITA */}
+      {images.length > 1 && (
+        <button
+          className="absolute right-5 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition"
+          onClick={(e) => {
+            e.stopPropagation();
+            goNextImage();
+          }}
+        >
+          ›
+        </button>
+      )}
+
+      {/* MINIATURAS REDUZIDAS */}
+      {images.length > 1 && (
+        <div className="absolute bottom-6 w-full flex justify-center gap-3 px-4">
+          {images.map((img, i) => (
+            <button
+              key={img + i}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveImageIndex(i);
+              }}
+              className={`h-12 w-12 rounded-xl overflow-hidden border transition ${
+                i === activeImageIndex
+                  ? 'border-emerald-400 ring-2 ring-emerald-300'
+                  : 'border-white/40 hover:border-white'
+              }`}
+            >
+              <img src={img} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   </div>
 )}
+
+
+
       {/* Modal de compartilhamento (fallback) */}
       {shareOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">

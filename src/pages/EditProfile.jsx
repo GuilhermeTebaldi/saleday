@@ -241,8 +241,21 @@ export default function EditProfile() {
     }
   };
 
+  const overlayLabel = 'Salvando perfil';
+
   return (
     <section className="edit-profile-page">
+      {saving && (
+        <div
+          className="edit-profile-page__overlay"
+          role="status"
+          aria-live="polite"
+          aria-label={overlayLabel}
+        >
+          <span className="edit-profile-page__spinner" aria-hidden="true" />
+          <span className="sr-only">{overlayLabel}</span>
+        </div>
+      )}
       <div className="edit-profile-card">
         <header className="edit-profile-header">
           <h1>Atualize seus dados</h1>

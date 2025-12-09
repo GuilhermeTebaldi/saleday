@@ -7,6 +7,8 @@ import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { getUnseenSellerOrderIds } from '../utils/orders.js';
 import { toast } from 'react-hot-toast';
+import formatProductPrice from '../utils/currency.js';
+import { isProductFree } from '../utils/product.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -32,6 +34,15 @@ const formatLegalDate = (timestamp) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return 'Não informado';
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+
+const formatOrderDatetime = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 };
 
 const privacyHighlights = [
@@ -85,6 +96,11 @@ export default function Dashboard() {
   });
 
   const [newOrderIds, setNewOrderIds] = useState([]);
+  const [sellerOrdersList, setSellerOrdersList] = useState([]);
+  const [isQuickPanelOpen, setIsQuickPanelOpen] = useState(false);
+  const [quickPanelTab, setQuickPanelTab] = useState(null);
+  const [favoritePanelItems, setFavoritePanelItems] = useState([]);
+  const [favoritePanelLoading, setFavoritePanelLoading] = useState(false);
 
   const userId = user?.id;
   const userAvatar = user?.profile_image_url ?? '';
@@ -93,6 +109,20 @@ export default function Dashboard() {
     () => getInitial(user?.username || user?.email || 'SaleDay'),
     [user?.username, user?.email]
   );
+
+  const openFavoritesPanel = useCallback(() => {
+    setQuickPanelTab('favorites');
+    setIsQuickPanelOpen(true);
+  }, []);
+
+  const openOrdersPanel = useCallback(() => {
+    setQuickPanelTab('orders');
+    setIsQuickPanelOpen(true);
+  }, []);
+
+  const closeQuickPanel = useCallback(() => {
+    setIsQuickPanelOpen(false);
+  }, []);
 
   const legalEntries = useMemo(() => {
     if (!user) return [];
@@ -130,6 +160,7 @@ export default function Dashboard() {
         if (!active) return;
 
         const orders = Array.isArray(res.data?.data) ? res.data.data : [];
+        setSellerOrdersList(orders);
 
         const pending = orders.filter((o) => o.status === 'pending').length;
         const confirmed = orders.filter((o) => o.status === 'confirmed').length;
@@ -366,6 +397,35 @@ export default function Dashboard() {
     }
   }, [supportMessages, isSupportModalOpen]);
 
+  useEffect(() => {
+    if (!isQuickPanelOpen || quickPanelTab !== 'favorites') return undefined;
+    if (!token) {
+      setFavoritePanelItems([]);
+      setFavoritePanelLoading(false);
+      return undefined;
+    }
+    let active = true;
+    setFavoritePanelLoading(true);
+    api
+      .get('/favorites')
+      .then((res) => {
+        if (!active) return;
+        setFavoritePanelItems(res.data?.data ?? []);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(error);
+        toast.error('Não foi possível carregar seus favoritos.');
+        setFavoritePanelItems([]);
+      })
+      .finally(() => {
+        if (active) setFavoritePanelLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isQuickPanelOpen, quickPanelTab, token]);
+
 
   return (
     <section className="dashboard p-4 sm:p-6 md:p-8">
@@ -429,6 +489,42 @@ export default function Dashboard() {
        
       </header>
 
+      <div
+        className="dashboard-quick-actions home-hero__row-scroll mb-6"
+        role="toolbar"
+        aria-label="Atalhos rápidos"
+      >
+        <button
+          type="button"
+          className="home-hero__iconchip"
+          onClick={openFavoritesPanel}
+          aria-label="Abrir curtidas"
+          title="Ver produtos curtidos"
+        >
+          <span className="home-hero__iconchip-icon" aria-hidden="true">
+            ♥
+          </span>
+          <span className="home-hero__iconchip-label">Curtidas</span>
+        </button>
+
+        <button
+          type="button"
+          className={`home-hero__iconchip${newOrderIds.length ? ' has-new' : ''}`}
+          onClick={openOrdersPanel}
+          aria-label="Abrir vendas confirmadas"
+          title={
+            newOrderIds.length
+              ? `${newOrderIds.length} novas solicitações de venda`
+              : 'Ver vendas confirmadas'
+          }
+        >
+          <span className="home-hero__iconchip-icon" aria-hidden="true">
+            ✔
+          </span>
+          <span className="home-hero__iconchip-label">Vendas</span>
+        </button>
+      </div>
+
       {/* RESUMO DE PEDIDOS */}
       <div className="dashboard-order-summary grid grid-cols-3 gap-4 bg-white/70 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-4 mb-8">
 
@@ -470,8 +566,7 @@ export default function Dashboard() {
       </div>
 
       {/* MENU PRINCIPAL */}
-      <div className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-8">
-
+      <div className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <Link
           className="dashboard-button bg-gradient-to-b from-white to-gray-50 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
           to="/my-products"
@@ -479,9 +574,24 @@ export default function Dashboard() {
           Meus Anúncios
         </Link>
         <Link
+          className="dashboard-button bg-sky-300/80 hover:bg-sky-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+          to="/messages"
+        >
+          Mensagens
+        </Link>
+        <Link
+          className="dashboard-button bg-blue-300/80 hover:bg-blue-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
+          to="/new-product"
+        >
+          Novo Produto
+        </Link>
+      </div>
+
+      <div className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
+        <Link
           to="/edit-profile"
           className="dashboard-button bg-gradient-to-b from-white to-gray-50 border border-gray-200 text-gray-300 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-          >
+        >
           Editar Perfil
         </Link>
         <Link
@@ -491,38 +601,170 @@ export default function Dashboard() {
             setIsConfigPanelOpen((state) => !state);
           }}
           className="dashboard-button bg-gradient-to-b from-white to-gray-500 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-          >
+        >
           Configurações
         </Link>
-        <Link
-          className="dashboard-button bg-fuchsia-300/80 hover:bg-fuchsia-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
-          to="/dashboard/impulsiona"
-        >
-          Impulsionar
-        </Link>
-
-        <Link
-          className="dashboard-button bg-blue-300/80 hover:bg-blue-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
-          to="/new-product"
-        >
-          Novo Produto
-        </Link>
-
-        <Link
-          className="dashboard-button bg-sky-300/80 hover:bg-sky-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
-          to="/messages"
-        >
-          Mensagens
-        </Link>
-
         <button
           onClick={logout}
           className="dashboard-button bg-gradient-to-b from-red-50 to-red-100 border border-red-200 text-red-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
         >
           Sair
         </button>
-
       </div>
+
+      {isQuickPanelOpen && (
+        <>
+          <div className="home-drawer__overlay" onClick={closeQuickPanel} aria-hidden="true" />
+          <div className="home-drawer" role="dialog" aria-modal="true">
+            <header className="home-drawer__header">
+              <nav className="home-drawer__tabs" aria-label="Painéis rápidos">
+                <button
+                  type="button"
+                  className={`home-drawer__tab ${quickPanelTab === 'favorites' ? 'is-active' : ''}`}
+                  onClick={() => setQuickPanelTab('favorites')}
+                >
+                  Curtidas <span>{favoritePanelItems.length}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`home-drawer__tab ${quickPanelTab === 'orders' ? 'is-active' : ''}`}
+                  onClick={() => setQuickPanelTab('orders')}
+                >
+                  Vendas {orderSummary.total ? <span>({orderSummary.total})</span> : null}
+                </button>
+              </nav>
+              <button type="button" className="home-drawer__close" onClick={closeQuickPanel}>
+                ✕
+              </button>
+            </header>
+            <div className="home-drawer__body">
+              {quickPanelTab === 'favorites' ? (
+                <div className="home-drawer__section">
+                  <p className="home-drawer__eyebrow">Coleção pessoal</p>
+                  <h2 className="home-drawer__title">
+                    {favoritePanelItems.length
+                      ? `Você tem ${favoritePanelItems.length} curtida${
+                          favoritePanelItems.length > 1 ? 's' : ''
+                        }`
+                      : 'Nenhum favorito salvo'}
+                  </h2>
+
+                  <div className="home-drawer__content">
+                    {favoritePanelLoading ? (
+                      <p className="home-drawer__empty">Carregando favoritos...</p>
+                    ) : favoritePanelItems.length === 0 ? (
+                      <p className="home-drawer__empty">
+                        Marque produtos como favoritos para acessá-los rapidamente aqui no painel.
+                      </p>
+                    ) : (
+                      favoritePanelItems.slice(0, 5).map((product) => {
+                        const targetProduct = product.product || product;
+                        const imageUrl =
+                          targetProduct?.image_urls?.[0] ||
+                          targetProduct?.image_url ||
+                          IMG_PLACEHOLDER;
+                        const title = targetProduct?.title || product.title || 'Produto favorito';
+                        const priceLabel = isProductFree(targetProduct)
+                          ? 'Grátis'
+                          : formatProductPrice(targetProduct?.price, targetProduct?.country);
+                        return (
+                          <Link
+                            key={targetProduct?.id ?? product.id ?? product.product_id}
+                            to={`/product/${targetProduct?.id ?? product.id ?? product.product_id}`}
+                            className="home-fav-card"
+                            onClick={closeQuickPanel}
+                          >
+                            <div className="home-fav-card__image-wrapper">
+                              <img
+                                src={imageUrl}
+                                alt={title}
+                                className="home-fav-card__image"
+                                loading="eager"
+                                decoding="async"
+                                onError={(event) => {
+                                  event.currentTarget.src = IMG_PLACEHOLDER;
+                                  event.currentTarget.onerror = null;
+                                }}
+                              />
+                            </div>
+                            <div className="home-fav-card__details">
+                              <p className="home-fav-card__title">{title}</p>
+                              <p
+                                className={`home-fav-card__price ${
+                                  isProductFree(targetProduct) ? 'is-free' : ''
+                                }`}
+                              >
+                                {priceLabel}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="home-drawer__section">
+                  <p className="home-drawer__eyebrow">Vendas</p>
+                  <h2 className="home-drawer__title">
+                    {orderSummary.total
+                      ? `Você tem ${orderSummary.total} pedidos`
+                      : 'Nenhuma venda registrada ainda'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {orderSummary.pending} pendente{orderSummary.pending === 1 ? '' : 's'} •{' '}
+                    {orderSummary.confirmed} confirmado
+                    {orderSummary.confirmed === 1 ? '' : 's'}
+                  </p>
+                  <div className="home-drawer__content">
+                    {sellerOrdersList.length === 0 ? (
+                      <p className="home-drawer__empty">
+                        Assim que houver novas vendas elas aparecerão aqui.
+                      </p>
+                    ) : (
+                      sellerOrdersList.slice(0, 5).map((order) => {
+                        const orderId = order.id;
+                        const statusLabel = (order.status || '').replace(/_/g, ' ');
+                        return (
+                          <div
+                            key={orderId}
+                            className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-slate-50 p-3 text-sm"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <p className="font-semibold text-gray-700">
+                                {order.product_title || order.product?.title || `Pedido #${orderId}`}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatOrderDatetime(order.created_at || order.updated_at)}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                                {statusLabel || 'Status'}
+                                {newOrderIds.includes(orderId) ? ' • Novo' : ''}
+                              </span>
+                              <span className="text-[12px] text-gray-500">
+                                {order.quantity ? `${order.quantity}x` : '—'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <Link
+                      to="/sales-requests"
+                      className="dashboard-button bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 text-sm font-semibold rounded-xl shadow-sm hover:shadow transition"
+                      onClick={closeQuickPanel}
+                    >
+                      Ver pedidos
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* TEXTO FINAL */}
       <p className="text-gray-400 text-center mt-8 text-xs">

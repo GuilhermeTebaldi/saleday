@@ -1,7 +1,7 @@
 // frontend/src/pages/Home.jsx
 // Página inicial com destaques, busca e feed de produtos.
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from '../components/SearchBar.jsx';
 import MapSearch from '../components/MapSearch.jsx';
@@ -187,6 +187,7 @@ export default function Home() {
   const { token, user } = useContext(AuthContext);
   const { country: detectedCountry } = useContext(GeoContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const preferredCountry = useMemo(
     () => detectPreferredCountry(user?.country, detectedCountry),
     [user?.country, detectedCountry]
@@ -213,6 +214,22 @@ export default function Home() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const drawerParam = params.get('drawer');
+    if (drawerParam !== 'favorites' && drawerParam !== 'orders') return;
+    setDrawerTab(drawerParam);
+    setActiveDrawer(true);
+    params.delete('drawer');
+    const nextSearch = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : ''
+      },
+      { replace: true }
+    );
+  }, [location.search, location.pathname, navigate]);
   const drawerRef = useRef(null);
   const mapOpenRef = useRef(null);
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -1041,9 +1058,7 @@ export default function Home() {
           aria-label="Abrir compras confirmadas"
         >
           <span className="home-hero__iconchip-icon">✔</span>
-          <span className="home-hero__iconchip-label">
-            {hasNewConfirmed ? 'Novo!' : buyerOrders.length || '0'}
-          </span>
+          
           <AnimatePresence>
             {hasNewConfirmed && (
               <motion.span
@@ -1509,6 +1524,18 @@ export default function Home() {
           </>
         )}
       </AnimatePresence>
+      {token && (
+        <Link
+          to="/new-product"
+          className="home-new-product-fab"
+          aria-label="Publicar novo produto"
+        >
+          <span className="home-new-product-fab__icon" aria-hidden="true">
+            +
+          </span>
+          <span className="home-new-product-fab__label">Nova publicação</span>
+        </Link>
+      )}
     </div>
     );
   } catch (err) {

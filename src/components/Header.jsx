@@ -816,6 +816,14 @@ export default function Header() {
                                 offerNotification.currency
                               )}`
                             : null;
+                        const offerResponse = parseOfferResponse(notification.content);
+                        const offerResponsePreview = offerResponse
+                          ? offerResponse.status === 'accepted'
+                            ? 'Oferta aceita'
+                            : offerResponse.status === 'declined'
+                              ? 'Oferta recusada'
+                              : `Status da oferta: ${offerResponse.status}`
+                          : null;
                         const contextPreview = parseMessageContextPreview(notification.content);
                         const contextTitle =
                           contextPreview?.title ||
@@ -825,7 +833,8 @@ export default function Header() {
                         const previewText =
                           contextPreview && contextTitle
                             ? `Produto em foco: ${contextTitle}`
-                            : offerPreview ||
+                            : offerResponsePreview ||
+                              offerPreview ||
                               notification.content?.slice(0, 60) ||
                               'Sem conteúdo recente.';
 

@@ -414,6 +414,53 @@ button {
   margin-top: 0.5rem;
 }
 
+.home-new-product-fab {
+  position: fixed;
+  right: clamp(1.25rem, 2vw, 2.5rem);
+  bottom: clamp(1.25rem, 2vw, 2.5rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
+  z-index: 40;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  text-decoration: none;
+}
+
+.home-new-product-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 45px rgba(37, 99, 235, 0.4);
+}
+
+.home-new-product-fab__icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.home-new-product-fab__label {
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 640px) {
+  .home-new-product-fab {
+    right: 1rem;
+    bottom: 1rem;
+    padding: 0.65rem 0.95rem;
+    border-radius: 16px;
+  }
+
+  .home-new-product-fab__label {
+    display: none;
+  }
+}
+
 .home-hero__stat {
   min-width: 140px;
   padding: 0.9rem 1.1rem;
@@ -2866,6 +2913,7 @@ button {
   background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.08));
   width: min(1300px, 100%);
   margin: 0 auto;
+  position: relative;
 }
 
 .edit-profile-card {
@@ -3005,6 +3053,25 @@ button {
   gap: 1rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
+}
+
+.edit-profile-page__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-profile-page__spinner {
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .product-grid {
