@@ -5959,3 +5959,26 @@ button {
 .sellersearch-score {
   color: #475569;
 }
+
+/* Estilos das bolhas de mensagem para manter o contraste solicitado */
+.messages-bubble {
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+  word-break: break-word;
+}
+
+.messages-bubble--self {
+  background-color: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0f172a;
+}
+
+.messages-bubble--other {
+  background-color: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
