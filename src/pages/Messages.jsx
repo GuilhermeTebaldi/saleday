@@ -1095,7 +1095,7 @@
           <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-4 py-4 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
             <aside className="hidden lg:flex lg:w-full lg:max-w-xs">{renderConversationList()}</aside>
 
-            <section className="flex flex-1 flex-col min-h-0 overflow-hidden overscroll-none fixed inset-0 pt-[calc(var(--home-header-height,64px)+2rem)] px-4 lg:px-6">
+            <section className="flex flex-1 flex-col min-h-0 overflow-hidden overscroll-none">
             <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
             {hasActiveConversation ? (
                   <>
