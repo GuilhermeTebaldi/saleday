@@ -4170,6 +4170,13 @@ button {
   background: #1d4ed8;
   transform: translateY(-1px);
 }
+.dashboard-order-summary__note {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
 
 .dashboard-messages {
   background: #f8fafc;

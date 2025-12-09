@@ -69,6 +69,274 @@ const privacyHighlights = [
   }
 ];
 
+const HeartIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 21.092 3.318 12.682a4.5 4.5 0 010-6.364z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const CheckIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M5 13l4 4 10-11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ShopIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M7 9V6a5 5 0 0110 0v3"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M3 9h18l-1.5 9H4.5L3 9z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const MessageIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M4 6a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H8l-4 4V6z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const PlusIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M12 5v14m7-7H5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ShieldIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M12 2l7 3v5c0 5.5-3.5 9.64-7 10-3.5-.36-7-4.5-7-10V5l7-3z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M9.5 12l2 2 4-4"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const ArrowRightIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M5 12h10m0 0l-4-4m4 4l-4 4"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const CogIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+    <path
+      d="M19.4 13a1.5 1.5 0 00.11 1.03l1.43 1.1a.5.5 0 01-.12.84l-1.53.7a1.5 1.5 0 00-.65 1.62l.36 1.61a.5.5 0 01-.64.59l-1.64-.45a1.5 1.5 0 00-1.64.41l-1.12 1.35a.5.5 0 01-.8 0l-1.12-1.35a1.5 1.5 0 00-1.64-.41l-1.64.45a.5.5 0 01-.64-.59l.36-1.61a1.5 1.5 0 00-.65-1.62l-1.53-.7a.5.5 0 01-.12-.84l1.43-1.1A1.5 1.5 0 004.6 11L3.17 9.9a.5.5 0 01.12-.84l1.53-.7a1.5 1.5 0 00.65-1.62L5.32 4.1A.5.5 0 015.96 3.5l1.64.45a1.5 1.5 0 001.64-.41l1.12-1.35a.5.5 0 01.8 0l1.12 1.35a1.5 1.5 0 001.64.41l1.64-.45a.5.5 0 01.64.59l-.36 1.61a1.5 1.5 0 00.65 1.62l1.53.7a.5.5 0 01.12.84L19.4 13z"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const BOOST_LINK_TARGET = '/dashboard/impulsiona';
+const BOOST_LINK_STATE = undefined;
+
+const PrimaryButton = ({
+  as: Component = 'button',
+  children,
+  icon,
+  trailingIcon,
+  variant = 'primary',
+  className = '',
+  ...props
+}) => {
+  const variants = {
+    primary:
+      'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400',
+    secondary:
+      'bg-white text-slate-900 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm',
+    muted:
+      'bg-slate-900/5 text-slate-900 hover:bg-slate-900/10 shadow-none border border-transparent',
+    accent:
+      'bg-amber-400/90 text-slate-900 shadow-lg shadow-amber-400/40 hover:bg-amber-300 focus-visible:outline-amber-300'
+  };
+  const baseStyles =
+    'inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition duration-150 focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-blue-300 focus-visible:outline-none';
+  const ComponentProps = {
+    ...props,
+    className: `${baseStyles} ${variants[variant] ?? variants.primary} ${className}`.trim()
+  };
+  if (Component === 'button') {
+    ComponentProps.type = ComponentProps.type ?? 'button';
+  }
+  return (
+    <Component {...ComponentProps}>
+      {icon && <span className="text-base">{icon}</span>}
+      <span>{children}</span>
+      {trailingIcon && <span className="text-base">{trailingIcon}</span>}
+    </Component>
+  );
+};
+
+const StatBox = ({ label, value, detail, tone = 'blue' }) => {
+  const toneMap = {
+    blue: 'from-sky-50 to-white border-sky-100 text-sky-700 shadow-sky-200/60',
+    emerald: 'from-emerald-50 to-white border-emerald-100 text-emerald-700 shadow-emerald-200/60',
+    amber: 'from-amber-50 to-white border-amber-100 text-amber-800 shadow-amber-200/60'
+  };
+  return (
+    <article
+      className={`rounded-3xl border bg-gradient-to-br px-5 py-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${toneMap[tone] ?? toneMap.blue}`}
+      role="status"
+    >
+      <p className="text-xs uppercase tracking-[0.4em] text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-semibold">{value}</p>
+      {detail && <p className="mt-1 text-sm text-slate-500">{detail}</p>}
+    </article>
+  );
+};
+
+const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggle, avatarMenuRef }) => (
+  <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+    <div className="relative" ref={avatarMenuRef}>
+      <button
+        type="button"
+        className="focus-visible:outline-none"
+        aria-haspopup="true"
+        aria-expanded={Boolean(avatarMenuOpen)}
+        onClick={onAvatarToggle}
+      >
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-semibold text-slate-600 shadow-inner shadow-slate-200">
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt="Foto do perfil"
+              className="h-full w-full rounded-2xl object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span>{userInitial}</span>
+          )}
+        </div>
+      </button>
+      {avatarMenuOpen && (
+        <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2">
+          <PrimaryButton
+            as={Link}
+            to="/edit-profile"
+            variant="secondary"
+            className="min-w-[150px]"
+            icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+          >
+            Editar perfil
+          </PrimaryButton>
+        </div>
+      )}
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Painel do usuário</p>
+      <h1 className="mt-1 text-2xl font-semibold text-slate-900 truncate">{user?.username || user?.email}</h1>
+      <p className="text-sm text-slate-500 truncate">{user?.email}</p>
+    </div>
+  </div>
+);
+
+const QuickAccessBar = ({ className = '', children, ...props }) => (
+  <div className={`flex flex-wrap gap-3 ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const ActionCard = ({ title, description, icon, to, onClick, badge, className = '' }) => {
+  const Element = to ? Link : 'button';
+  const elementProps = {
+    className: `group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 ${className}`,
+    onClick,
+    ...(to ? { to } : { type: 'button' })
+  };
+
+  return (
+    <Element {...elementProps}>
+      <div className="flex items-center justify-between">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 shadow-inner">
+          {icon}
+        </span>
+        {badge && (
+          <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+            {badge}
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p className="text-xs text-slate-500">{description}</p>
+      </div>
+    </Element>
+  );
+};
+
+const MobileMenu = ({ actions }) => (
+  <div className="sm:hidden">
+    <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 justify-between gap-2 rounded-3xl border border-slate-200 bg-white/90 px-4 py-3 shadow-2xl backdrop-blur">
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          onClick={action.onClick}
+          className="flex flex-col items-center gap-1 text-center text-[11px] text-slate-600 transition hover:text-slate-900"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+            {action.icon}
+          </span>
+          <span>{action.label}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -101,6 +369,8 @@ export default function Dashboard() {
   const [quickPanelTab, setQuickPanelTab] = useState(null);
   const [favoritePanelItems, setFavoritePanelItems] = useState([]);
   const [favoritePanelLoading, setFavoritePanelLoading] = useState(false);
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef(null);
 
   const userId = user?.id;
   const userAvatar = user?.profile_image_url ?? '';
@@ -109,6 +379,12 @@ export default function Dashboard() {
     () => getInitial(user?.username || user?.email || 'SaleDay'),
     [user?.username, user?.email]
   );
+  const toggleAvatarMenu = useCallback(() => {
+    setIsAvatarMenuOpen((state) => !state);
+  }, []);
+  const closeAvatarMenu = useCallback(() => {
+    setIsAvatarMenuOpen(false);
+  }, []);
 
   const openFavoritesPanel = useCallback(() => {
     setQuickPanelTab('favorites');
@@ -144,6 +420,17 @@ export default function Dashboard() {
       }
     ];
   }, [user]);
+
+  useEffect(() => {
+    const handleClickOutsideAvatar = (event) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
+        closeAvatarMenu();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutsideAvatar);
+    return () => document.removeEventListener('click', handleClickOutsideAvatar);
+  }, [closeAvatarMenu]);
 
   useEffect(() => {
     if (!token) {
@@ -428,188 +715,265 @@ export default function Dashboard() {
 
 
   return (
-    <section className="dashboard p-4 sm:p-6 md:p-8">
-
-      {/* ALERTA DE NOVOS PEDIDOS */}
-      {newOrderIds.length > 0 && (
-        <div className="dashboard-alert bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 rounded-xl shadow-sm mb-4 text-sm">
-          Você recebeu {newOrderIds.length}{' '}
-          {newOrderIds.length === 1 ? 'nova solicitação de compra' : 'novas solicitações de compra'}.
-          Confira em <strong>Gerenciar pedidos</strong>.
+    <section className="dashboard min-h-screen bg-slate-50 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <div className="space-y-3">
+          {supportAlert?.conversationId && !isSupportModalOpen && (
+            <div
+              className="flex flex-col rounded-3xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              role="status"
+            >
+              <div>
+                <p className="text-sm font-semibold text-emerald-800">Suporte respondeu!</p>
+                <p className="text-xs text-emerald-700">{supportAlert.message}</p>
+              </div>
+              <button
+                type="button"
+                className="mt-3 inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm transition hover:bg-white sm:mt-0"
+                onClick={() => openSupportChat(supportAlert.conversationId)}
+              >
+                Abrir chat
+              </button>
+            </div>
+          )}
+          {newOrderIds.length > 0 && (
+            <div className="rounded-3xl border border-yellow-200 bg-gradient-to-r from-yellow-50 to-white px-4 py-3 text-sm text-yellow-800 shadow-sm">
+              Você recebeu {newOrderIds.length}{' '}
+              {newOrderIds.length === 1 ? 'nova solicitação de compra' : 'novas solicitações de compra'}.
+              Confira em <strong>Gerenciar pedidos</strong>.
+            </div>
+          )}
         </div>
-      )}
-      {supportAlert?.conversationId && !isSupportModalOpen && (
-        <div
-          className="dashboard-alert bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl shadow-sm mb-4 text-sm flex items-center justify-between gap-3"
-          role="status"
-        >
-          <div>
-            <p className="font-semibold text-emerald-800">Suporte respondeu!</p>
-            <p className="text-xs text-emerald-700">{supportAlert.message}</p>
+
+        <div className="rounded-[32px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <UserCard
+              user={user}
+              userAvatar={userAvatar}
+              userInitial={userInitial}
+              avatarMenuOpen={isAvatarMenuOpen}
+              onAvatarToggle={toggleAvatarMenu}
+              avatarMenuRef={avatarMenuRef}
+            />
+            <div className="flex flex-wrap gap-3">
+              <PrimaryButton
+                as={Link}
+                to="/sales-requests"
+                icon={<ArrowRightIcon className="h-4 w-4 text-white" />}
+                className="min-w-[180px]"
+              >
+                Gerenciar pedidos
+              </PrimaryButton>
+
+            </div>
           </div>
-          <button
-            type="button"
-            className="rounded-full border border-emerald-200 bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100 transition"
-            onClick={() => openSupportChat(supportAlert.conversationId)}
-          >
-            Abrir chat
-          </button>
-        </div>
-      )}
-
-      {/* CABEÇALHO DO USUÁRIO */}
-      <header className="dashboard-header w-full bg-white/80 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl px-5 sm:px-7 py-5 mb-8 flex flex-wrap items-center justify-between gap-5">
-
-        <Link
-          to={userId ? `/users/${userId}` : '/edit-profile'}
-          className="flex items-center gap-4 min-w-0 flex-1 hover:opacity-90 transition"
-        >
-          <div className="dashboard-header__avatar w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-lg font-semibold text-gray-600 shadow-inner">
-            {userAvatar ? (
-              <img
-                src={userAvatar}
-                alt="Foto do perfil"
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{userInitial}</span>
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+            <span>Pedidos totais: {orderSummary.total}</span>
+            <span>Pendentes: {orderSummary.pending}</span>
+            <span>Confirmados: {orderSummary.confirmed}</span>
+            {newOrderIds.length > 0 && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                +{newOrderIds.length} novas solicitações
+              </span>
             )}
           </div>
 
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm text-gray-500 leading-none mb-1">Painel do usuário</span>
-            <h1 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
-              {user?.username || user?.email}
-            </h1>
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+          <QuickAccessBar className="mt-6 w-full gap-3">
+            <button
+              type="button"
+              onClick={openFavoritesPanel}
+              aria-label="Abrir curtidas"
+              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 shadow-inner">
+                  <HeartIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400">Coleção</p>
+                  <p className="text-sm font-semibold text-slate-900">Curtidas</p>
+                </div>
+              </div>
+              <ArrowRightIcon className="h-4 w-4 text-slate-400" />
+            </button>
+            <button
+              type="button"
+              onClick={openOrdersPanel}
+              aria-label="Abrir vendas confirmadas"
+              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-inner">
+                  <CheckIcon className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400">Vendas</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {newOrderIds.length ? 'Pedidos com novidades' : 'Painel de vendas'}
+                  </p>
+                </div>
+              </div>
+              {newOrderIds.length > 0 ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                  +{newOrderIds.length}
+                </span>
+              ) : (
+                <ArrowRightIcon className="h-4 w-4 text-slate-400" />
+              )}
+            </button>
+          </QuickAccessBar>
+          <div className="mt-5 flex justify-end">
+
+          {false && isOwner && !isSold && ( // nao perder esse botao agora ele esta bloqueado só apagar {false && isOwner && !isSold && ( e o botao volta ! 
+            <Link
+              to={BOOST_LINK_TARGET}
+              state={BOOST_LINK_STATE}
+              className="inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 transition hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
+            >
+              Impulsionar anúncio
+            </Link>
+ )} 
           </div>
-        </Link>
-
-       
-      </header>
-
-      <div
-        className="dashboard-quick-actions home-hero__row-scroll mb-6"
-        role="toolbar"
-        aria-label="Atalhos rápidos"
-      >
-        <button
-          type="button"
-          className="home-hero__iconchip"
-          onClick={openFavoritesPanel}
-          aria-label="Abrir curtidas"
-          title="Ver produtos curtidos"
-        >
-          <span className="home-hero__iconchip-icon" aria-hidden="true">
-            ♥
-          </span>
-          <span className="home-hero__iconchip-label">Curtidas</span>
-        </button>
-
-        <button
-          type="button"
-          className={`home-hero__iconchip${newOrderIds.length ? ' has-new' : ''}`}
-          onClick={openOrdersPanel}
-          aria-label="Abrir vendas confirmadas"
-          title={
-            newOrderIds.length
-              ? `${newOrderIds.length} novas solicitações de venda`
-              : 'Ver vendas confirmadas'
-          }
-        >
-          <span className="home-hero__iconchip-icon" aria-hidden="true">
-            ✔
-          </span>
-          <span className="home-hero__iconchip-label">Vendas</span>
-        </button>
-      </div>
-
-      {/* RESUMO DE PEDIDOS */}
-      <div className="dashboard-order-summary grid grid-cols-3 gap-4 bg-white/70 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-4 mb-8">
-
-        <div className="dashboard-order-summary__stat text-center">
-          <span className="label text-xs text-gray-500 block">Pedidos totais</span>
-          <span className="value text-lg font-bold text-gray-800 block">
-            {orderSummary.total}
-          </span>
         </div>
 
-        <div className="dashboard-order-summary__stat text-center">
-          <span className="label text-xs text-gray-500 block">Pendentes</span>
-          <span className="value pending text-lg font-bold text-gray-800 block">
-            {orderSummary.pending}
-          </span>
+        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="space-y-6">
+            
+            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Atalhos rápidos</p>
+                  <h2 className="text-xl font-semibold text-slate-900">Organize seu ritmo</h2>
+                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+                  Atualização automática
+                </span>
+              </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <ActionCard
+                  title="Meus anúncios"
+                  description="Revise estoque, preços e histórico de exibição."
+                  icon={<ShopIcon className="h-5 w-5 text-slate-500" />}
+                  to="/my-products"
+                  className="h-full min-h-[140px]"
+                />
+                <ActionCard
+                  title="Mensagens"
+                  description="Responda compradores e acompanhe conversas ativas."
+                  icon={<MessageIcon className="h-5 w-5 text-slate-500" />}
+                  to="/messages"
+                  className="h-full min-h-[140px]"
+                />
+                <ActionCard
+                  title="Novo produto"
+                  description="Publique rapidamente com fotos, descrições e preços."
+                  icon={<PlusIcon className="h-5 w-5 text-slate-500" />}
+                  to="/new-product"
+                  className="h-full min-h-[140px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Suporte</p>
+                  <h3 className="text-lg font-semibold text-slate-900">Tem dúvidas?</h3>
+                </div>
+                <MessageIcon className="h-6 w-6 text-slate-400" />
+              </div>
+              <p className="mt-3 text-sm text-slate-500">
+                Converse com o time operacional e acompanhe o histórico em tempo real.
+              </p>
+              {supportAlert && (
+                <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                  {supportAlert.message}
+                </p>
+              )}
+              <PrimaryButton
+                variant="secondary"
+                icon={<MessageIcon className="h-4 w-4 text-slate-500" />}
+                className="min-w-[180px]"
+                onClick={() => openSupportChat()}
+              >
+                Conversar com o suporte
+              </PrimaryButton>
+            </div>
+
+            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Conta & privacidade</p>
+                  <h3 className="text-lg font-semibold text-slate-900">Ajustes essenciais</h3>
+                </div>
+                <CogIcon className="h-6 w-6 text-slate-400" />
+              </div>
+              <p className="mt-3 text-sm text-slate-500">
+                Mantenha a segurança em dia, sincronize termos aceitos e revise permissões.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PrimaryButton
+                  variant="muted"
+                  className="px-3 py-1 text-[10px] uppercase tracking-[0.3em]"
+                  icon={<CogIcon className="h-3 w-3 text-slate-500" />}
+                  onClick={() => setIsConfigPanelOpen(true)}
+                >
+                  Painel lateral
+                </PrimaryButton>
+                <PrimaryButton
+                  as={Link}
+                  to="/edit-profile"
+                  variant="secondary"
+                  className="flex-1 min-w-[130px]"
+                  icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+                >
+                  Editar perfil
+                </PrimaryButton>
+                <PrimaryButton
+                  variant="secondary"
+                  className="flex-1 min-w-[130px]"
+                  icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+                  onClick={() => {
+                    setPasswords(getInitialSecurityPasswords());
+                    setIsSecurityModalOpen(true);
+                  }}
+                >
+                  Segurança
+                </PrimaryButton>
+                <PrimaryButton
+                  variant="secondary"
+                  className="flex-1 min-w-[130px]"
+                  icon={<CogIcon className="h-4 w-4 text-slate-500" />}
+                  onClick={() => setIsTermsPanelOpen(true)}
+                >
+                  Termos
+                </PrimaryButton>
+                <PrimaryButton
+                  variant="secondary"
+                  className="flex-1 min-w-[130px]"
+                  icon={<CogIcon className="h-4 w-4 text-slate-500" />}
+                  onClick={() => setIsPrivacyPanelOpen(true)}
+                >
+                  Privacidade
+                </PrimaryButton>
+                <PrimaryButton
+                  variant="accent"
+                  className="flex-1 min-w-[130px]"
+                  icon={<ArrowRightIcon className="h-4 w-4 text-slate-900" />}
+                  onClick={logout}
+                >
+                  Sair
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="dashboard-order-summary__stat text-center">
-          <span className="label text-xs text-gray-500 block">Confirmados</span>
-          <span className="value confirmed text-lg font-bold text-gray-800 block">
-            {orderSummary.confirmed}
-          </span>
-        </div>
-
-        {/* BOTÃO GERENCIAR PEDIDOS */}
-        <Link
-          to="/sales-requests"
-          className={`mx-auto mt-3 w-fit flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-1.5 rounded-xl text-blue-700 text-sm font-semibold shadow-sm hover:shadow transition ${
-            newOrderIds.length ? 'ring-2 ring-blue-300' : ''
-          }`}
-        >
-          Gerenciar pedidos
-          {newOrderIds.length > 0 && (
-            <span className="dashboard-order-summary__badge bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full shadow">
-              +{newOrderIds.length}
-            </span>
-          )}
-        </Link>
-      </div>
-
-      {/* MENU PRINCIPAL */}
-      <div className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Link
-          className="dashboard-button bg-gradient-to-b from-white to-gray-50 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-          to="/my-products"
-        >
-          Meus Anúncios
-        </Link>
-        <Link
-          className="dashboard-button bg-sky-300/80 hover:bg-sky-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
-          to="/messages"
-        >
-          Mensagens
-        </Link>
-        <Link
-          className="dashboard-button bg-blue-300/80 hover:bg-blue-400 text-gray-900 font-semibold py-3 rounded-lg text-center shadow-md transition-all"
-          to="/new-product"
-        >
-          Novo Produto
-        </Link>
-      </div>
-
-      <div className="dashboard-actions grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
-        <Link
-          to="/edit-profile"
-          className="dashboard-button bg-gradient-to-b from-white to-gray-50 border border-gray-200 text-gray-300 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-        >
-          Editar Perfil
-        </Link>
-        <Link
-          to="#configuracoes"
-          onClick={(event) => {
-            event.preventDefault();
-            setIsConfigPanelOpen((state) => !state);
-          }}
-          className="dashboard-button bg-gradient-to-b from-white to-gray-500 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-        >
-          Configurações
-        </Link>
-        <button
-          onClick={logout}
-          className="dashboard-button bg-gradient-to-b from-red-50 to-red-100 border border-red-200 text-red-700 font-semibold py-3 rounded-xl text-center shadow-md hover:shadow-lg active:scale-[0.97] transition"
-        >
-          Sair
-        </button>
+        <p className="text-center text-xs text-slate-500">
+          Acompanhe suas métricas principais, organize anúncios e mantenha a segurança em dia.
+        </p>
       </div>
 
       {isQuickPanelOpen && (
@@ -618,6 +982,7 @@ export default function Dashboard() {
           <div className="home-drawer" role="dialog" aria-modal="true">
             <header className="home-drawer__header">
               <nav className="home-drawer__tabs" aria-label="Painéis rápidos">
+                
                 <button
                   type="button"
                   className={`home-drawer__tab ${quickPanelTab === 'favorites' ? 'is-active' : ''}`}
@@ -766,10 +1131,20 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* TEXTO FINAL */}
-      <p className="text-gray-400 text-center mt-8 text-xs">
-        Aqui você poderá gerenciar seus produtos e acompanhar suas vendas.
-      </p>
+    
+ {false && isOwner && !isSold && ( // botoes bonitos nao apagar 
+      <MobileMenu
+        actions={[
+          { label: 'Curtidas', icon: <HeartIcon className="h-4 w-4 text-rose-500" />, onClick: openFavoritesPanel },
+          {
+            label: 'Vendas',
+            icon: <CheckIcon className="h-4 w-4 text-emerald-500" />,
+            onClick: openOrdersPanel
+          }
+        ]}
+      />
+    )}
+
 
       {/* PAINEL DE CONFIGURAÇÕES */}
       <div
