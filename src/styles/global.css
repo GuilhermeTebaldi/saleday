@@ -1654,8 +1654,8 @@ button {
 
 .home-card__date-bar {
   position: absolute;
-  top: 160px;
-  left: 115px;
+  top: 150px;
+  left: 110px;
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
   background: rgba(253, 253, 253, 0.9);
