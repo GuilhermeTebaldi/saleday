@@ -64,13 +64,95 @@ const ENTRIES = [
   { key: 'Voltar ao topo', en: 'Back to top', es: 'Volver arriba', it: 'Torna in cima' , ja: 'ページトップへ' },
   { key: 'Voltar', en: 'Back', es: 'Volver', it: 'Indietro' , ja: '戻る' },
   { key: 'Painel do usuário', en: 'User dashboard', es: 'Panel de usuario', it: 'Pannello utente' , ja: 'ユーザーダッシュボード' },
+  { key: 'Atalhos rápidos', en: 'Quick shortcuts', es: 'Accesos rápidos', it: 'Scorciatoie rapide', ja: 'クイックショートカット' },
+  { key: 'Atualização automática', en: 'Automatic update', es: 'Actualización automática', it: 'Aggiornamento automatico', ja: '自動更新' },
+  { key: 'Tem dúvidas?', en: 'Have questions?', es: '¿Tienes dudas?', it: 'Hai domande?', ja: 'ご質問はありますか？' },
+  { key: 'Suporte', en: 'Support', es: 'Soporte', it: 'Supporto', ja: 'サポート' },
+  {
+    key: 'Converse com o time operacional e acompanhe o histórico em tempo real.',
+    en: 'Talk to the operations team and monitor the real-time history.',
+    es: 'Habla con el equipo operativo y sigue el historial en tiempo real.',
+    it: 'Parla con il team operativo e monitora lo storico in tempo reale.',
+    ja: '運用チームと話して、リアルタイムの履歴を確認しましょう。'
+  },
+  { key: 'Tempo real', en: 'Real time', es: 'Tiempo real', it: 'Tempo reale', ja: 'リアルタイム' },
+  {
+    key: 'Conversar com o suporte',
+    en: 'Chat with support',
+    es: 'Chatear con soporte',
+    it: 'Chatta con il supporto',
+    ja: 'サポートとチャット'
+  },
+  { key: 'Escreva sua mensagem', en: 'Write your message', es: 'Escribe tu mensaje', it: 'Scrivi il tuo messaggio', ja: 'メッセージを入力してください' },
+  {
+    key: 'Compartilhe o que precisa e acompanhe as respostas em tempo real.',
+    en: 'Share your needs and track replies in real time.',
+    es: 'Comparte lo que necesitas y sigue las respuestas en tiempo real.',
+    it: 'Condividi ciò di cui hai bisogno e segui le risposte in tempo reale.',
+    ja: '必要なことを共有し、リアルタイムで回答を追跡しましょう。'
+  },
+  {
+    key: 'Enviar para o suporte',
+    en: 'Send to support',
+    es: 'Enviar al soporte',
+    it: 'Invia al supporto',
+    ja: 'サポートに送信'
+  },
+  {
+    key: 'Mantenha a segurança em dia, sincronize termos aceitos e revise permissões.',
+    en: 'Keep security up to date, sync accepted terms and review permissions.',
+    es: 'Mantén la seguridad al día, sincroniza términos aceptados y revisa permisos.',
+    it: 'Mantieni la sicurezza aggiornata, sincronizza i termini accettati e rivedi i permessi.',
+    ja: 'セキュリティを最新状態に保ち、承認された条件を同期し、権限を見直してください。'
+  },
+  { key: 'Ajustes essenciais', en: 'Essential settings', es: 'Ajustes esenciales', it: 'Impostazioni essenziali', ja: '重要な設定' },
+  { key: 'Conta & privacidade', en: 'Account & privacy', es: 'Cuenta y privacidad', it: 'Account e privacy', ja: 'アカウントとプライバシー' },
+  { key: 'Painel lateral', en: 'Side panel', es: 'Panel lateral', it: 'Pannello laterale', ja: 'サイドパネル' },
   { key: 'Editar Perfil', en: 'Edit Profile', es: 'Editar perfil', it: 'Modifica profilo' , ja: 'プロフィールを編集' },
   { key: 'Meus Anúncios', en: 'My listings', es: 'Mis anuncios', it: 'I miei annunci' , ja: '自分の出品' },
+  { key: 'Novo produto', en: 'New product', es: 'Nuevo producto', it: 'Nuovo prodotto', ja: '新しい商品' },
   { key: 'Novo Produto', en: 'New product', es: 'Nuevo producto', it: 'Nuovo prodotto' , ja: '新しい商品' },
+  {
+    key: 'Publique rapidamente com fotos, descrições e preços.',
+    en: 'Publish quickly with photos, descriptions and prices.',
+    es: 'Publica rápidamente con fotos, descripciones y precios.',
+    it: 'Pubblica rapidamente con foto, descrizioni e prezzi.',
+    ja: '写真・説明・価格を添えてすばやく公開します。'
+  },
+  {
+    key: 'Responda compradores e acompanhe conversas ativas.',
+    en: 'Respond to buyers and follow active conversations.',
+    es: 'Responde a compradores y sigue las conversaciones activas.',
+    it: 'Rispondi agli acquirenti e monitora le conversazioni attive.',
+    ja: '購入者に返信してアクティブな会話を追跡します。'
+  },
+  {
+    key: 'Revise estoque, preços e histórico de exibição.',
+    en: 'Review inventory, prices and viewing history.',
+    es: 'Revisa el inventario, precios e historial de visualización.',
+    it: 'Controlla l\'inventario, i prezzi e la cronologia delle visualizzazioni.',
+    ja: '在庫、価格、表示履歴を確認します。'
+  },
   { key: 'Notificações de mensagens', en: 'Message notifications', es: 'Notificaciones de mensajes', it: 'Notifiche dei messaggi' , ja: 'メッセージ通知' },
   { key: 'Ver todas', en: 'See all', es: 'Ver todas', it: 'Vedi tutte' , ja: 'すべて表示' },
   { key: 'Nenhuma mensagem nova no momento.', en: 'No new messages right now.', es: 'Ningún mensaje nuevo por ahora.', it: 'Nessun nuovo messaggio al momento.' , ja: '現在、新しいメッセージはありません。' },
   { key: 'Aqui você poderá gerenciar seus produtos e acompanhar suas vendas.', en: 'Here you can manage your products and track your sales.', es: 'Aquí podrás gestionar tus productos y seguir tus ventas.', it: 'Qui puoi gestire i tuoi prodotti e monitorare le tue vendite.' , ja: 'ここで商品を管理し、販売状況を確認できます。' },
+  {
+    key: 'Acompanhe suas métricas principais, organize anúncios e mantenha a segurança em dia.',
+    en: 'Track your key metrics, organize listings and keep security up to date.',
+    es: 'Sigue tus métricas clave, organiza anuncios y mantén la seguridad al día.',
+    it: 'Monitora le metriche principali, organizza gli annunci e mantieni la sicurezza aggiornata.',
+    ja: '主要な指標を追跡し、出品を整理し、セキュリティを最新に保ちましょう。'
+  },
+  { key: 'Você', en: 'You', es: 'Tú', it: 'Tu', ja: 'あなた' },
+  { key: 'Conversa conectada', en: 'Connected conversation', es: 'Conversación conectada', it: 'Conversazione connessa', ja: '接続された会話' },
+  {
+    key: 'Descreva o que aconteceu, compartilhe prints ou o que for importante.',
+    en: 'Describe what happened, share screenshots or anything important.',
+    es: 'Describe lo que ocurrió, comparte capturas o lo que sea importante.',
+    it: 'Descrivi cosa è successo, condividi screenshot o qualsiasi cosa importante.',
+    ja: '何が起きたかを説明し、スクリーンショットや重要な情報を共有してください。'
+  },
   { key: 'Sem conteúdo recente.', en: 'No recent content.', es: 'Sin contenido reciente.', it: 'Nessun contenuto recente.' , ja: '最近のコンテンツはありません。' },
   { key: 'Produto #', en: 'Product #', es: 'Producto #', it: 'Prodotto #' , ja: '商品 #' },
   { key: 'com ', en: 'with ', es: 'con ', it: 'con ' , ja: 'と ' },
@@ -78,7 +160,16 @@ const ENTRIES = [
   { key: 'Vendedor:', en: 'Seller:', es: 'Vendedor:', it: 'Venditore:' , ja: '出品者:' },
   { key: 'Conversas', en: 'Conversations', es: 'Conversaciones', it: 'Conversazioni' , ja: '会話' },
   { key: 'Nenhuma conversa', en: 'No conversations', es: 'No hay conversaciones', it: 'Nessuna conversazione', ja: '会話がありません' },
+  { key: 'Abrir conversas', en: 'Open conversations', es: 'Abrir conversaciones', it: 'Apri conversazioni', ja: '会話を開く' },
+  { key: 'Conversa privada', en: 'Private conversation', es: 'Conversación privada', it: 'Conversazione privata', ja: 'プライベートメッセージ' },
   { key: 'Selecione uma conversa para começar a trocar mensagens.', en: 'Select a conversation to start messaging.', es: 'Selecciona una conversación para comenzar a chatear.', it: 'Seleziona una conversazione per iniziare a scrivere.', ja: 'メッセージを始める会話を選択してください。' },
+  {
+    key: 'Escolha uma conversa ou envie uma proposta para começar.',
+    en: 'Choose a conversation or send an offer to start.',
+    es: 'Elige una conversación o envía una propuesta para comenzar.',
+    it: 'Scegli una conversazione o invia un\'offerta per iniziare.',
+    ja: '会話を選ぶか提案を送って始めてください。'
+  },
   { key: 'Digite sua mensagem...', en: 'Type your message...', es: 'Escribe tu mensaje...', it: 'Scrivi il tuo messaggio...', ja: 'メッセージを入力してください...' },
   { key: 'Enviar', en: 'Send', es: 'Enviar', it: 'Invia', ja: '送信' },
   { key: 'Não foi possível identificar o destinatário da mensagem.', en: 'Could not identify the message recipient.', es: 'No se pudo identificar al destinatario del mensaje.', it: 'Impossibile identificare il destinatario del messaggio.', ja: 'メッセージの宛先を特定できませんでした。' },
