@@ -1,3 +1,4 @@
+//frontend/src/utils/productCollections.js
 const getProductKey = (product) => {
   if (!product) return null;
   if (product.id) return `id:${product.id}`;
