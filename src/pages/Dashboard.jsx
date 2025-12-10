@@ -37,6 +37,20 @@ const formatLegalDate = (timestamp) => {
 };
 
 const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+const normalizeOrderStatus = (status) => {
+  const value = String(status || '').toLowerCase().trim();
+
+  if (value === 'pending' || value === 'pendente' || value === 'in_sospeso') {
+    return 'pending';
+  }
+
+  if (value === 'confirmed' || value === 'confirmado' || value === 'confermato') {
+    return 'confirmed';
+  }
+
+  return value;
+};
+
 
 const formatOrderDatetime = (value) => {
   if (!value) return '';
@@ -446,11 +460,19 @@ export default function Dashboard() {
       .then((res) => {
         if (!active) return;
 
-        const orders = Array.isArray(res.data?.data) ? res.data.data : [];
+        const raw = res.data;
+        const orders = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
         setSellerOrdersList(orders);
 
-        const pending = orders.filter((o) => o.status === 'pending').length;
-        const confirmed = orders.filter((o) => o.status === 'confirmed').length;
+              const pending = orders.filter(
+          (o) => normalizeOrderStatus(o.status ?? o.order_status ?? o.state) === 'pending'
+        ).length;
+
+        const confirmed = orders.filter(
+          (o) => normalizeOrderStatus(o.status ?? o.order_status ?? o.state) === 'confirmed'
+        ).length;
+
+
 
         setOrderSummary({
           total: orders.length,
@@ -756,13 +778,24 @@ export default function Dashboard() {
               avatarMenuRef={avatarMenuRef}
             />
             <div className="flex flex-wrap gap-3">
-              <PrimaryButton
+            <PrimaryButton
                 as={Link}
                 to="/sales-requests"
                 icon={<ArrowRightIcon className="h-4 w-4 text-white" />}
-                className="min-w-[180px]"
+                className={`min-w-[180px] ${
+                  newOrderIds.length > 0
+                    ? 'dashboard-order-summary__cta dashboard-order-summary__cta--highlight'
+                    : ''
+                }`}
               >
-                Gerenciar pedidos
+                {newOrderIds.length > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <span>Gerenciar pedidos</span>
+                    <span className="dashboard-order-summary__badge">+{newOrderIds.length}</span>
+                  </span>
+                ) : (
+                  'Gerenciar pedidos'
+                )}
               </PrimaryButton>
 
             </div>

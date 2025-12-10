@@ -57,11 +57,21 @@ const buildDataAttrName = (attr) => `data-saleday-i18n-original-${attr.toLowerCa
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
 
 function rememberTextNode(node) {
-  if (!originalTextMap || !node) return node?.nodeValue ?? '';
-  if (!originalTextMap.has(node)) {
-    originalTextMap.set(node, node.nodeValue ?? '');
+  if (!originalTextMap || !node) return null;
+  const current = node.nodeValue ?? '';
+  let record = originalTextMap.get(node);
+  if (!record) {
+    record = { original: current, translated: current };
+    originalTextMap.set(node, record);
+    return record;
   }
-  return originalTextMap.get(node);
+  if (record.translated === current) {
+    return record;
+  }
+  if (record.original !== current) {
+    record.original = current;
+  }
+  return record;
 }
 
 function restoreTextNodes(root) {
@@ -69,11 +79,10 @@ function restoreTextNodes(root) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
   let node;
   while ((node = walker.nextNode())) {
-    if (originalTextMap.has(node)) {
-      const original = originalTextMap.get(node);
-      if (typeof original === 'string') {
-        node.nodeValue = original;
-      }
+    const record = originalTextMap.get(node);
+    if (record && typeof record.original === 'string') {
+      node.nodeValue = record.original;
+      record.translated = record.original;
     }
   }
 }
@@ -119,10 +128,14 @@ function replaceTextNodes(root, dict) {
   while ((node = walker.nextNode())) {
     const parentTag = node.parentElement?.tagName;
     if (parentTag && SKIP_TEXT_PARENTS.has(parentTag)) continue;
-    const original = rememberTextNode(node);
-    const translated = translateString(original, helpers);
+    const record = rememberTextNode(node);
+    const source = record?.original ?? node.nodeValue ?? '';
+    const translated = translateString(source, helpers);
     if (translated != null && node.nodeValue !== translated) {
       node.nodeValue = translated;
+    }
+    if (record) {
+      record.translated = translated ?? source;
     }
   }
   const all = root.querySelectorAll('input[placeholder],textarea[placeholder],button,select,option,[aria-label]');
