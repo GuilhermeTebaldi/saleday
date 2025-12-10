@@ -16,6 +16,9 @@ const BOUNDS = {
 };
 
 const MAX_PRODUCT_PHOTOS = 10;
+const FIELD_BASE_CLASS =
+  'w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500';
+const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
 
 const PUBLISH_STAGE_META = {
   uploading: {
@@ -234,16 +237,44 @@ const cleanZip = (z, country) => {
   return country === 'US' ? digits.slice(0, 9) : digits.slice(0, 8);
 };
 
+const FIELD_SCROLL_IDS = {
+  title: 'new-product-field-title',
+  price: 'new-product-field-price',
+  category: 'new-product-field-category'
+};
+
+const localizeFieldTarget = (field) => {
+  if (typeof document === 'undefined') return null;
+  const dataTarget = document.querySelector(`[data-new-product-field="${field}"]`);
+  if (dataTarget) return dataTarget;
+  if (FIELD_SCROLL_IDS[field]) {
+    const byId = document.getElementById(FIELD_SCROLL_IDS[field]);
+    if (byId) return byId;
+  }
+  return document.querySelector(`[name="${field}"]`);
+};
+
+const highlightField = (element) => {
+  if (!element || typeof element.classList === 'undefined') return;
+  element.classList.add('ring-4', 'ring-yellow-400');
+  if (typeof window === 'undefined') return;
+  window.setTimeout(() => {
+    element.classList.remove('ring-4', 'ring-yellow-400');
+  }, 1200);
+};
+
 const scrollToField = (field) => {
   if (!field || typeof document === 'undefined') return;
   requestAnimationFrame(() => {
-    const target = document.querySelector(`[data-new-product-field="${field}"]`);
-    if (target?.scrollIntoView) {
+    const target = localizeFieldTarget(field);
+    if (!target) return;
+    if (target.scrollIntoView) {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    if (target && typeof target.focus === 'function') {
+    if (typeof target.focus === 'function') {
       target.focus({ preventScroll: true });
     }
+    highlightField(target);
   });
 };
 
@@ -279,8 +310,13 @@ export default function NewProduct() {
   }, [baseForm]);
 
   const isValid = useMemo(
-    () => form.title && form.category && (form.isFree || form.price),
-    [form.title, form.category, form.price, form.isFree]
+    () =>
+      form.title?.trim() &&
+      form.category?.trim() &&
+      form.country?.trim() &&
+      form.city?.trim() &&
+      (form.isFree || form.price),
+    [form.title, form.category, form.price, form.isFree, form.country, form.city]
   );
   const currencyCode = useMemo(
     () => resolveCurrencyFromCountry(form.country),
@@ -408,8 +444,10 @@ export default function NewProduct() {
     if (!form.title?.trim()) missing.push({ name: 'title', label: 'Título' });
     if (!form.category?.trim()) missing.push({ name: 'category', label: 'Categoria' });
     if (!form.isFree && !form.price?.trim()) missing.push({ name: 'price', label: 'Preço' });
+    if (!form.country?.trim()) missing.push({ name: 'country', label: 'País' });
+    if (!form.city?.trim()) missing.push({ name: 'city', label: 'Cidade' });
     return missing;
-  }, [form.title, form.category, form.price, form.isFree]);
+  }, [form.title, form.category, form.price, form.isFree, form.country, form.city]);
 
   const hasFieldError = (field) =>
     showFieldErrors && missingFields.some((item) => item.name === field);
@@ -491,16 +529,19 @@ export default function NewProduct() {
 
     let addedCount = 0;
     let hitLimit = false;
+    let resultingLength = 0;
 
     setImages((prev) => {
       const available = MAX_PRODUCT_PHOTOS - prev.length;
       if (available <= 0) {
         hitLimit = true;
+        resultingLength = prev.length;
         return prev;
       }
 
       const limited = imageFiles.slice(0, available);
       addedCount = limited.length;
+      resultingLength = prev.length + addedCount;
 
       const mapped = limited.map((file) => {
         const previewUrl = URL.createObjectURL(file);
@@ -516,13 +557,29 @@ export default function NewProduct() {
     });
 
     if (hitLimit) {
-      toast.error('Você já adicionou o máximo de 10 fotos.');
+      toast.error('Você já alcançou o limite de 10 fotos. Remova alguma para adicionar outra.');
       return;
     }
 
-    if (addedCount < imageFiles.length) {
-      toast.error('Limite de 10 fotos por anúncio. Algumas imagens ficaram de fora.');
+    if (addedCount === 0) return;
+
+    const remaining = Math.max(0, MAX_PRODUCT_PHOTOS - resultingLength);
+    const leftover = Math.max(0, imageFiles.length - addedCount);
+    let message = 'Fotos atualizadas.';
+    if (leftover > 0) {
+      message += ` ${leftover} imagem${leftover === 1 ? '' : 'ens'} ficaram de fora.`;
     }
+    if (remaining > 0) {
+      message += ` Pode colar ainda ${remaining} foto${remaining === 1 ? '' : 's'}.`;
+    } else {
+      message += ' Limite de 10 fotos atingido – remova uma para incluir outra.';
+    }
+
+    if (leftover > 0) {
+      toast.info(message);
+      return;
+    }
+    toast.success(message);
   };
 
   // GPS -> normaliza país para sigla e UF
@@ -753,20 +810,38 @@ export default function NewProduct() {
   };
 
   return (
-    <section className="new-product-page">
-      <div className="new-product-card">
-        <header className="new-product-header">
-          <h1>Publicar novo produto</h1>
-          <p>Compartilhe seu produto com a comunidade SaleDay em poucos passos.</p>
+    <section className="bg-gray-100 min-h-screen py-10 px-4">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6">
+        <header className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-blue-700">Publicar novo produto</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Compartilhe seu produto com a comunidade SaleDay em poucos passos.
+          </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="new-product-form">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          noValidate
+          onInvalid={(event) => {
+            event.preventDefault();
+          }}
+        >
           {showFieldErrors && missingFields.length > 0 && (
             <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
               <p className="font-semibold">Complete os campos obrigatórios:</p>
-              <ul className="list-disc list-inside text-red-600 text-xs">
+              <p className="text-xs text-red-600">Clique no campo para ir direto ao local destacado.</p>
+              <ul className="list-disc list-inside text-red-600 text-xs space-y-1">
                 {missingFields.map((item) => (
-                  <li key={item.name}>{item.label}</li>
+                  <li key={item.name}>
+                    <button
+                      type="button"
+                      onClick={() => scrollToField(item.name)}
+                      className="text-red-700 underline-offset-2 hover:text-red-500 underline"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -796,27 +871,26 @@ export default function NewProduct() {
             </label>
           </div>
 
-          <div className="form-grid">
-            <label>
-              Título*
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <label className={FIELD_LABEL_CLASS}>
+              <span>Título*</span>
               <input
                 name="title"
                 placeholder="Ex: Notebook Dell XPS 13"
                 value={form.title}
                 onChange={handleChange}
                 required
-                className={`${
-                  hasFieldError('title') ? 'ring-2 ring-red-400' : ''
-                }`}
+                className={`${FIELD_BASE_CLASS} ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
                 data-new-product-field="title"
+                id={FIELD_SCROLL_IDS.title}
               />
               {hasFieldError('title') && (
                 <span className="text-xs text-red-600">Informe um título.</span>
               )}
             </label>
 
-            <label className={form.isFree ? 'opacity-60' : ''}>
-              Preço ({currencyInfo.symbol})
+            <label className={`${FIELD_LABEL_CLASS} ${form.isFree ? 'opacity-60' : ''}`.trim()}>
+              <span>Preço ({currencyInfo.symbol})</span>
               <input
                 name="price"
                 placeholder={form.isFree ? 'Anúncio marcado como grátis' : `Ex: ${currencyInfo.example}`}
@@ -828,45 +902,52 @@ export default function NewProduct() {
                 disabled={form.isFree}
                 required={!form.isFree}
                 inputMode="decimal"
-                className={`${
-                  hasFieldError('price') ? 'ring-2 ring-red-400' : ''
-                }`}
+                className={`${FIELD_BASE_CLASS} ${hasFieldError('price') ? 'ring-2 ring-red-400' : ''}`}
                 data-new-product-field="price"
+                id={FIELD_SCROLL_IDS.price}
               />
               <span className="text-xs text-gray-500">
-                {form.isFree
-                  ? 'Este anúncio será exibido como “Grátis” em destaque.'
-                  : `Será exibido como: ${pricePreview || previewFallback}`}
+                {form.isFree ? (
+                  'Este anúncio será exibido como “Grátis” em destaque.'
+                ) : (
+                  <>
+                    Será exibido como:{' '}
+                    <span className="text-yellow-500 font-semibold">
+                      {pricePreview || previewFallback}
+                    </span>
+                  </>
+                )}
               </span>
               {hasFieldError('price') && !form.isFree && (
                 <span className="text-xs text-red-600">Informe o preço do produto.</span>
               )}
             </label>
 
-            <label>
-              Categoria
+            <label className={FIELD_LABEL_CLASS}>
+              <span>Categoria</span>
               <select
                 name="category"
                 value={form.category}
                 onChange={handleChange}
                 required
-                className={`${
-                  hasFieldError('category') ? 'ring-2 ring-red-400' : ''
-                }`}
+                className={`${FIELD_BASE_CLASS} ${hasFieldError('category') ? 'ring-2 ring-red-400' : ''}`}
                 data-new-product-field="category"
+                id={FIELD_SCROLL_IDS.category}
               >
                 <option value="">Selecione uma categoria</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
               {hasFieldError('category') && (
                 <span className="text-xs text-red-600">Selecione uma categoria.</span>
               )}
             </label>
-            <label>
-              País (sigla)
-              <select name="country" value={form.country} onChange={handleChange}>
+            <label className={FIELD_LABEL_CLASS}>
+              <span>País (sigla)</span>
+              <select name="country" value={form.country} onChange={handleChange} className={FIELD_BASE_CLASS}>
                 {COUNTRY_OPTIONS.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.label} ({c.code})
@@ -874,14 +955,13 @@ export default function NewProduct() {
                 ))}
               </select>
             </label>
-
           </div>
 
           {/* CEP/ZIP primeiro */}
           <div className="my-2">
             <div className="flex gap-2">
               <input
-                className="border p-2 rounded flex-1"
+                className={`flex-1 ${FIELD_BASE_CLASS}`}
                 placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
                 name="zip"
                 value={form.zip}
@@ -909,25 +989,30 @@ export default function NewProduct() {
             </p>
           </div>
 
-          <div className="flex items-center justify-between my-2">
-            <span className="text-sm text-gray-600">Detectar localização automática:</span>
-            <button
-              type="button"
-              onClick={handleDetectLocation}
-              disabled={loadingLocation}
-              className="bg-blue-600 text-white px-3 py-1 rounded"
-            >
-              {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
-            </button>
+          <div className="flex flex-col gap-2 my-2">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-gray-600">Detectar localização automática:</span>
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={loadingLocation}
+                className="bg-blue-600 text-white px-3 py-1 rounded"
+              >
+                {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">
+              País e cidade são obrigatórios. Você pode preenchê-los manualmente ou usar o botão acima para detectar sua localização.
+            </p>
           </div>
 
           {/* Endereço */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-4">
             {/* País como SELECT com siglas */}
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Cidade</span>
+              <span className="text-sm font-medium text-gray-700 mb-1">Cidade</span>
               <input
-                className="border p-2 rounded"
+                className={FIELD_BASE_CLASS}
                 placeholder="Localização do produto"
                 name="city"
                 value={form.city}
@@ -936,9 +1021,9 @@ export default function NewProduct() {
             </label>
 
             <label className="flex flex-col">
-              <span className="text-sm mb-1">Estado/UF</span>
+              <span className="text-sm font-medium text-gray-700 mb-1">Estado/UF</span>
               <input
-                className="border p-2 rounded"
+                className={FIELD_BASE_CLASS}
                 placeholder={form.country === 'US' ? 'Ex: CA' : 'Ex: SP'}
                 name="state"
                 value={form.state}
@@ -946,8 +1031,20 @@ export default function NewProduct() {
               />
             </label>
 
-            <input className="border p-2 rounded" placeholder="Bairro" name="neighborhood" value={form.neighborhood} onChange={handleChange} />
-            <input className="border p-2 rounded" placeholder="Rua" name="street" value={form.street} onChange={handleChange} />
+            <input
+              className={FIELD_BASE_CLASS}
+              placeholder="Bairro"
+              name="neighborhood"
+              value={form.neighborhood}
+              onChange={handleChange}
+            />
+            <input
+              className={FIELD_BASE_CLASS}
+              placeholder="Rua"
+              name="street"
+              value={form.street}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="mt-4">
@@ -957,7 +1054,7 @@ export default function NewProduct() {
                 <label key={field.name} className="flex flex-col">
                   <span className="text-xs text-gray-600 mb-1">{field.label}</span>
                   <input
-                    className="border p-2 rounded"
+                    className={FIELD_BASE_CLASS}
                     name={field.name}
                     placeholder={field.placeholder}
                     value={form[field.name]}
@@ -974,14 +1071,17 @@ export default function NewProduct() {
               <h2 className="text-sm font-semibold text-gray-700">Fotos do produto</h2>
               <span className="text-xs text-gray-500">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-2">
               {images.map((image) => (
-                <div key={image.id} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                <div
+                  key={image.id}
+                  className="relative group aspect-square rounded-lg overflow-hidden border border-gray-300 shadow-md"
+                >
                   <img src={image.preview} alt="Pré-visualização da foto" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(image.id)}
-                    className="absolute top-1 right-1 rounded-full bg-black/70 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                    className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
                   >
                     remover
                   </button>
@@ -1006,21 +1106,22 @@ export default function NewProduct() {
             </p>
           </div>
 
-          <label>
-            Descrição
+          <label className={FIELD_LABEL_CLASS}>
+            <span>Descrição</span>
             <textarea
               name="description"
               placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
               value={form.description}
               onChange={handleChange}
               rows={5}
+              className={`${FIELD_BASE_CLASS} resize-none`}
             />
           </label>
 
-          <footer className="new-product-actions">
+          <footer className="flex justify-end gap-4 mt-6">
             <button
               type="button"
-              className="btn-secondary"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
               onClick={() => {
                 resetImagePreviews();
                 setForm(baseForm);
@@ -1030,41 +1131,42 @@ export default function NewProduct() {
             >
               Limpar
             </button>
-            <button type="submit" className="btn-primary" disabled={sending}>
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:opacity-70"
+              disabled={sending}
+            >
               {sending ? 'Publicando...' : 'Publicar produto'}
             </button>
           </footer>
         </form>
       </div>
       {isOverlayVisible && (
-        <div className="new-product-publish-overlay" role="status" aria-live="polite">
-          <div className="new-product-publish-card">
-            <p className="new-product-publish-card__title">{stageTitle}</p>
-            <p
-              key={stageDetail}
-              className="new-product-publish-card__detail"
-            >
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md text-center">
+            <p className="text-lg font-semibold text-blue-700">{stageTitle}</p>
+            <p key={stageDetail} className="text-sm text-gray-600 mt-2">
               {stageDetail}
             </p>
             {(publishStage === 'uploading' && !hasUploadProgress) ||
             publishStage === 'processing' ? (
               <div className="new-product-publish-spinner" aria-hidden="true" />
             ) : null}
-            <div
-              className={`new-product-publish-progress ${
-                publishStage === 'processing' ? 'is-processing' : ''
-              }`}
-            >
+            <div className="h-2 rounded-full bg-blue-200 overflow-hidden mt-4">
               <div
-                className="new-product-publish-progress__fill"
+                className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${progressWidth}%` }}
               />
             </div>
             {publishStage === 'processing' && (
               <>
-                <div className="new-product-publish-progress--detail">
+                <div className="h-2 rounded-full bg-blue-200 overflow-hidden mt-4">
                   <div
-                    className="new-product-publish-progress__fill--inner"
+                    className="h-full bg-blue-500 transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, serverProgress))}%` }}
                   />
                 </div>
