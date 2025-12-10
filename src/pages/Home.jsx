@@ -47,6 +47,15 @@ const resolveCountryName = (code) => {
   const normalized = String(code).trim().toUpperCase();
   return getCountryLabel(normalized) || regionDisplay?.of(normalized) || normalized;
 };
+const formatPostDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  }).format(date);
+};
 const isActive = (p) => (p?.status || 'active') !== 'sold';
 const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
@@ -1173,7 +1182,7 @@ export default function Home() {
       )}
 
       {/* grade de produtos pública */}
-      <section className="home-grid-section mt-2">
+      <section className="home-grid-section mt-2 px-0 sm:px-0">
 
         {displayedProducts.length === 0 ? (
           <div className="home-empty-state">
@@ -1185,7 +1194,7 @@ export default function Home() {
             <p>Experimente ajustar os filtros ou explorar outras localidades no mapa.</p>
           </div>
         ) : (
-          <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 p-1">
+          <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px sm:gap-1 w-full">
             {displayedProducts.map((product) => {
               const mainImage = product.image_urls?.[0] || product.image_url;
               const freeTag = isProductFree(product);
@@ -1193,6 +1202,19 @@ export default function Home() {
               const isFavorited = favoriteSet.has(productId);
               const isPulsed = pulseTarget === productId;
               const likeCount = getProductLikes(product);
+              const countryLabel = resolveCountryName(product.country);
+              const locationParts = [
+                product.city,
+                countryLabel,
+              ].filter(Boolean);
+              const postTimestamp =
+                product.posted_at ||
+                product.postedAt ||
+                product.postedAtDate ||
+                product.created_at ||
+                product.updated_at ||
+                '';
+              const postedAtLabel = formatPostDate(postTimestamp);
               
 
               return (
@@ -1201,38 +1223,39 @@ export default function Home() {
                     to={`/product/${product.id}`}
                     data-product-id={product.id}
                     onClick={() => registerClick(product.id)}
-                    className="home-card group bg-white border border-gray-100 rounded-xl shadow-sm transition hover:shadow-2xl relative overflow-hidden"
-                  >
-                  <div className="home-card__media relative w-full h-36 sm:h-40 lg:h-52 xl:h-56 overflow-hidden rounded-t-xl">
-                    <div className="home-card__slideshow absolute inset-0 w-full h-full overflow-hidden">
+                    className="home-card block relative w-full h-full group overflow-hidden"
+>
+                  <div className="home-card__media w-full aspect-square relative overflow-hidden">
+                    {postedAtLabel && (
+                      <div className="home-card__date-bar">
+                        <span className="home-card__date-text">{postedAtLabel}</span>
+                      </div>
+                    )}
                     <img
-  src={mainImage || IMG_PLACEHOLDER}
-  alt={product.title}
-  className="home-card__image w-full h-full object-cover transition-opacity duration-300"
-  loading="lazy"
-  decoding="async"
-  onError={(e) => {
-    e.currentTarget.src = IMG_PLACEHOLDER;
-    e.currentTarget.onerror = null;
-  }}
-/>
+                      src={mainImage || IMG_PLACEHOLDER}
+                      alt={product.title}
+                      className="home-card__image w-full h-full object-cover transition-opacity duration-300"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.src = IMG_PLACEHOLDER;
+                        e.currentTarget.onerror = null;
+                      }}
+                    />
 
-
-{Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
-  <img
-    src={product.image_urls[1] || IMG_PLACEHOLDER}
-    alt=""
-    className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-    loading="lazy"
-    decoding="async"
-    onError={(e) => {
-      e.currentTarget.src = IMG_PLACEHOLDER;
-      e.currentTarget.onerror = null;
-    }}
-  />
-)}
-
-                    </div>
+                    {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
+                      <img
+                        src={product.image_urls[1] || IMG_PLACEHOLDER}
+                        alt=""
+                        className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.src = IMG_PLACEHOLDER;
+                          e.currentTarget.onerror = null;
+                        }}
+                      />
+                    )}
                     {freeTag && (
                       <span className="home-card__badge absolute top-2 left-2 bg-green-600 text-white text-[11px] px-2 py-[2px] rounded-md shadow">
                         Grátis
@@ -1261,21 +1284,18 @@ export default function Home() {
                         ♥
                       </span>
                     </button>
+                    <div className="home-card__likes-badge">
+                      <span className="home-card__likes-icon" aria-hidden="true">♥</span>
+                      <span className="home-card__metric-value">{likeCount}</span>
+                    </div>
                   </div>
 
-                  <div className="home-card__content p-3 flex flex-col gap-1.5"> <div
-                      className="home-card__metrics flex items-center gap-2 text-gray-500 text-xs mt-1"
-                      aria-label="Curtidas"
-                    >
-                      
-                        <span className="home-card__metric-icon text-red-500">♥</span>
-                        <span className="home-card__metric-value">{likeCount}</span>
-                       
-                    
+                  <div className="home-card__content">
+                    <div className="home-card__title-bar" aria-label="Nome do produto">
+                      <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
+                        {product.title}
+                      </p>
                     </div>
-                    <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
-                      {product.title}
-                    </p>
                     <p
                       className={`home-card__price text-base font-bold ${
                         freeTag ? 'text-green-600' : 'text-gray-900'
@@ -1286,7 +1306,7 @@ export default function Home() {
                         : formatProductPrice(product.price, product.country)}
                     </p>
                     <p className="home-card__location text-xs text-gray-500">
-                      {product.city}
+                      {locationParts.join(' • ')}
                     </p>
                    
 
