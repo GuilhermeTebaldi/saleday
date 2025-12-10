@@ -1655,7 +1655,7 @@ button {
 .home-card__date-bar {
   position: absolute;
   top: 150px;
-  left: 110px;
+  left: 100px;
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
   background: rgba(253, 253, 253, 0.9);
@@ -1668,7 +1668,7 @@ button {
 
 .home-card__date-text {
   color: #030202;
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
