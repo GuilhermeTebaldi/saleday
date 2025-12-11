@@ -303,10 +303,24 @@ export default function NewProduct() {
     () => normalizeCountryCode(user?.country) || initialFormState.country,
     [user?.country]
   );
-  const baseForm = useMemo(
-    () => ({ ...initialFormState, country: defaultCountry, zip: user?.zip ?? '' }),
-    [defaultCountry, user?.zip]
-  );
+  const baseForm = useMemo(() => {
+    const saved = {
+      country: defaultCountry,
+      city: normalizeCityName(user?.city) || '',
+      state: user?.state ?? '',
+      neighborhood: user?.district ?? '',
+      street: user?.street ?? '',
+      zip: user?.zip ?? ''
+    };
+    return { ...initialFormState, ...saved };
+  }, [
+    defaultCountry,
+    user?.city,
+    user?.state,
+    user?.district,
+    user?.street,
+    user?.zip
+  ]);
   const [form, setForm] = useState(baseForm);
   const [images, setImages] = useState([]);
   const previewsRef = useRef(new Set());
@@ -811,9 +825,15 @@ export default function NewProduct() {
         }
       });
 
-      if (payload.zip) {
-        updateUser?.({ zip: payload.zip });
-      }
+      const userUpdates = {
+        country: payload.country,
+        state: payload.state,
+        city: payload.city,
+        neighborhood: payload.neighborhood,
+        street: payload.street,
+        zip: payload.zip
+      };
+      updateUser?.(userUpdates);
 
       const jobIdentifier = data?.jobId ?? null;
       if (!jobIdentifier) {
