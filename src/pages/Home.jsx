@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import formatProductPrice from '../utils/currency.js';
+import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
@@ -149,6 +150,12 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
         const normalizedRegion = normalizeCountryCode(region);
         if (normalizedRegion) return normalizedRegion;
       }
+      const timezone =
+        typeof window.Intl !== 'undefined'
+          ? window.Intl.DateTimeFormat().resolvedOptions?.().timeZone
+          : null;
+      const timezoneCountry = detectCountryFromTimezone(timezone);
+      if (timezoneCountry) return timezoneCountry;
     } catch {
       /* ignore */
     }

@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import { localeFromCountry } from './localeMap.js';
 import { DICTS } from './dictionaries.js';
+import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 
 function normalize(s) {
   return (s || '').replace(/\s+/g, ' ').trim();
@@ -201,11 +202,17 @@ export default function AutoI18n() {
         ? navigator.languages?.[0] || navigator.language
         : null;
 
+    const timezone =
+      typeof Intl !== 'undefined'
+        ? Intl.DateTimeFormat().resolvedOptions?.().timeZone
+        : null;
+    const timezoneCountry = detectCountryFromTimezone(timezone);
     return (
       matchSupportedLocale(byUser) ||
       matchSupportedLocale(geoLocale) ||
       matchSupportedLocale(byBrowser) ||
       matchSupportedLocale(byStorage) ||
+      matchSupportedLocale(localeFromCountry(timezoneCountry)) ||
       'pt-BR'
     );
   }, [user, geoLocale]);

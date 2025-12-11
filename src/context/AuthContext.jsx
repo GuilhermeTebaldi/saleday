@@ -1,4 +1,7 @@
-import { createContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import api from '../api/api.js';
+
+const REMEMBER_TOKEN_KEY = 'saleday.rememberToken';
 
 export const AuthContext = createContext();
 
@@ -16,6 +19,12 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
 
+  const persistRememberToken = useCallback((value) => {
+    if (typeof window === 'undefined') return;
+    if (value) localStorage.setItem(REMEMBER_TOKEN_KEY, value);
+    else localStorage.removeItem(REMEMBER_TOKEN_KEY);
+  }, []);
+
   useEffect(() => {
     if (token) localStorage.setItem('token', token);
     else localStorage.removeItem('token');
@@ -26,18 +35,54 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem('user');
   }, [user]);
 
-  const login = (data) => {
-    setUser(sanitizeUser(data.user));
-    setToken(data.token);
-  };
+  const login = useCallback(
+    (data) => {
+      setUser(sanitizeUser(data.user));
+      setToken(data.token);
+      if (data?.rememberToken) {
+        persistRememberToken(data.rememberToken);
+      }
+      setLoading(false);
+    },
+    [persistRememberToken]
+  );
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
+    setLoading(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('saleday.locale');
-  };
+    persistRememberToken(null);
+  }, [persistRememberToken]);
+
+  useEffect(() => {
+    if (user) return undefined;
+    if (typeof window === 'undefined') return undefined;
+    const rememberToken = localStorage.getItem(REMEMBER_TOKEN_KEY);
+    if (!rememberToken) return undefined;
+    let isActive = true;
+    setLoading(true);
+    api
+      .post('/auth/remember', { token: rememberToken })
+      .then((response) => {
+        if (!isActive) return;
+        login(response.data?.data);
+      })
+      .catch((err) => {
+        if (!isActive) return;
+        console.error('remember login failed:', err);
+        persistRememberToken(null);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [user, login, persistRememberToken]);
 
   const value = useMemo(
     () => ({
@@ -45,7 +90,7 @@ export function AuthProvider({ children }) {
       token,
       loading,
       login,
-      logout,
+      logout
     }),
     [user, token, loading, login, logout]
   );

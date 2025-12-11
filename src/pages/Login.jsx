@@ -16,6 +16,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
@@ -43,7 +44,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await api.post('/auth/login', { email, password });
+      if (!rememberMe && typeof window !== 'undefined') {
+        window.localStorage.removeItem('saleday.rememberToken');
+      }
+      const res = await api.post('/auth/login', { email, password, rememberMe });
       handleLoginSuccess(res.data.data);
     } catch (err) {
       const message = err.response?.data?.message ?? 'E-mail ou senha inválidos.';
@@ -76,6 +80,15 @@ export default function Login() {
           placeholder="Digite sua senha"
           required
         />
+
+        <label className="auth-form__remember">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(event) => setRememberMe(event.target.checked)}
+          />
+          Lembrar meus dados neste dispositivo
+        </label>
 
         {error && <p className="form-error">{error}</p>}
 
