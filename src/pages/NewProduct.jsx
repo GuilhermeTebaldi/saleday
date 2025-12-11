@@ -975,6 +975,23 @@ export default function NewProduct() {
                 <span className="text-xs text-red-600">Selecione uma categoria.</span>
               )}
             </label>
+            <div className="flex flex-col gap-2 my-2">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-gray-600">Detectar localização automática:</span>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  disabled={loadingLocation}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/40 transition hover:from-blue-500 hover:to-blue-400 disabled:opacity-60"
+                >
+                  <span aria-hidden="true">📍</span>
+                  {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                País e cidade são obrigatórios; use o botão acima para preencher estes campos automaticamente e acelerar a publicação.
+              </p>
+            </div>
             <label className={FIELD_LABEL_CLASS}>
               <span>País (sigla)</span>
               <select name="country" value={form.country} onChange={handleChange} className={FIELD_BASE_CLASS}>
@@ -1020,23 +1037,6 @@ export default function NewProduct() {
             {hasFieldError('zip') && (
               <span className="text-xs text-red-600">Informe o CEP/ZIP.</span>
             )}
-          </div>
-
-          <div className="flex flex-col gap-2 my-2">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-gray-600">Detectar localização automática:</span>
-              <button
-                type="button"
-                onClick={handleDetectLocation}
-                disabled={loadingLocation}
-                className="bg-blue-600 text-white px-3 py-1 rounded"
-              >
-                {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500">
-              País e cidade são obrigatórios. Você pode preenchê-los manualmente ou usar o botão acima para detectar sua localização.
-            </p>
           </div>
 
           {/* Endereço */}
