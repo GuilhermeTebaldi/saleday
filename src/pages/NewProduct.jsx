@@ -160,6 +160,24 @@ function normalizeState(uf, country) {
   return s.slice(0, 5);
 }
 
+// normaliza nome de cidade para capitalização adequada (ex: "ardea" -> "Ardea", "rio de janeiro" -> "Rio de Janeiro")
+function normalizeCityName(value) {
+  if (!value) return '';
+  const trimmed = String(value).trim().toLowerCase();
+  if (!trimmed) return '';
+
+  const LOWER_WORDS = new Set(['de', 'da', 'do', 'das', 'dos', 'di', 'del', 'della', 'e']);
+
+  return trimmed
+    .split(/\s+/)
+    .map((word, index) => {
+      if (!word) return '';
+      if (index > 0 && LOWER_WORDS.has(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+}
+
 /* ===== Parser de preço flexível (topo, antes do componente) ===== */
 // Trata variações comuns de formatação de preço (pt-BR, en-US e mistos) sem penalizar erros pequenos.
 const parsePriceFlexible = (v) => {
@@ -279,15 +297,15 @@ const scrollToField = (field) => {
 };
 
 export default function NewProduct() {
-  const { token, user } = useContext(AuthContext);
+  const { token, user, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const defaultCountry = useMemo(
     () => normalizeCountryCode(user?.country) || initialFormState.country,
     [user?.country]
   );
   const baseForm = useMemo(
-    () => ({ ...initialFormState, country: defaultCountry }),
-    [defaultCountry]
+    () => ({ ...initialFormState, country: defaultCountry, zip: user?.zip ?? '' }),
+    [defaultCountry, user?.zip]
   );
   const [form, setForm] = useState(baseForm);
   const [images, setImages] = useState([]);
@@ -315,8 +333,9 @@ export default function NewProduct() {
       form.category?.trim() &&
       form.country?.trim() &&
       form.city?.trim() &&
+      form.zip?.trim() &&
       (form.isFree || form.price),
-    [form.title, form.category, form.price, form.isFree, form.country, form.city]
+    [form.title, form.category, form.price, form.isFree, form.country, form.city, form.zip]
   );
   const currencyCode = useMemo(
     () => resolveCurrencyFromCountry(form.country),
@@ -446,8 +465,9 @@ export default function NewProduct() {
     if (!form.isFree && !form.price?.trim()) missing.push({ name: 'price', label: 'Preço' });
     if (!form.country?.trim()) missing.push({ name: 'country', label: 'País' });
     if (!form.city?.trim()) missing.push({ name: 'city', label: 'Cidade' });
+    if (!form.zip?.trim()) missing.push({ name: 'zip', label: 'CEP/ZIP' });
     return missing;
-  }, [form.title, form.category, form.price, form.isFree, form.country, form.city]);
+  }, [form.title, form.category, form.price, form.isFree, form.country, form.city, form.zip]);
 
   const hasFieldError = (field) =>
     showFieldErrors && missingFields.some((item) => item.name === field);
@@ -495,6 +515,12 @@ export default function NewProduct() {
         lat: '',
         lng: ''
       }));
+      return;
+    }
+
+    if (name === 'city') {
+      const normalizedCity = normalizeCityName(value);
+      setForm((prev) => ({ ...prev, city: normalizedCity }));
       return;
     }
 
@@ -609,7 +635,7 @@ export default function NewProduct() {
               ...f,
               country: countryCode,
               state: stateNorm,
-              city: addr.city || f.city,
+              city: normalizeCityName(addr.city) || f.city,
               neighborhood: addr.neighborhood || f.neighborhood,
               street: addr.street || f.street,
               zip: addr.zip || f.zip,
@@ -652,7 +678,7 @@ export default function NewProduct() {
         ...form,
         country: normalizeCountryCode(a.country) || form.country,
         state: a.state || form.state,
-        city: a.city || form.city,
+        city: normalizeCityName(a.city) || form.city,
         neighborhood: a.neighborhood ?? form.neighborhood,
         street: a.street ?? form.street,
         zip: a.zip || cleaned
@@ -784,6 +810,10 @@ export default function NewProduct() {
           setUploadProgress((prev) => Math.min(99, prev + 6));
         }
       });
+
+      if (payload.zip) {
+        updateUser?.({ zip: payload.zip });
+      }
 
       const jobIdentifier = data?.jobId ?? null;
       if (!jobIdentifier) {
@@ -961,7 +991,7 @@ export default function NewProduct() {
           <div className="my-2">
             <div className="flex gap-2">
               <input
-                className={`flex-1 ${FIELD_BASE_CLASS}`}
+                className={`flex-1 ${FIELD_BASE_CLASS} ${hasFieldError('zip') ? 'ring-2 ring-red-400' : ''}`}
                 placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
                 name="zip"
                 value={form.zip}
@@ -987,6 +1017,9 @@ export default function NewProduct() {
             <p className="text-xs text-gray-500 mt-1">
               Dica: use “Preencher pelo CEP/ZIP” para localizar automaticamente.
             </p>
+            {hasFieldError('zip') && (
+              <span className="text-xs text-red-600">Informe o CEP/ZIP.</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 my-2">

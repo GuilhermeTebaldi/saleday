@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
 export const AuthContext = createContext();
 
@@ -39,6 +39,14 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('saleday.locale');
   };
 
+  const updateUser = useCallback((updates) => {
+    if (!updates || typeof updates !== 'object') return;
+    setUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, ...updates };
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -46,8 +54,9 @@ export function AuthProvider({ children }) {
       loading,
       login,
       logout,
+      updateUser
     }),
-    [user, token, loading]
+    [user, token, loading, login, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
