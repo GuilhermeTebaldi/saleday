@@ -261,6 +261,66 @@ const FIELD_SCROLL_IDS = {
   category: 'new-product-field-category'
 };
 
+const NEW_PRODUCT_ADDRESS_STORAGE_KEY = 'newProductAddress';
+
+const safeTrim = (value) => (typeof value === 'string' ? value.trim() : '');
+
+function loadSavedNewProductAddress(defaultCountry) {
+  const fallbackCountry = normalizeCountryCode(defaultCountry) || initialFormState.country;
+  const fallback = {
+    country: fallbackCountry,
+    city: '',
+    state: '',
+    neighborhood: '',
+    street: '',
+    zip: ''
+  };
+
+  if (typeof window === 'undefined') return fallback;
+
+  try {
+    const stored = window.localStorage.getItem(NEW_PRODUCT_ADDRESS_STORAGE_KEY);
+    if (!stored) return fallback;
+    const parsed = JSON.parse(stored);
+    const country = normalizeCountryCode(parsed?.country) || fallbackCountry;
+    const state = normalizeState(parsed?.state, country);
+    return {
+      country,
+      city: normalizeCityName(parsed?.city),
+      state,
+      neighborhood: safeTrim(parsed?.neighborhood),
+      street: safeTrim(parsed?.street),
+      zip: safeTrim(parsed?.zip)
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistNewProductAddress(payload, fallbackCountry) {
+  const normalizedCountry = normalizeCountryCode(payload?.country) || fallbackCountry || initialFormState.country;
+  const entry = {
+    country: normalizedCountry,
+    city: normalizeCityName(payload?.city),
+    state: normalizeState(payload?.state, normalizedCountry),
+    neighborhood: safeTrim(payload?.neighborhood),
+    street: safeTrim(payload?.street),
+    zip: safeTrim(payload?.zip)
+  };
+
+  if (typeof window === 'undefined') {
+    return entry;
+  }
+
+  try {
+    window.localStorage.setItem(NEW_PRODUCT_ADDRESS_STORAGE_KEY, JSON.stringify(entry));
+  } catch {
+    // no-op
+  }
+
+  return entry;
+}
+
 const localizeFieldTarget = (field) => {
   if (typeof document === 'undefined') return null;
   const dataTarget = document.querySelector(`[data-new-product-field="${field}"]`);
@@ -297,30 +357,18 @@ const scrollToField = (field) => {
 };
 
 export default function NewProduct() {
-  const { token, user, updateUser } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const defaultCountry = useMemo(
     () => normalizeCountryCode(user?.country) || initialFormState.country,
     [user?.country]
   );
-  const baseForm = useMemo(() => {
-    const saved = {
-      country: defaultCountry,
-      city: normalizeCityName(user?.city) || '',
-      state: user?.state ?? '',
-      neighborhood: user?.district ?? '',
-      street: user?.street ?? '',
-      zip: user?.zip ?? ''
-    };
-    return { ...initialFormState, ...saved };
-  }, [
-    defaultCountry,
-    user?.city,
-    user?.state,
-    user?.district,
-    user?.street,
-    user?.zip
-  ]);
+  const [savedAddress, setSavedAddress] = useState(() => loadSavedNewProductAddress(defaultCountry));
+  useEffect(() => {
+    if (!defaultCountry) return;
+    setSavedAddress(loadSavedNewProductAddress(defaultCountry));
+  }, [defaultCountry]);
+  const baseForm = useMemo(() => ({ ...initialFormState, ...savedAddress }), [savedAddress]);
   const [form, setForm] = useState(baseForm);
   const [images, setImages] = useState([]);
   const previewsRef = useRef(new Set());
@@ -825,15 +873,8 @@ export default function NewProduct() {
         }
       });
 
-      const userUpdates = {
-        country: payload.country,
-        state: payload.state,
-        city: payload.city,
-        neighborhood: payload.neighborhood,
-        street: payload.street,
-        zip: payload.zip
-      };
-      updateUser?.(userUpdates);
+      const savedEntry = persistNewProductAddress(payload, defaultCountry);
+      setSavedAddress(savedEntry);
 
       const jobIdentifier = data?.jobId ?? null;
       if (!jobIdentifier) {
