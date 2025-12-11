@@ -1,6 +1,6 @@
 // frontend/src/pages/Login.jsx
 // Página de autenticação de usuários.
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/api.js';
 import Auth0LoginActions from '../components/Auth0LoginActions.jsx';
@@ -9,12 +9,24 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { localeFromCountry } from '../i18n/localeMap.js';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('saleday.loginEmail') ?? '';
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (email) {
+      localStorage.setItem('saleday.loginEmail', email);
+    } else {
+      localStorage.removeItem('saleday.loginEmail');
+    }
+  }, [email]);
 
   const handleLoginSuccess = (payload) => {
     login(payload);

@@ -35,6 +35,17 @@ const handleSessionExpiration = (message) => {
     }
   }
   localStorage.removeItem('token');
+  const onAdminPage =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  if (onAdminPage) {
+    localStorage.removeItem('adminToken');
+    if (!window.location.pathname.startsWith('/admin/login')) {
+      setTimeout(() => {
+        window.location.href = '/admin/login';
+      }, 1200);
+    }
+    return;
+  }
   if (!window.location.pathname.startsWith('/login')) {
     setTimeout(() => {
       window.location.href = '/login';
