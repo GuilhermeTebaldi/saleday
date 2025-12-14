@@ -11,6 +11,7 @@ import { getProductKey, mergeProductLists } from '../utils/productCollections.js
 
 const DEFAULT_CENTER = [-23.55, -46.63];
 const DEFAULT_ZOOM = 12;
+const normalizeQueryValue = (value) => (value || '').trim().toLowerCase();
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -106,6 +107,17 @@ export default function MapSearch({
   const [geoRequested, setGeoRequested] = useState(false);
   const mapRef = useRef(null);
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
+  const [locationQuery, setLocationQuery] = useState('');
+  const [searchingLocation, setSearchingLocation] = useState(false);
+  const pendingCenterRef = useRef(null);
+  const applyBoundsFromPoint = useCallback((lat, lng, delta = 0.05) => {
+    setBbox({
+      minLat: lat - delta,
+      maxLat: lat + delta,
+      minLng: lng - delta,
+      maxLng: lng + delta
+    });
+  }, []);
 
   const buildBoundsFromMap = useCallback((mapInstance) => {
     if (!mapInstance) return null;
@@ -166,6 +178,82 @@ export default function MapSearch({
     mapRef.current.setView(mapCenter, mapZoom);
   }, [showMap, mapCenter, mapZoom]);
 
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    const payload = pendingCenterRef.current;
+    if (!payload) return;
+    pendingCenterRef.current = null;
+    mapRef.current.setView(payload.center, payload.zoom ?? mapZoom ?? DEFAULT_ZOOM);
+  }, [mapReady, mapZoom]);
+
+  const searchLocation = useCallback(
+    async (rawQuery, { showSuccessToast = false, showErrors = true, updateInput = false } = {}) => {
+      const trimmed = rawQuery?.trim();
+      if (!trimmed) {
+        if (showErrors) {
+          toast.error('Digite um endereço ou cidade para localizar.');
+        }
+        return false;
+      }
+      try {
+        const { data } = await api.get('/geo/forward', { params: { q: trimmed } });
+        if (!data.success || !data.data) {
+          if (showErrors) toast.error('Local não encontrado.');
+          return false;
+        }
+        const { lat, lng } = data.data;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          if (showErrors) toast.error('Coordenadas inválidas.');
+          return false;
+        }
+        const center = [lat, lng];
+        setMapCenter(center);
+        const zoomTarget = Number.isFinite(mapZoom) ? mapZoom : DEFAULT_ZOOM;
+        pendingCenterRef.current = { center, zoom: zoomTarget };
+        if (mapReady && mapRef.current) {
+          mapRef.current.setView(center, zoomTarget);
+          pendingCenterRef.current = null;
+        }
+        const delta = Math.max(0.02, zoomTarget * 0.003);
+        const bounds = {
+          minLat: lat - delta,
+          maxLat: lat + delta,
+          minLng: lng - delta,
+          maxLng: lng + delta
+        };
+        applyBoundsFromPoint(lat, lng, delta);
+        await fetchProductsByBbox(bounds, { keepExisting: false });
+        const formattedLabel = buildLocationLabel(data.data);
+        if (updateInput && formattedLabel) {
+          setLocationQuery(formattedLabel);
+        }
+        if (showSuccessToast) {
+          toast.success('Localização aplicada no mapa.');
+        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        if (showErrors) {
+          toast.error('Erro ao buscar localização.');
+        }
+        return false;
+      }
+    },
+    [mapZoom, applyBoundsFromPoint, mapReady, fetchProductsByBbox]
+  );
+
+  const handleLocationSearch = useCallback(async () => {
+    setSearchingLocation(true);
+    try {
+      await searchLocation(locationQuery, {
+        showSuccessToast: true,
+        updateInput: true
+      });
+    } finally {
+      setSearchingLocation(false);
+    }
+  }, [locationQuery, searchLocation]);
+
   const handleViewportChange = useCallback(
     ({ lat, lng, zoom }) => {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -201,7 +289,7 @@ export default function MapSearch({
     );
   }, [showMap, geoRequested, initialCenter, onLocateUser]);
 
-  async function fetchProductsByBbox(bounds) {
+  async function fetchProductsByBbox(bounds, { keepExisting = true } = {}) {
     setLoading(true);
     const locationPromise = resolveBoundsLocation(bounds);
     try {
@@ -223,15 +311,21 @@ export default function MapSearch({
       let nextList = regionProducts;
       const locationInfo = await locationPromise;
 
+      let countryProducts = [];
       if (locationInfo?.country) {
         try {
           const fallback = await api.get('/products', {
             params: { sort: 'rank', country: locationInfo.country }
           });
           if (fallback.data?.success) {
-            const missingCoords = (fallback.data.data ?? []).filter((item) => !hasValidCoords(item));
-            if (missingCoords.length) {
-              nextList = mergeProductLists(nextList, missingCoords);
+            countryProducts = Array.isArray(fallback.data.data) ? fallback.data.data : [];
+            if (nextList.length === 0 && countryProducts.length) {
+              nextList = countryProducts;
+            } else {
+              const missingCoords = countryProducts.filter((item) => !hasValidCoords(item));
+              if (missingCoords.length) {
+                nextList = mergeProductLists(nextList, missingCoords);
+              }
             }
           }
         } catch (fallbackErr) {
@@ -239,12 +333,22 @@ export default function MapSearch({
         }
       }
 
-      onProductsLoaded?.(nextList, { keepExisting: true, priorityKeys });
+      onProductsLoaded?.(nextList, { keepExisting, priorityKeys });
       if (bounds?.minLat != null) toast.success('Produtos atualizados para a região selecionada.');
+      const mapInstance = mapRef.current;
+      const centerPoint = mapInstance?.getCenter?.();
+      const zoomLevel = mapInstance?.getZoom?.();
       const applied = {
         bounds,
         label: locationInfo?.label || 'Região selecionada no mapa',
-        country: locationInfo?.country || ''
+        country: locationInfo?.country || '',
+        center: centerPoint
+          ? {
+              lat: Number(centerPoint.lat),
+              lng: Number(centerPoint.lng),
+              zoom: Number.isFinite(zoomLevel) ? zoomLevel : null
+            }
+          : null
       };
       onRegionApplied?.(applied);
     } catch (err) {
@@ -319,20 +423,38 @@ export default function MapSearch({
                   animate={{ scale: 1, y: 0 }}
                   exit={{ scale: 0.95, y: 10 }}
                 >
-                  <div className="flex items-center justify-between px-3 py-2 border-b">
+                  <div className="flex flex-col gap-3 px-3 py-2 border-b">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
                         <MapIcon size={16} />
                       </span>
                       <h3 className="font-semibold text-sm">Selecione a região no mapa</h3>
                     </div>
-                    <button
-                      onClick={closeModal}
-                      aria-label="Fechar"
-                      className="p-2 rounded hover:bg-gray-100"
-                    >
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={locationQuery}
+                          onChange={(e) => setLocationQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
+                          placeholder="Buscar cidade ou endereço"
+                          className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={handleLocationSearch}
+                          disabled={searchingLocation}
+                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold disabled:opacity-60"
+                        >
+                          {searchingLocation ? 'Buscando...' : 'Ir'}
+                        </button>
+                      </div>
+                      <button
+                        onClick={closeModal}
+                        aria-label="Fechar"
+                        className="p-2 rounded hover:bg-gray-100"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative h-[420px]">

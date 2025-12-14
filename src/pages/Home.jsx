@@ -200,6 +200,19 @@ const writeStoredMapCenter = (center) => {
   }
 };
 
+const normalizeCenter = (candidate) => {
+  if (!candidate) return null;
+  const lat = Number(candidate.lat);
+  const lng = Number(candidate.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const zoomValue = Number(candidate.zoom);
+  return {
+    lat,
+    lng,
+    zoom: Number.isFinite(zoomValue) ? zoomValue : null
+  };
+};
+
 const boundsAreValid = (bounds) => {
   if (!bounds) return false;
   return ['minLat', 'maxLat', 'minLng', 'maxLng'].every((key) =>
@@ -397,7 +410,7 @@ export default function Home() {
     } catch {
       // ignora falha de storage (modo privado, quota, etc.)
     }
-  }, [preferredCountry]);
+  }, [preferredCountry, handlePersistMapCenter]);
 
   useEffect(() => {
     setGeoScope((current) => {
@@ -406,7 +419,7 @@ export default function Home() {
       if (current.country === preferredCountry) return current;
       return { type: 'country', country: preferredCountry };
     });
-  }, [preferredCountry]);
+  }, [preferredCountry, handlePersistMapCenter]);
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400);
     onScroll();
@@ -669,6 +682,10 @@ export default function Home() {
       const derivedBounds =
         (details.bounds && boundsAreValid(details.bounds) && details.bounds) ||
         buildBoundsFromPoint(details.lat, details.lng);
+      const persistedCenter = normalizeCenter(details);
+      if (persistedCenter) {
+        handlePersistMapCenter(persistedCenter);
+      }
       if (derivedBounds) {
         setGeoScope({ type: 'bbox', bounds: derivedBounds });
       } else {
@@ -678,7 +695,7 @@ export default function Home() {
       setLocationCountry(null);
       return;
     }
-  }, [preferredCountry]);
+  }, [preferredCountry, handlePersistMapCenter]);
 
   const handleCategoryFilter = useCallback(
     async (label) => {
@@ -757,12 +774,15 @@ export default function Home() {
   const handleRegionApplied = useCallback((details) => {
     if (!details) return;
     const bounds = details.bounds || details;
-    if (boundsAreValid(bounds)) {
+    const hasBounds = boundsAreValid(bounds);
+    if (hasBounds) {
       setGeoScope({ type: 'bbox', bounds, country: details.country || preferredCountry });
-      const center = deriveCenterFromBounds(bounds);
-      if (center) {
-        handlePersistMapCenter(center);
-      }
+    }
+    const boundsCenter = hasBounds ? deriveCenterFromBounds(bounds) : null;
+    const centerFromDetails = normalizeCenter(details.center);
+    const centerToPersist = centerFromDetails || boundsCenter;
+    if (centerToPersist) {
+      handlePersistMapCenter(centerToPersist);
     }
     const label = typeof details.label === 'string' && details.label.trim()
       ? details.label.trim()

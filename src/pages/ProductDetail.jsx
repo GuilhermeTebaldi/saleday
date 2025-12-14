@@ -746,7 +746,7 @@ export default function ProductDetail() {
     { label: 'Quartos', value: product.bedrooms },
     { label: 'Banheiros', value: product.bathrooms },
     { label: 'Vagas', value: product.parking },
-    { label: 'Condomínio (R$)', value: product.condo_fee },
+    { label: 'Condomínio', value: product.condo_fee },
     { label: 'Tipo de aluguel', value: product.rent_type }
   ].filter((entry) => entry.value);
   const specEntries = [
