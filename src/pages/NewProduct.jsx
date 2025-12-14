@@ -75,6 +75,13 @@ const initialFormState = {
   model: '',
   color: '',
   year: '',
+  propertyType: '',
+  area: '',
+  bedrooms: '',
+  bathrooms: '',
+  parking: '',
+  condoFee: '',
+  rentType: '',
   isFree: false,
   pickupOnly: false
 };
@@ -84,9 +91,32 @@ const categories = [
   'Informática',
   'Moda',
   'Casa e Jardim',
+  'Imóvel',
+  'Apartamento',
+  'Aluguel',
   'Esportes',
   'Veículos',
   'Outros'
+];
+
+const DEFAULT_DETAILS = [
+  { name: 'brand', label: 'Marca', placeholder: 'Ex: Nike' },
+  { name: 'model', label: 'Modelo / variação', placeholder: 'Ex: Air Zoom' },
+  { name: 'color', label: 'Cor', placeholder: 'Ex: Azul' }
+];
+
+const PROPERTY_DETAILS = [
+  { name: 'propertyType', label: 'Tipo de imóvel', placeholder: 'Ex: Casa, cobertura, sobrado' },
+  { name: 'area', label: 'Área (m²)', placeholder: 'Ex: 120', inputMode: 'numeric' },
+  { name: 'bedrooms', label: 'Quartos', placeholder: 'Ex: 3', inputMode: 'numeric' },
+  { name: 'bathrooms', label: 'Banheiros', placeholder: 'Ex: 2', inputMode: 'numeric' },
+  { name: 'parking', label: 'Vagas', placeholder: 'Ex: 1', inputMode: 'numeric' },
+  { name: 'condoFee', label: 'Condomínio (R$)', placeholder: 'Ex: 600', inputMode: 'decimal' }
+];
+
+const RENTAL_EXTRA_DETAILS = [
+  ...PROPERTY_DETAILS,
+  { name: 'rentType', label: 'Tipo de aluguel', placeholder: 'Ex: Temporada ou mensal' }
 ];
 
 const CATEGORY_DETAILS = {
@@ -99,14 +129,11 @@ const CATEGORY_DETAILS = {
   'Eletrônicos': [
     { name: 'brand', label: 'Marca', placeholder: 'Ex: Apple' },
     { name: 'model', label: 'Modelo', placeholder: 'Ex: iPhone 15' }
-  ]
+  ],
+  Imóvel: { fields: PROPERTY_DETAILS, skipDefaults: true },
+  Apartamento: { fields: PROPERTY_DETAILS, skipDefaults: true },
+  Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true }
 };
-
-const DEFAULT_DETAILS = [
-  { name: 'brand', label: 'Marca', placeholder: 'Ex: Nike' },
-  { name: 'model', label: 'Modelo / variação', placeholder: 'Ex: Air Zoom' },
-  { name: 'color', label: 'Cor', placeholder: 'Ex: Azul' }
-];
 
 // normaliza UF para duas letras quando possível
 function normalizeState(uf, country) {
@@ -542,8 +569,11 @@ export default function NewProduct() {
     });
   }, [form.isFree]);
   const categoryDetails = useMemo(() => {
-    const specific = CATEGORY_DETAILS[form.category] ?? [];
-    const combined = [...specific, ...DEFAULT_DETAILS];
+    const config = CATEGORY_DETAILS[form.category];
+    const specific = Array.isArray(config) ? config : config?.fields ?? [];
+    const skipDefaults =
+      !!config && !Array.isArray(config) && config.skipDefaults === true;
+    const combined = skipDefaults ? specific : [...specific, ...DEFAULT_DETAILS];
     const seen = new Set();
     const result = [];
     for (const field of combined) {
