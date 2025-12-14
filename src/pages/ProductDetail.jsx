@@ -737,7 +737,20 @@ export default function ProductDetail() {
 
   const isFreeProduct = isProductFree(product);
   const priceFmt = isFreeProduct ? 'Grátis' : formatProductPrice(product.price, product.country);
+  const propertySpecs = [
+    { label: 'Tipo de imóvel', value: product.property_type },
+    {
+      label: 'Área (m²)',
+      value: product.surface_area
+    },
+    { label: 'Quartos', value: product.bedrooms },
+    { label: 'Banheiros', value: product.bathrooms },
+    { label: 'Vagas', value: product.parking },
+    { label: 'Condomínio (R$)', value: product.condo_fee },
+    { label: 'Tipo de aluguel', value: product.rent_type }
+  ].filter((entry) => entry.value);
   const specEntries = [
+    ...propertySpecs,
     { label: 'Marca', value: product.brand },
     { label: 'Modelo', value: product.model },
     { label: 'Cor', value: product.color },

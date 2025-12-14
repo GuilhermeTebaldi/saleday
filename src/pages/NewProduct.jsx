@@ -835,6 +835,13 @@ export default function NewProduct() {
       model: form.model?.trim() || null,
       color: form.color?.trim() || null,
       year: form.year?.trim() || null,
+      propertyType: form.propertyType?.trim() || null,
+      area: form.area?.trim() || null,
+      bedrooms: form.bedrooms?.trim() || null,
+      bathrooms: form.bathrooms?.trim() || null,
+      parking: form.parking?.trim() || null,
+      condoFee: form.condoFee?.trim() || null,
+      rentType: form.rentType?.trim() || null,
       is_free: form.isFree ? 'true' : 'false',
       pickup_only: form.pickupOnly ? 'true' : 'false'
     };

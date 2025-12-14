@@ -163,11 +163,68 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
   return DEFAULT_COUNTRY;
 };
 
+const MAP_CENTER_KEY = 'saleday.map.center';
+const readStoredMapCenter = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(MAP_CENTER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const lat = Number(parsed?.lat);
+    const lng = Number(parsed?.lng);
+    const zoom = Number(parsed?.zoom);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return {
+        lat,
+        lng,
+        zoom: Number.isFinite(zoom) ? zoom : null
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredMapCenter = (center) => {
+  if (!center || typeof window === 'undefined') return;
+  try {
+    const payload = {
+      lat: center.lat,
+      lng: center.lng,
+      zoom: center.zoom ?? null
+    };
+    window.localStorage.setItem(MAP_CENTER_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore
+  }
+};
+
 const boundsAreValid = (bounds) => {
   if (!bounds) return false;
   return ['minLat', 'maxLat', 'minLng', 'maxLng'].every((key) =>
-    Number.isFinite(bounds[key])
+    Number.isFinite(Number(bounds[key]))
   );
+};
+
+const deriveCenterFromBounds = (bounds) => {
+  if (!bounds) return null;
+  const minLat = Number(bounds.minLat);
+  const maxLat = Number(bounds.maxLat);
+  const minLng = Number(bounds.minLng);
+  const maxLng = Number(bounds.maxLng);
+  if (
+    Number.isFinite(minLat) &&
+    Number.isFinite(maxLat) &&
+    Number.isFinite(minLng) &&
+    Number.isFinite(maxLng)
+  ) {
+    return {
+      lat: (minLat + maxLat) / 2,
+      lng: (minLng + maxLng) / 2
+    };
+  }
+  return null;
 };
 
 const geoScopeToParams = (scope, fallbackCountry = DEFAULT_COUNTRY) => {
@@ -201,7 +258,11 @@ const updateLikesInCollection = (collection, productId, delta) => {
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
-  const { country: detectedCountry } = useContext(GeoContext);
+  const {
+    country: detectedCountry,
+    lat: detectedLat,
+    lng: detectedLng
+  } = useContext(GeoContext);
   const navigate = useNavigate();
   const location = useLocation();
   const preferredCountry = useMemo(
@@ -212,6 +273,7 @@ export default function Home() {
 
   // produtos / favoritos (já existia)
   const [products, setProducts] = useState([]);
+  const [lastMapCenter, setLastMapCenter] = useState(() => readStoredMapCenter());
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
@@ -247,6 +309,11 @@ export default function Home() {
     );
   }, [location.search, location.pathname, navigate]);
   const drawerRef = useRef(null);
+  const handlePersistMapCenter = useCallback((center) => {
+    if (!center || !Number.isFinite(center.lat) || !Number.isFinite(center.lng)) return;
+    setLastMapCenter(center);
+    writeStoredMapCenter(center);
+  }, []);
   const mapOpenRef = useRef(null);
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
   const [pulseTarget, setPulseTarget] = useState(null);
@@ -692,13 +759,34 @@ export default function Home() {
     const bounds = details.bounds || details;
     if (boundsAreValid(bounds)) {
       setGeoScope({ type: 'bbox', bounds, country: details.country || preferredCountry });
+      const center = deriveCenterFromBounds(bounds);
+      if (center) {
+        handlePersistMapCenter(center);
+      }
     }
     const label = typeof details.label === 'string' && details.label.trim()
       ? details.label.trim()
       : 'Região selecionada no mapa';
     setLocationSummary(label);
     setLocationCountry(details.country ? String(details.country).toUpperCase() : null);
-  }, [preferredCountry]);
+  }, [preferredCountry, handlePersistMapCenter]);
+
+  const mapInitialCenter = useMemo(() => {
+    if (lastMapCenter) return lastMapCenter;
+    if (geoScope?.type === 'bbox' && boundsAreValid(geoScope.bounds)) {
+      const center = deriveCenterFromBounds(geoScope.bounds);
+      if (center) return center;
+    }
+    if (Number.isFinite(detectedLat) && Number.isFinite(detectedLng)) {
+      return { lat: detectedLat, lng: detectedLng };
+    }
+    return null;
+  }, [lastMapCenter, geoScope, detectedLat, detectedLng]);
+
+  const handleRegisterMapOpener = useCallback((handler) => {
+    mapOpenRef.current =
+      typeof handler === 'function' ? handler : null;
+  }, []);
 
   const handleClearAllFilters = useCallback(() => {
     setSearchSummary(null);
@@ -1026,90 +1114,20 @@ export default function Home() {
             </div>
           </div>
           <div className="home-hero__toolbar">
-  <div className="home-hero__row-scroll">
-    {/* Grupo ESQUERDA: Todos / Gratuitos */}
-    <div className="home-hero__group home-hero__group--left">
-      <button
-        type="button"
-        onClick={() => setViewMode('all')}
-        className={`home-hero__pill ${viewMode === 'all' ? 'is-active' : ''}`}
-      >
-        <span>Todos</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setViewMode('free')}
-        disabled={!freeProducts.length}
-        className={`home-hero__pill ${viewMode === 'free' ? 'is-active' : ''} ${!freeProducts.length ? 'is-disabled' : ''}`}
-      >
-        <span>Gratuitos</span>
-        {Boolean(freeProducts.length) && (
-          <span className="home-hero__pill-badge">{freeProducts.length}</span>
-        )}
-      </button>
-    </div>
-
-    {/* Grupo DIREITA: Favoritos / Confirmados */}
-    <div className="home-hero__group home-hero__group--right">
-      {/* Favoritos */}
-      <button
-        type="button"
-        onClick={openFavoritesDrawer}
-        className="home-hero__iconchip"
-        aria-label="Abrir favoritos"
-      >
-        <span className="home-hero__iconchip-icon">♥</span>
-         
-      </button>
-
-      {/* Confirmados */}
-      {token && (
-        <button
-          type="button"
-          onClick={openOrdersDrawer}
-          className={`home-hero__iconchip ${hasNewConfirmed ? 'has-new' : ''} ${
-            showConfirmedAttention ? 'is-attention' : ''
-          }`}
-          aria-label="Abrir compras confirmadas"
-        >
-          <span className="home-hero__iconchip-icon">✔</span>
-          
-          <AnimatePresence>
-            {hasNewConfirmed && (
-              <motion.span
-                className="home-hero__confirmed-note"
-                key="confirmed-note"
-                initial={{ opacity: 0, scale: 0.9, y: 6 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 6 }}
-                transition={{ duration: 0.35, ease: 'easeOut' }}
-                aria-live="polite"
-              >
-                Pedido confirmado!
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
-      )}
-    </div>
-
-    {/* MapSearch continua depois dos grupos */}
-    <div className="home-hero__map-inline">
-      <MapSearch
-        onProductsLoaded={handleProductsLoaded}
-        onRegionApplied={handleRegionApplied}
-        resetSignal={externalResetToken}
-        onRegisterOpenMap={(fn) => {
-          mapOpenRef.current = fn;
-        }}
-      />
-    </div>
-  </div>
+ 
 </div>
 
   </div>
       </section>
+      <MapSearch
+        onProductsLoaded={handleProductsLoaded}
+        onRegionApplied={handleRegionApplied}
+        resetSignal={externalResetToken}
+        onRegisterOpenMap={handleRegisterMapOpener}
+        initialCenter={mapInitialCenter}
+        initialZoom={mapInitialCenter?.zoom ?? undefined}
+        onLocateUser={handlePersistMapCenter}
+      />
 
       {(activeFilters.length > 0 || countryShortcuts.length > 0) && (
         <section className="home-active-filters mb-0">

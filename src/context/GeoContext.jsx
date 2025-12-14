@@ -3,23 +3,33 @@ import api from '../api/api.js';
 
 const STORAGE_KEY = 'saleday.geo.location';
 
+const toNumberIfFinite = (value) => {
+  if (value === undefined || value === null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const readStoredGeo = () => {
   if (typeof window === 'undefined') {
-    return { country: null, locale: null, ready: false };
+    return { country: null, locale: null, lat: null, lng: null, ready: false };
   }
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) {
-      return { country: null, locale: null, ready: false };
+      return { country: null, locale: null, lat: null, lng: null, ready: false };
     }
     const parsed = JSON.parse(stored);
+    const lat = toNumberIfFinite(parsed.lat);
+    const lng = toNumberIfFinite(parsed.lng);
     return {
       country: parsed.country || null,
       locale: parsed.locale || null,
-      ready: Boolean(parsed.country || parsed.locale)
+      lat,
+      lng,
+      ready: Boolean(parsed.country || parsed.locale || lat !== null || lng !== null)
     };
   } catch {
-    return { country: null, locale: null, ready: false };
+    return { country: null, locale: null, lat: null, lng: null, ready: false };
   }
 };
 
@@ -46,7 +56,9 @@ export function GeoProvider({ children }) {
         const payload = response.data?.data || {};
         const persistedGeo = {
           country: payload.country || null,
-          locale: payload.locale || null
+          locale: payload.locale || null,
+          lat: toNumberIfFinite(payload.lat),
+          lng: toNumberIfFinite(payload.lng)
         };
         const nextState = {
           ...persistedGeo,
@@ -74,6 +86,8 @@ export function GeoProvider({ children }) {
     () => ({
       country: state.country,
       locale: state.locale,
+      lat: state.lat,
+      lng: state.lng,
       ready: state.ready,
       error: state.error
     }),

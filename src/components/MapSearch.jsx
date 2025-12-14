@@ -59,28 +59,51 @@ const resolveBoundsLocation = async (bounds) => {
   }
 };
 
-function MapEvents({ onBoundsChange }) {
+function MapEvents({ onBoundsChange, onViewportChange }) {
   useMapEvents({
     moveend(e) {
-      const b = e.target.getBounds();
+      const map = e.target;
+      const b = map.getBounds();
       onBoundsChange({
         minLat: b.getSouth(),
         maxLat: b.getNorth(),
         minLng: b.getWest(),
         maxLng: b.getEast(),
       });
+      if (typeof onViewportChange === 'function') {
+        const center = map.getCenter();
+        onViewportChange({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
+      }
     },
+    zoomend(e) {
+      const map = e.target;
+      if (typeof onViewportChange === 'function') {
+        const center = map.getCenter();
+        onViewportChange({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
+      }
+    }
   });
   return null;
 }
 
-export default function MapSearch({ onProductsLoaded, onRegionApplied, resetSignal, onRegisterOpenMap }) {
+export default function MapSearch({
+  onProductsLoaded,
+  onRegionApplied,
+  resetSignal,
+  onRegisterOpenMap,
+  initialCenter,
+  initialZoom,
+  onLocateUser
+}) {
   const [showMap, setShowMap] = useState(false);
   const [mapReady, setMapReady] = useState(false);
-  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
-  const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM);
+  const [mapZoom, setMapZoom] = useState(initialZoom ?? DEFAULT_ZOOM);
+  const [mapCenter, setMapCenter] = useState(() =>
+    initialCenter ? [initialCenter.lat, initialCenter.lng] : DEFAULT_CENTER
+  );
   const [bbox, setBbox] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [geoRequested, setGeoRequested] = useState(false);
   const mapRef = useRef(null);
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
 
@@ -126,6 +149,57 @@ export default function MapSearch({ onProductsLoaded, onRegionApplied, resetSign
     if (resetSignal === undefined) return;
     setBbox(null);
   }, [resetSignal]);
+
+  useEffect(() => {
+    if (typeof initialZoom === 'number') {
+      setMapZoom(initialZoom);
+    }
+  }, [initialZoom]);
+
+  useEffect(() => {
+    if (!initialCenter) return;
+    setMapCenter([initialCenter.lat, initialCenter.lng]);
+  }, [initialCenter]);
+
+  useEffect(() => {
+    if (!showMap || !mapRef.current) return;
+    mapRef.current.setView(mapCenter, mapZoom);
+  }, [showMap, mapCenter, mapZoom]);
+
+  const handleViewportChange = useCallback(
+    ({ lat, lng, zoom }) => {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      setMapCenter([lat, lng]);
+      if (Number.isFinite(zoom)) {
+        setMapZoom(zoom);
+      }
+      if (typeof onLocateUser === 'function') {
+        onLocateUser({ lat, lng, zoom: Number.isFinite(zoom) ? zoom : undefined });
+      }
+    },
+    [onLocateUser]
+  );
+
+  useEffect(() => {
+    if (!showMap || geoRequested) return;
+    if (initialCenter) return;
+    if (!navigator.geolocation) return;
+    setGeoRequested(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          setMapCenter([lat, lng]);
+          if (typeof onLocateUser === 'function') {
+            onLocateUser({ lat, lng });
+          }
+        }
+      },
+      () => {},
+      { timeout: 8000, maximumAge: 5 * 60 * 1000, enableHighAccuracy: false }
+    );
+  }, [showMap, geoRequested, initialCenter, onLocateUser]);
 
   async function fetchProductsByBbox(bounds) {
     setLoading(true);
@@ -213,37 +287,6 @@ export default function MapSearch({ onProductsLoaded, onRegionApplied, resetSign
     return undefined;
   }, [onRegisterOpenMap, openModal]);
 
-  useEffect(() => {
-    if (!showMap || !mapReady || !mapRef.current) return;
-    const map = mapRef.current;
-
-    const updateBoundsFromMap = () => {
-      const next = buildBoundsFromMap(map);
-      if (next) setBbox(next);
-    };
-
-    updateBoundsFromMap();
-
-    let cancelled = false;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          const coords = [pos.coords.latitude, pos.coords.longitude];
-          setMapCenter(coords);
-          setMapZoom(13);
-          map.setView(coords, 13);
-          updateBoundsFromMap();
-        },
-        () => {}
-      );
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showMap, mapReady, buildBoundsFromMap]);
-
   // Ao abrir o modal, espere o mapa hidratar e garante um bbox inicial mesmo que o usuário não mova.
   useEffect(() => {
     if (!showMap) return;
@@ -307,7 +350,7 @@ export default function MapSearch({ onProductsLoaded, onRegionApplied, resetSign
                       }}
                     >
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <MapEvents onBoundsChange={setBbox} />
+                      <MapEvents onBoundsChange={setBbox} onViewportChange={handleViewportChange} />
                     </MapContainer>
 
                     {/* sobreposição com círculo amarelo */}
