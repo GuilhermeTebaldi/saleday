@@ -16,6 +16,7 @@ import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
+import usePreventDrag from '../hooks/usePreventDrag.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -351,41 +352,6 @@ const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) =
     [captureStart]
   );
 
-  const preventDrag = useCallback((event) => {
-    if (event && event.preventDefault) {
-      event.preventDefault();
-    }
-    if (event?.dataTransfer) {
-      const emptyImg = new Image();
-      emptyImg.src = IMG_PLACEHOLDER;
-      event.dataTransfer.setDragImage(emptyImg, 0, 0);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') {
-      return undefined;
-    }
-    const handler = (event) => {
-      if (
-        !event.target ||
-        !event.target.closest?.('.home-card__media-gallery')
-      ) {
-        return;
-      }
-      if (event.preventDefault) {
-        event.preventDefault();
-      }
-      if (event.dataTransfer) {
-        const emptyImg = new Image();
-        emptyImg.src = IMG_PLACEHOLDER;
-        event.dataTransfer.setDragImage(emptyImg, 0, 0);
-      }
-    };
-    document.addEventListener('dragstart', handler, true);
-    return () => document.removeEventListener('dragstart', handler, true);
-  }, []);
-
   const handlePointerUp = useCallback(
     (event) => {
       handleSwipeEnd(event.clientX);
@@ -426,14 +392,13 @@ const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) =
 
   return (
     <div
-      className="home-card__media-gallery"
+      className="home-card__media-gallery prevent-drag"
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onClick={handleClick}
-      onDragStart={preventDrag}
     >
       <div
         key={currentImage}
@@ -645,6 +610,7 @@ export default function Home() {
 
   // botão "voltar ao topo"
   const [showTop, setShowTop] = useState(false);
+  usePreventDrag(['.home-card__media-gallery']);
 
   useEffect(() => {
     // Reload automático desativado para evitar loop/tela branca em produção

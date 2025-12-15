@@ -1611,6 +1611,13 @@ button {
   user-select: none;
 }
 
+.home-card__media-gallery.prevent-drag,
+.home-card__media-gallery.prevent-drag * {
+  -webkit-user-drag: none;
+  user-drag: none;
+  user-select: none;
+}
+
 .home-card__badge,
 .home-card__favorite,
 .home-card__likes-badge {
