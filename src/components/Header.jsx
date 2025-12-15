@@ -26,7 +26,8 @@ function SaleDayLogo({ className }) {
   return (
     <img
       src="/logo-saleday.png"
-      alt="Logo SaleDay"
+      alt="SaleDay"
+      translate="no"
       className={className}
       width={120}
       height={120}
@@ -627,50 +628,44 @@ export default function Header() {
   return (
     <header className="app-header">
       <div className="app-shell">
-      <a
-  href="/"
-  className="app-logo transition-transform duration-300 active:scale-95"
-  onClick={(e) => {
-    e.preventDefault();
-    // toca o som
-    const sound = new Audio('/sounds/open-logo.mp3');
-    sound.volume = 0.10;
-    sound.play().catch(() => {});
-    // adiciona pequena animação de saída
-    const logo = e.currentTarget.querySelector('.app-logo__mark');
-    if (logo) {
-      logo.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-      logo.style.transform = 'scale(0.9) rotate(-5deg)';
-      logo.style.opacity = '0.8';
-    }
-    // redireciona junto com o fim do som
-    setTimeout(() => handleLogoClick(e), 400);
-  }}
-  aria-label="Ir para a página inicial e recarregar"
->
-
-
-
-        <div className="relative flex items-center justify-center">
-  <div className="relative">
-    <SaleDayLogo className="app-logo__mark animate-logoEntry" />
-    <span
-  className="absolute font-extrabold animate-slideIn
-  text-2xl left-[35px] top-[2px]
-  sm:text-3xl sm:left-[70px] sm:top-[15px]
-  md:text-4xl md:left-[50px] md:top-[5px]
-  bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
-  style={{ whiteSpace: 'nowrap' }}
->
-  aleDay
-</span>
-
-  </div>
-</div>
-
-
-
-         
+        <a
+          href="/"
+          className="app-logo transition-transform duration-300 active:scale-95"
+          translate="no"
+          onClick={(e) => {
+            e.preventDefault();
+            // toca o som
+            const sound = new Audio('/sounds/open-logo.mp3');
+            sound.volume = 0.10;
+            sound.play().catch(() => {});
+            // adiciona pequena animação de saída
+            const logo = e.currentTarget.querySelector('.app-logo__mark');
+            if (logo) {
+              logo.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+              logo.style.transform = 'scale(0.9) rotate(-5deg)';
+              logo.style.opacity = '0.8';
+            }
+            // redireciona junto com o fim do som
+            setTimeout(() => handleLogoClick(e), 400);
+          }}
+          aria-label="Ir para a página inicial e recarregar"
+        >
+          <div className="relative flex items-center justify-center">
+            <div className="relative">
+              <SaleDayLogo className="app-logo__mark animate-logoEntry" />
+              <span
+                className="absolute font-extrabold animate-slideIn
+                text-2xl left-[35px] top-[2px]
+                sm:text-3xl sm:left-[70px] sm:top-[15px]
+                md:text-4xl md:left-[50px] md:top-[5px]
+                bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
+                style={{ whiteSpace: 'nowrap' }}
+                translate="no"
+              >
+                aleDay
+              </span>
+            </div>
+          </div>
         </a>
       </div>
 
