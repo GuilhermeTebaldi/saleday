@@ -137,6 +137,9 @@ const getCountryTheme = (code) => {
   return COUNTRY_THEMES[normalized] ?? { border: 'border-gray-200', bg: 'bg-white', text: 'text-gray-700' };
 };
 
+const TOOLBAR_ICON_BTN =
+  'p-2 rounded-full border border-transparent bg-white/90 hover:border-gray-200 hover:bg-white/95 shadow-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring focus-visible:ring-emerald-200';
+
 export default function SearchBar({
   onProductsLoaded,
   onFiltersChange,
@@ -156,7 +159,6 @@ export default function SearchBar({
   const [loading, setLoading] = useState(false);
   const [panel, setPanel] = useState(null); // 'address' | 'seller' | 'country' | null
   const [sellerName, setSellerName] = useState('');
-  const [sellerRating, setSellerRating] = useState('');
   const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
   const popRef = useRef(null);
   const fallbackCountry = (originCountry || 'BR').toString().trim().toUpperCase() || 'BR';
@@ -214,7 +216,6 @@ export default function SearchBar({
     setQ('');
     setAddress('');
     setSellerName('');
-    setSellerRating('');
     setPanel(null);
   }, [resetSignal]);
 
@@ -457,14 +458,11 @@ export default function SearchBar({
 
   function searchSeller() {
     const nameTrimmed = sellerName.trim();
-    const ratingSelected = sellerRating;
-    if (!nameTrimmed && !ratingSelected) {
-      toast.error('Informe um nome ou uma nota mínima.');
+    if (!nameTrimmed) {
+      toast.error('Informe um nome para buscar.');
       return;
     }
-    const params = new URLSearchParams();
-    if (nameTrimmed) params.set('q', nameTrimmed);
-    if (ratingSelected) params.set('minRating', ratingSelected);
+    const params = new URLSearchParams({ q: nameTrimmed });
     navigate(`/sellers/search?${params.toString()}`);
     setPanel(null);
   }
@@ -502,9 +500,7 @@ export default function SearchBar({
               onClick={toggleCategoryPanel}
               aria-haspopup="true"
               aria-expanded={categoryPanelOpen}
-              className={`p-2 rounded hover:bg-gray-100 transition ${
-                categoryPanelOpen ? 'bg-gray-100 shadow-sm' : ''
-              }`}
+              className={`${TOOLBAR_ICON_BTN} relative ${categoryPanelOpen ? 'bg-white border-gray-200 shadow-md' : ''}`}
             >
               <Filter size={18} />
               {categoryFilter && (
@@ -512,13 +508,13 @@ export default function SearchBar({
               )}
             </button>
             {categoryPanelOpen && (
-              <div className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-2xl p-3 text-sm">
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <p>
-                    {locationSummary
-                      ? `Disponíveis em ${locationSummary}`
-                      : 'Categorias'}
-                  </p>
+              <div className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
+                <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {locationSummary ? `Disponíveis em ${locationSummary}` : 'Categorias'}
+                      </p>
+                    </div>
                   <div className="flex items-center gap-2">
                     {categoryFilter && (
                       <button
@@ -539,7 +535,7 @@ export default function SearchBar({
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+                <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
                   {categoryOptions.map(({ label, count }) => {
                     const active = categoryFilter === label;
                     return (
@@ -548,9 +544,9 @@ export default function SearchBar({
                         type="button"
                         onClick={() => handleCategorySelection(label)}
                         disabled={categoryLoading}
-                        className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                        className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
                           active
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                         } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
                       >
@@ -568,33 +564,115 @@ export default function SearchBar({
             )}
           </div>
         )}
-        <button
-          type="button"
-          title="Filtrar por países"
-          onClick={toggleCountryPanel}
-          className="p-2 rounded hover:bg-gray-100"
-          aria-haspopup="dialog"
-          aria-expanded={panel === 'country'}
-        >
-          <Globe size={18} />
-        </button>
+        <div className="relative">
+          
+          <button
+            type="button"
+            title="Filtrar por países"
+            onClick={toggleCountryPanel}
+            className={`${TOOLBAR_ICON_BTN}`}
+            aria-haspopup="dialog"
+            aria-expanded={panel === 'country'}
+          >
+            <Globe size={18} />
+          </button>
+          {panel === 'country' && (
+            <div
+              role="dialog"
+              aria-label="Lista de países disponíveis"
+              className="absolute left-0 top-full z-40 mt-2 w-80 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
+            >
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div>
+                  <p className="font-semibold text-sm text-gray-800">
+                    {countryLoading ? 'Carregando países' : 'Filtrar por país'}
+                  </p>
+                  <p className="text-[11px] text-gray-400">
+                    {countryLoading ? 'Aguarde enquanto atualizamos os países ativos' : 'Somente países com anúncios ativos'}
+                  </p>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => setPanel(null)}
+                  className="p-1.5 rounded-full hover:bg-gray-100 transition"
+                  aria-label="Fechar lista de países"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+                {countryLoading ? (
+                  <p className="text-sm text-gray-500">Carregando países...</p>
+                ) : countryOptions.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
+                ) : (
+                  countryOptions.map((item) => {
+                    const label = resolveCountryName(item.country);
+                    const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
+                    const isActive = activeCountry === item.country;
+                    const flagUrl = getFlagUrl(item.country);
+                    const theme = getCountryTheme(item.country);
+                    return (
+                      
+                      <button
+                        key={item.country}
+                        type="button"
+                        disabled={countryApplying}
+                        onClick={() => applyCountryFilter(item.country)}
+                        className={`w-full text-left p-3 rounded-2xl border transition shadow-sm hover:shadow-lg ${
+                          isActive
+                            ? `${theme.border} ${theme.bg} ${theme.text}`
+                            : 'border-gray-200 bg-white/80 text-gray-700 hover:border-gray-300'
+                        } duration-150`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            {flagUrl ? (
+                              <img
+                                src={flagUrl}
+                                alt={label}
+                                className="w-5 h-5 rounded-sm object-cover border border-white/60 shadow-inner"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
+                                {item.country}
+                              </span>
+                            )}
+                            <p className="font-semibold text-sm truncate">{label}</p>
+                          </div>
+                          <p className="text-xs text-gray-500">{countLabel}</p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="mt-3 rounded-2xl border border-dashed border-gray-200 bg-white/60 p-3 text-xs text-gray-500">
+                {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
+              </div>
+            </div>
+          )}
+        </div>
         {false && (
           <button
             type="button"
             title="Cidade, bairro ou endereço"
             onClick={() => setPanel((p) => (p === 'address' ? null : 'address'))}
-            className="p-2 rounded hover:bg-gray-100"
+            className={`${TOOLBAR_ICON_BTN}`}
             aria-haspopup="dialog"
             aria-expanded={panel === 'address'}
           >
             <MapPin size={18} />
           </button>
         )}
+        
         <button
           type="button"
           title="GPS"
           onClick={useGPSQuick}
-          className="p-2 rounded hover:bg-gray-100"
+          className={`${TOOLBAR_ICON_BTN}`}
         >
           <Crosshair size={18} />
         </button>
@@ -602,7 +680,7 @@ export default function SearchBar({
           type="button"
           title="Reset"
           onClick={resetAll}
-          className="p-2 rounded hover:bg-gray-100"
+          className={`${TOOLBAR_ICON_BTN}`}
         >
           <RotateCw size={18} />
         </button>
@@ -618,7 +696,7 @@ export default function SearchBar({
               window.dispatchEvent(new Event('saleday:open-map'));
             }
           }}
-          className="p-2 rounded hover:bg-gray-100"
+          className={`${TOOLBAR_ICON_BTN}`}
         >
           <MapIcon size={18} />
         </button>
@@ -626,7 +704,7 @@ export default function SearchBar({
           type="button"
           title="Buscar vendedores"
           onClick={() => setPanel((p) => (p === 'seller' ? null : 'seller'))}
-          className="p-2 rounded hover:bg-gray-100"
+          className={`${TOOLBAR_ICON_BTN}`}
           aria-haspopup="dialog"
           aria-expanded={panel === 'seller'}
         >
@@ -637,35 +715,57 @@ export default function SearchBar({
       {/* Painéis */}
 
       {panel === 'address' && (
-        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-2 flex items-center gap-2">
-          <MapPin size={16} className="text-gray-500" />
-          <input
-            className="flex-1 p-2 outline-none"
-            placeholder="Cidade, bairro ou endereço (ex: Chapecó)"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && applyAddress()}
-            autoFocus
-          />
-          <button
-            onClick={applyAddress}
-            disabled={loading}
-            className="px-3 py-2 rounded bg-blue-600 text-white text-sm disabled:opacity-60"
-          >
-            {loading ? 'Aplicando...' : 'Aplicar'}
-          </button>
-          <button onClick={() => setPanel(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Fechar">
-            <X size={16} />
-          </button>
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 flex flex-col gap-3 backdrop-blur-sm">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Aplicar endereço</p>
+            <p className="text-xs text-gray-400">Cidade, bairro ou endereço (ex: Chapecó)</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-inner">
+            <MapPin size={16} className="text-gray-500" />
+            <input
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              placeholder="Cidade, bairro ou endereço (ex: Chapecó)"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyAddress()}
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setPanel(null)}
+              className="px-4 py-2 rounded-2xl border border-gray-200 bg-white text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
+            >
+              Fechar
+            </button>
+            <button
+              onClick={applyAddress}
+              disabled={loading}
+              className="px-4 py-2 rounded-2xl bg-blue-600 text-white text-xs font-semibold shadow-lg hover:shadow-xl transition disabled:opacity-60"
+            >
+              {loading ? 'Aplicando...' : 'Aplicar'}
+            </button>
+          </div>
         </div>
       )}
 
       {panel === 'seller' && (
-        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-md border bg-white shadow-lg p-3 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-gray-500" />
+        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-900">Buscar vendedores</p>
+            <button
+              type="button"
+              onClick={() => setPanel(null)}
+              className="p-1 rounded-full hover:bg-gray-100 transition"
+              aria-label="Fechar painel de vendedores"
+            >
+              <X size={16} className="text-gray-500" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-inner">
+            <User size={18} className="text-slate-500" />
             <input
-              className="flex-1 p-2 outline-none"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
               placeholder="Nome do vendedor ou empresa"
               value={sellerName}
               onChange={(e) => setSellerName(e.target.value)}
@@ -673,97 +773,23 @@ export default function SearchBar({
               autoFocus
             />
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600" htmlFor="seller-rating-select">
-              Nota mínima
-            </label>
-            <select
-              id="seller-rating-select"
-              className="flex-1 p-2 border rounded-md"
-              value={sellerRating}
-              onChange={(e) => setSellerRating(e.target.value)}
-            >
-              <option value="">Qualquer nota</option>
-              <option value="5">5 estrelas</option>
-              <option value="4.5">4.5 ou mais</option>
-              <option value="4">4 ou mais</option>
-              <option value="3">3 ou mais</option>
-            </select>
-          </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setPanel(null)} className="px-3 py-2 rounded bg-gray-200 text-sm">
+            <button
+              onClick={() => setPanel(null)}
+              className="px-4 py-2 rounded-2xl border border-gray-200 bg-white text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
+            >
               Fechar
             </button>
-            <button onClick={searchSeller} className="px-3 py-2 rounded bg-emerald-600 text-white text-sm">
+            <button
+              onClick={searchSeller}
+              className="px-4 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-semibold shadow-lg hover:shadow-xl transition"
+            >
               Buscar vendedores
             </button>
           </div>
         </div>
       )}
 
-      {panel === 'country' && (
-        <div className="fixed z-40 top-24 right-4 w-72 max-w-[90vw] h-[70vh] rounded-2xl border bg-white/95 backdrop-blur shadow-2xl flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <div>
-              <p className="text-sm font-semibold">Filtrar por país</p>
-              <p className="text-xs text-gray-500">Somente países com anúncios ativos</p>
-            </div>
-            <button type="button" onClick={() => setPanel(null)} className="p-1.5 rounded-full hover:bg-gray-100" aria-label="Fechar lista de países">
-              <X size={16} />
-            </button>
-          </div>
-          <div className="p-4 flex-1 overflow-auto space-y-2">
-            {countryLoading ? (
-              <p className="text-sm text-gray-500">Carregando países...</p>
-            ) : countryOptions.length === 0 ? (
-              <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
-            ) : (
-              countryOptions.map((item) => {
-                const label = resolveCountryName(item.country);
-                const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
-                const isActive = activeCountry === item.country;
-                const flagUrl = getFlagUrl(item.country);
-                const theme = getCountryTheme(item.country);
-                return (
-                  <button
-                    key={item.country}
-                    type="button"
-                    disabled={countryApplying}
-                    onClick={() => applyCountryFilter(item.country)}
-                    className={`w-full text-left p-3 rounded-2xl border transition hover:shadow-sm ${
-                      isActive
-                        ? `${theme.border} ${theme.bg} ${theme.text}`
-                        : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        {flagUrl ? (
-                          <img
-                            src={flagUrl}
-                            alt={label}
-                            className="w-5 h-5 rounded-sm object-cover border border-white/60"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
-                            {item.country}
-                          </span>
-                        )}
-                        <p className="font-semibold text-sm truncate">{label}</p>
-                      </div>
-                      <p className="text-xs text-gray-500">{countLabel}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <div className="px-4 py-3 border-t text-xs text-gray-500">
-            {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -200,6 +200,293 @@ const writeStoredMapCenter = (center) => {
   }
 };
 
+const buildProductImageSources = (product) => {
+  const normalized = [];
+  const seen = new Set();
+  const pushImage = (value) => {
+    const resolved = toAbsoluteImageUrl(value);
+    if (resolved && !seen.has(resolved)) {
+      seen.add(resolved);
+      normalized.push(resolved);
+    }
+  };
+
+  if (product?.image_url) {
+    pushImage(product.image_url);
+  }
+
+  const parsed = parseImageList(product?.image_urls);
+  for (const entry of parsed) {
+    pushImage(entry);
+  }
+
+  return normalized.length ? normalized : [IMG_PLACEHOLDER];
+};
+
+const formatNumberLabel = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return num;
+};
+
+const pickProductFacts = (product) => {
+  if (!product) return [];
+  const category = (product.category || '').toLowerCase();
+  const factPool = [];
+  const addFact = (text) => {
+    if (text && !factPool.includes(text)) {
+      factPool.push(text);
+    }
+  };
+
+  const estateKeywords = ['apto', 'apartamento', 'imóvel', 'imoveis', 'casas', 'casa', 'aluguel', 'flat', 'kitnet'];
+  const fashionKeywords = ['moda', 'roupa', 'vestuário', 'vestidos', 'fashion', 'camisa', 'jeans', 'saia', 'terno'];
+  const isEstate =
+    estateKeywords.some((keyword) => category.includes(keyword)) ||
+    Boolean(product.property_type || product.surface_area || product.bedrooms || product.bathrooms || product.parking || product.rent_type);
+  const isFashion = fashionKeywords.some((keyword) => category.includes(keyword));
+
+  const parking = formatNumberLabel(product.parking);
+  const parkingLabel = parking !== null ? `${parking} vaga${parking > 1 ? 's' : ''}` : null;
+
+  if (isEstate) {
+    const area = formatNumberLabel(product.surface_area);
+    if (area !== null) addFact(`${area} m²`);
+    const bedrooms = formatNumberLabel(product.bedrooms);
+    if (bedrooms !== null) addFact(`${bedrooms} quarto${bedrooms > 1 ? 's' : ''}`);
+    const bathrooms = formatNumberLabel(product.bathrooms);
+    if (bathrooms !== null) addFact(`${bathrooms} banheiro${bathrooms > 1 ? 's' : ''}`);
+    if (parkingLabel) addFact(parkingLabel);
+  } else if (isFashion) {
+    if (product.brand) addFact(`Marca: ${product.brand}`);
+    if (product.model) addFact(`Modelo: ${product.model}`);
+    if (product.color) addFact(`Cor: ${product.color}`);
+    if (!product.brand && !product.model && !product.color && product.year) {
+      addFact(`Ano: ${product.year}`);
+    }
+  } else {
+    if (product.brand) addFact(`Marca: ${product.brand}`);
+    if (product.model) addFact(`Modelo: ${product.model}`);
+    if (product.year) addFact(`Ano: ${product.year}`);
+    if (product.color && factPool.length < 3) addFact(`Cor: ${product.color}`);
+  }
+
+  if (!isEstate && parkingLabel) {
+    if (factPool.length < 3) {
+      addFact(parkingLabel);
+    } else if (!factPool.includes(parkingLabel)) {
+      factPool[factPool.length - 1] = parkingLabel;
+    }
+  }
+
+  const maxFacts = isEstate ? 4 : 3;
+  return factPool.slice(0, maxFacts);
+};
+
+const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const pointerStartX = useRef(null);
+  const clickBlocked = useRef(false);
+
+  const imageSources = images.length ? images : [IMG_PLACEHOLDER];
+  const totalImages = imageSources.length;
+  const currentImage = imageSources[currentIndex] ?? IMG_PLACEHOLDER;
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [productId, galleryKey]);
+
+  useEffect(() => {
+    setCurrentIndex((prev) => Math.min(prev, totalImages - 1));
+  }, [totalImages]);
+
+  const wrapIndex = useCallback(
+    (value) => {
+      if (!totalImages) return 0;
+      const next = value % totalImages;
+      return next < 0 ? next + totalImages : next;
+    },
+    [totalImages]
+  );
+
+  const goNext = useCallback(() => {
+    setCurrentIndex((prev) => wrapIndex(prev + 1));
+  }, [wrapIndex]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIndex((prev) => wrapIndex(prev - 1));
+  }, [wrapIndex]);
+
+  const captureStart = useCallback((clientX) => {
+    if (clientX === null || clientX === undefined) return;
+    pointerStartX.current = clientX;
+  }, []);
+
+  const handleSwipeEnd = useCallback(
+    (clientX) => {
+      if (pointerStartX.current === null || clientX === null || clientX === undefined) {
+        return;
+      }
+      const delta = clientX - pointerStartX.current;
+      pointerStartX.current = null;
+      if (Math.abs(delta) < 25) return;
+      clickBlocked.current = true;
+      if (delta < 0) {
+        goNext();
+      } else {
+        goPrev();
+      }
+    },
+    [goNext, goPrev]
+  );
+
+  const handlePointerDown = useCallback(
+    (event) => {
+      if (event?.pointerType === 'mouse' || event?.pointerType === 'pen') {
+        event.preventDefault();
+      }
+      captureStart(event.clientX);
+    },
+    [captureStart]
+  );
+
+  const preventDrag = useCallback((event) => {
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
+    if (event?.dataTransfer) {
+      const emptyImg = new Image();
+      emptyImg.src = IMG_PLACEHOLDER;
+      event.dataTransfer.setDragImage(emptyImg, 0, 0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+    const handler = (event) => {
+      if (
+        !event.target ||
+        !event.target.closest?.('.home-card__media-gallery')
+      ) {
+        return;
+      }
+      if (event.preventDefault) {
+        event.preventDefault();
+      }
+      if (event.dataTransfer) {
+        const emptyImg = new Image();
+        emptyImg.src = IMG_PLACEHOLDER;
+        event.dataTransfer.setDragImage(emptyImg, 0, 0);
+      }
+    };
+    document.addEventListener('dragstart', handler, true);
+    return () => document.removeEventListener('dragstart', handler, true);
+  }, []);
+
+  const handlePointerUp = useCallback(
+    (event) => {
+      handleSwipeEnd(event.clientX);
+    },
+    [handleSwipeEnd]
+  );
+
+  const handleTouchStart = useCallback(
+    (event) => {
+      const touch = event.touches?.[0];
+      if (touch) {
+        captureStart(touch.clientX);
+      }
+    },
+    [captureStart]
+  );
+
+  const handleTouchEnd = useCallback(
+    (event) => {
+      const touch = event.changedTouches?.[0];
+      if (touch) {
+        handleSwipeEnd(touch.clientX);
+      }
+    },
+    [handleSwipeEnd]
+  );
+
+  const handlePointerLeave = useCallback(() => {
+    pointerStartX.current = null;
+  }, []);
+
+  const handleClick = useCallback((event) => {
+    if (!clickBlocked.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clickBlocked.current = false;
+  }, []);
+
+  return (
+    <div
+      className="home-card__media-gallery"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={handleClick}
+      onDragStart={preventDrag}
+    >
+      <div
+        key={currentImage}
+        role="img"
+        aria-label={alt || 'Foto do anúncio'}
+        className="home-card__image w-full h-full object-cover home-card__image-bg"
+        style={{
+          backgroundImage: `url(${JSON.stringify(currentImage)})`
+        }}
+      />
+
+      {totalImages > 1 && (
+        <>
+          <button
+            type="button"
+            className="home-card__media-arrow home-card__media-arrow--left"
+            aria-label="Foto anterior"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              goPrev();
+            }}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="home-card__media-arrow home-card__media-arrow--right"
+            aria-label="Próxima foto"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              goNext();
+            }}
+          >
+            ›
+          </button>
+          <div className="home-card__media-indicator" aria-hidden="true">
+            {imageSources.map((_, index) => (
+              <span
+                key={index}
+                className={`home-card__media-indicator-dot ${
+                  index === currentIndex ? 'is-active' : ''
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const normalizeCenter = (candidate) => {
   if (!candidate) return null;
   const lat = Number(candidate.lat);
@@ -1177,52 +1464,54 @@ export default function Home() {
           )}
 
           {/*
-{countryShortcuts.length > 0 && (
-  <div className="home-country-shortcuts">
-    <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-      Países com anúncios
-    </p>
-    <div className="home-country-shortcuts__scroll gap-1">
-      {countryShortcuts.map((item) => {
-        const flag = getFlagUrl(item.country);
-        const label = resolveCountryName(item.country);
-        const theme = getCountryTheme(item.country);
-        const isActive = locationCountry === item.country;
-        return (
-          <button
-            key={item.country}
-            type="button"
-            onClick={() => handleCountryShortcut(item.country)}
-            disabled={countryShortcutApplying}
-            className={`home-country-shortcuts__chip px-1.5 py-[3px] rounded-md gap-1 ${
-              isActive
-                ? `${theme.border} ${theme.bg} ${theme.text}`
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-            } transition-colors duration-150 ease-in-out ${
-              countryShortcutApplying ? 'opacity-70' : ''
-            }`}
-            title={`${label} (${item.total} anúncios)`}
-          >
-            {flag ? (
-              <img
-                src={flag}
-                alt={label}
-                className="home-country-shortcuts__flag w-2 h-2"
-                loading="lazy"
-              />
-            ) : (
-              <span className="home-country-shortcuts__flag home-country-shortcuts__flag--fallback">
-                {item.country}
-              </span>
-            )}
-            <span className="home-country-shortcuts__label text-[6px] leading-none">{label}</span>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-)}
-*/}
+          {countryShortcuts.length > 0 && (
+            <div className="home-country-shortcuts">
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+                Países com anúncios
+              </p>
+              <div className="home-country-shortcuts__scroll gap-1">
+                {countryShortcuts.map((item) => {
+                  const flag = getFlagUrl(item.country);
+                  const label = resolveCountryName(item.country);
+                  const theme = getCountryTheme(item.country);
+                  const isActive = locationCountry === item.country;
+                  return (
+                    <button
+                      key={item.country}
+                      type="button"
+                      onClick={() => handleCountryShortcut(item.country)}
+                      disabled={countryShortcutApplying}
+                      className={`home-country-shortcuts__chip px-1.5 py-[3px] rounded-md gap-1 ${
+                        isActive
+                          ? `${theme.border} ${theme.bg} ${theme.text}`
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      } transition-colors duration-150 ease-in-out ${
+                        countryShortcutApplying ? 'opacity-70' : ''
+                      }`}
+                      title={`${label} (${item.total} anúncios)`}
+                    >
+                      {flag ? (
+                        <img
+                          src={flag}
+                          alt={label}
+                          className="home-country-shortcuts__flag w-2 h-2"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="home-country-shortcuts__flag home-country-shortcuts__flag--fallback">
+                          {item.country}
+                        </span>
+                      )}
+                      <span className="home-country-shortcuts__label text-[6px] leading-none">
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          */}
 </section>
       )}
 
@@ -1241,17 +1530,16 @@ export default function Home() {
         ) : (
           <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px sm:gap-1 w-full">
             {displayedProducts.map((product) => {
-              const mainImage = product.image_urls?.[0] || product.image_url;
+              const productImages = buildProductImageSources(product);
+              const galleryKey = productImages.join('|');
               const freeTag = isProductFree(product);
               const productId = normalizeId(product.id);
               const isFavorited = favoriteSet.has(productId);
               const isPulsed = pulseTarget === productId;
               const likeCount = getProductLikes(product);
               const countryLabel = resolveCountryName(product.country);
-              const locationParts = [
-                product.city,
-                countryLabel,
-              ].filter(Boolean);
+              const locationParts = [product.city, countryLabel].filter(Boolean);
+              const cardFacts = pickProductFacts(product);
               const postTimestamp =
                 product.posted_at ||
                 product.postedAt ||
@@ -1268,40 +1556,24 @@ export default function Home() {
                     to={`/product/${product.id}`}
                     data-product-id={product.id}
                     onClick={() => registerClick(product.id)}
+                    draggable="false"
+                    onDragStart={(event) => event.preventDefault()}
                     className="home-card block relative w-full h-full group overflow-hidden"
 >
-                  <div className="home-card__media w-full aspect-square relative overflow-hidden">
-                    {postedAtLabel && (
+                    <div className="home-card__media w-full aspect-square relative overflow-hidden">
+                      {postedAtLabel && (
                       <div className="home-card__date-bar">
                         <span className="home-card__date-text">{postedAtLabel}</span>
                       </div>
                     )}
-                    <img
-                      src={mainImage || IMG_PLACEHOLDER}
-                      alt={product.title}
-                      className="home-card__image w-full h-full object-cover transition-opacity duration-300"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.src = IMG_PLACEHOLDER;
-                        e.currentTarget.onerror = null;
-                      }}
-                    />
-
-                    {Array.isArray(product.image_urls) && product.image_urls.length > 1 && (
-                      <img
-                        src={product.image_urls[1] || IMG_PLACEHOLDER}
-                        alt=""
-                        className="home-card__image2 w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          e.currentTarget.src = IMG_PLACEHOLDER;
-                          e.currentTarget.onerror = null;
-                        }}
+                      <ProductImageGallery
+                        images={productImages}
+                        alt={product.title}
+                        productId={product.id}
+                        galleryKey={galleryKey}
                       />
-                    )}
-                    {freeTag && (
+
+                      {freeTag && (
                       <span className="home-card__badge absolute top-2 left-2 bg-green-600 text-white text-[11px] px-2 py-[2px] rounded-md shadow">
                         Grátis
                       </span>
@@ -1350,6 +1622,15 @@ export default function Home() {
                         ? 'Grátis'
                         : formatProductPrice(product.price, product.country)}
                     </p>
+                    {cardFacts.length > 0 && (
+                      <div className="home-card__facts">
+                        {cardFacts.map((fact, index) => (
+                          <span key={`${fact}-${index}`} className="home-card__fact-pill">
+                            {fact}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="home-card__location text-xs text-gray-500">
                       {locationParts.join(' • ')}
                     </p>
