@@ -1527,11 +1527,6 @@ export default function Home() {
                     className="home-card block relative w-full h-full group overflow-hidden"
 >
                     <div className="home-card__media w-full aspect-square relative overflow-hidden">
-                      {postedAtLabel && (
-                      <div className="home-card__date-bar">
-                        <span className="home-card__date-text">{postedAtLabel}</span>
-                      </div>
-                    )}
                       <ProductImageGallery
                         images={productImages}
                         alt={product.title}
@@ -1573,22 +1568,22 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="home-card__content">
-                    <div className="home-card__title-bar" aria-label="Nome do produto">
-                      <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
-                        {product.title}
+                    <div className="home-card__content">
+                      <div className="home-card__title-bar" aria-label="Nome do produto">
+                        <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
+                          {product.title}
+                        </p>
+                      </div>
+                      <p
+                        className={`home-card__price text-base font-bold ${
+                          freeTag ? 'text-green-600' : 'text-gray-900'
+                        }`}
+                      >
+                        {freeTag
+                          ? 'Grátis'
+                          : formatProductPrice(product.price, product.country)}
                       </p>
-                    </div>
-                    <p
-                      className={`home-card__price text-base font-bold ${
-                        freeTag ? 'text-green-600' : 'text-gray-900'
-                      }`}
-                    >
-                      {freeTag
-                        ? 'Grátis'
-                        : formatProductPrice(product.price, product.country)}
-                    </p>
-                    {cardFacts.length > 0 && (
+                      {cardFacts.length > 0 && (
                       <div className="home-card__facts">
                         {cardFacts.map((fact, index) => (
                           <span key={`${fact}-${index}`} className="home-card__fact-pill">
@@ -1597,9 +1592,16 @@ export default function Home() {
                         ))}
                       </div>
                     )}
-                    <p className="home-card__location text-xs text-gray-500">
-                      {locationParts.join(' • ')}
-                    </p>
+                    <div className="home-card__meta-row">
+                      <p className="home-card__location text-xs text-gray-500">
+                        {locationParts.join(' • ')}
+                      </p>
+                      {postedAtLabel && (
+                        <span className="home-card__date-label text-xs font-semibold text-gray-400">
+                          {postedAtLabel}
+                        </span>
+                      )}
+                    </div>
                    
 
                   </div>
