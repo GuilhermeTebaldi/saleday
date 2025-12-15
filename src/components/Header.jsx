@@ -652,18 +652,18 @@ export default function Header() {
         >
           <div className="relative flex items-center justify-center">
             <div className="relative">
-              <SaleDayLogo className="app-logo__mark animate-logoEntry" />
-              <span
-                className="absolute font-extrabold animate-slideIn
-                text-2xl left-[35px] top-[2px]
-                sm:text-3xl sm:left-[70px] sm:top-[15px]
-                md:text-4xl md:left-[50px] md:top-[5px]
-                bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
-                style={{ whiteSpace: 'nowrap' }}
-                translate="no"
-              >
-                aleDay
-              </span>
+            <SaleDayLogo className="app-logo__mark animate-logoEntry" />
+            <span
+              className="absolute font-extrabold animate-slideIn
+              text-2xl left-[35px] top-[2px]
+              sm:text-3xl sm:left-[70px] sm:top-[15px]
+              md:text-4xl md:left-[50px] md:top-[5px]
+              bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
+              style={{ whiteSpace: 'nowrap' }}
+              translate="no"
+            >
+              aleDay
+            </span>
             </div>
           </div>
         </a>
