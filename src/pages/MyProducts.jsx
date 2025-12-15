@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
 import formatProductPrice from '../utils/currency.js';
 import { isProductFree } from '../utils/product.js';
+import { buildProductSpecEntries } from '../utils/productSpecs.js';
 
 export default function MyProducts() {
   const { token } = useContext(AuthContext);
@@ -93,6 +94,11 @@ export default function MyProducts() {
         const isSold = product.status === 'sold';
         const mainImage = product.image_urls?.[0] || product.image_url;
         const freeTag = isProductFree(product);
+        const specEntries = buildProductSpecEntries(product);
+        const categoryLabel = product.category || 'Não informada';
+        const locationLabel = [product.city, product.state, product.country]
+          .filter(Boolean)
+          .join(', ');
         return (
           <article key={product.id} className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
             <div className="relative">
@@ -113,6 +119,28 @@ export default function MyProducts() {
               <p className={`font-medium ${freeTag ? 'text-emerald-600' : 'text-green-600'}`}>
                 {freeTag ? 'Grátis' : formatProductPrice(product.price, product.country)}
               </p>
+              <div className="text-xs text-gray-500 space-y-1 mt-1">
+                <p>
+                  Categoria:{' '}
+                  <span className="text-gray-800">{categoryLabel}</span>
+                </p>
+                {locationLabel && (
+                  <p>
+                    Local:{' '}
+                    <span className="text-gray-800">{locationLabel}</span>
+                  </p>
+                )}
+              </div>
+              {specEntries.length > 0 && (
+                <div className="text-[11px] text-gray-600 grid grid-cols-2 gap-1">
+                  {specEntries.slice(0, 2).map((entry) => (
+                    <p key={entry.label}>
+                      {entry.label}:{' '}
+                      <span className="text-gray-800">{entry.value}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
               {isSold && (
                 <p className="text-xs text-rose-600">
                   Esse produto foi comprado por{' '}

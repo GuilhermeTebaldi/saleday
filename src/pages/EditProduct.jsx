@@ -5,6 +5,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
+import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
+import { getCategoryDetailFields } from '../utils/categoryFields.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
 
@@ -25,11 +27,20 @@ const initialFormState = {
   model: '',
   color: '',
   year: '',
+  propertyType: '',
+  area: '',
+  bedrooms: '',
+  bathrooms: '',
+  parking: '',
+  rentType: '',
   isFree: false,
   pickupOnly: false
 };
 
 const sanitizeYear = (value) => value.replace(/\D/g, '').slice(0, 4);
+
+const normalizeFieldValue = (value) =>
+  value === undefined || value === null ? '' : String(value);
 
 const collectExistingImages = (primary, list) => {
   const images = [];
@@ -116,6 +127,12 @@ export default function EditProduct() {
           model: data.model ?? '',
           color: data.color ?? '',
           year: data.year !== undefined && data.year !== null ? String(data.year) : '',
+          propertyType: normalizeFieldValue(data.propertyType ?? data.property_type),
+          area: normalizeFieldValue(data.area ?? data.surface_area),
+          bedrooms: normalizeFieldValue(data.bedrooms),
+          bathrooms: normalizeFieldValue(data.bathrooms),
+          parking: normalizeFieldValue(data.parking),
+          rentType: normalizeFieldValue(data.rentType ?? data.rent_type),
           isFree,
           pickupOnly: isFree ? true : Boolean(data.pickup_only)
         });
@@ -133,6 +150,11 @@ export default function EditProduct() {
   const isValid = useMemo(
     () => form.title && (form.isFree || form.price),
     [form.title, form.isFree, form.price]
+  );
+
+  const categoryDetailFields = useMemo(
+    () => getCategoryDetailFields(form.category),
+    [form.category]
   );
 
   useEffect(() => {
@@ -254,6 +276,12 @@ export default function EditProduct() {
       model: form.model?.trim() || null,
       color: form.color?.trim() || null,
       year: form.year?.trim() || null,
+      propertyType: form.propertyType?.trim() || null,
+      area: form.area?.trim() || null,
+      bedrooms: form.bedrooms?.trim() || null,
+      bathrooms: form.bathrooms?.trim() || null,
+      parking: form.parking?.trim() || null,
+      rentType: form.rentType?.trim() || null,
       is_free: form.isFree ? 'true' : 'false',
       pickup_only: form.pickupOnly ? 'true' : 'false'
     };
@@ -429,17 +457,39 @@ export default function EditProduct() {
           </span>
         </div>
 
-        <input name="category" value={form.category} onChange={handleChange} placeholder="Categoria" />
-        <input name="brand" value={form.brand} onChange={handleChange} placeholder="Marca" />
-        <input name="model" value={form.model} onChange={handleChange} placeholder="Modelo" />
-        <input name="color" value={form.color} onChange={handleChange} placeholder="Cor" />
-        <input
-          name="year"
-          value={form.year}
-          onChange={handleChange}
-          placeholder="Ano"
-          inputMode="numeric"
-        />
+        <label className="flex flex-col text-sm">
+          <span className="text-[11px] text-gray-500 mb-1">Categoria</span>
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
+          >
+            <option value="">Selecione uma categoria</option>
+            {PRODUCT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </label>
+        {categoryDetailFields.length > 0 && (
+          <div className="grid gap-2 md:grid-cols-2">
+            {categoryDetailFields.map((field) => (
+              <label key={field.name} className="flex flex-col text-sm">
+                <span className="text-[11px] text-gray-500 mb-1">{field.label}</span>
+                <input
+                  name={field.name}
+                  value={form[field.name] ?? ''}
+                  onChange={handleChange}
+                  placeholder={field.placeholder}
+                  className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
+                  inputMode={field.inputMode}
+                />
+              </label>
+            ))}
+          </div>
+        )}
         <input name="city" value={form.city} onChange={handleChange} placeholder="Cidade" />
 
         <div className="flex items-center justify-between w-full">
