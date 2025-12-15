@@ -1,6 +1,7 @@
 // frontend/src/pages/ProductDetail.jsx
 // Página com os detalhes completos de um produto e ações de contato.
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -104,7 +105,15 @@ export default function ProductDetail() {
   const [shareOpen, setShareOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerPortalRoot] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    const node = document.createElement('div');
+    node.setAttribute('data-saleday-product-viewer', 'true');
+    return node;
+  });
   const [touchStartX, setTouchStartX] = useState(null);
+  const galleryTouchStartXRef = useRef(null);
+  const galleryTouchMovedRef = useRef(false);
   const [offerOpen, setOfferOpen] = useState(false);
   const [offerValue, setOfferValue] = useState('');
   const [offerNote, setOfferNote] = useState('');
@@ -330,6 +339,24 @@ export default function ProductDetail() {
   }, [viewerOpen, images.length]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (!viewerOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [viewerOpen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !viewerPortalRoot) return undefined;
+    document.body.appendChild(viewerPortalRoot);
+    return () => {
+      if (viewerPortalRoot.parentNode) viewerPortalRoot.parentNode.removeChild(viewerPortalRoot);
+    };
+  }, [viewerPortalRoot]);
+
+  useEffect(() => {
     if (!product?.id || !token) {
       setFavorite(false);
       setFavoriteLoading(false);
@@ -489,6 +516,65 @@ export default function ProductDetail() {
   const goNextImage = () => {
     if (images.length < 2) return;
     setActiveImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const SWIPE_THRESHOLD = 40;
+
+  const handleViewerTouchStart = (event) => {
+    const startX = event.touches?.[0]?.clientX;
+    setTouchStartX(typeof startX === 'number' ? startX : null);
+  };
+
+  const handleViewerTouchMove = (event) => {
+    if (touchStartX === null) return;
+    const currentX = event.touches?.[0]?.clientX;
+    if (typeof currentX !== 'number') return;
+    const delta = currentX - touchStartX;
+    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+    if (delta > 0) {
+      goPrevImage();
+    } else {
+      goNextImage();
+    }
+    setTouchStartX(null);
+  };
+
+  const handleViewerTouchEnd = () => {
+    setTouchStartX(null);
+  };
+
+  const handleGalleryTouchStart = (event) => {
+    galleryTouchMovedRef.current = false;
+    const startX = event.touches?.[0]?.clientX;
+    galleryTouchStartXRef.current = typeof startX === 'number' ? startX : null;
+  };
+
+  const handleGalleryTouchMove = (event) => {
+    const startX = galleryTouchStartXRef.current;
+    if (startX === null) return;
+    const currentX = event.touches?.[0]?.clientX;
+    if (typeof currentX !== 'number') return;
+    const delta = currentX - startX;
+    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+    galleryTouchMovedRef.current = true;
+    if (delta > 0) {
+      goPrevImage();
+    } else {
+      goNextImage();
+    }
+    galleryTouchStartXRef.current = currentX;
+  };
+
+  const handleGalleryTouchEnd = () => {
+    galleryTouchStartXRef.current = null;
+  };
+
+  const handleGalleryClick = () => {
+    if (galleryTouchMovedRef.current) {
+      galleryTouchMovedRef.current = false;
+      return;
+    }
+    setViewerOpen(true);
   };
 
   const openOfferModal = () => {
@@ -818,6 +904,72 @@ export default function ProductDetail() {
     </>
   );
 
+  const viewerPortal =
+    viewerOpen && viewerPortalRoot
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/95 backdrop-blur-sm"
+            onClick={() => setViewerOpen(false)}
+          >
+            <div
+              className="relative w-full h-full flex items-center justify-center overflow-hidden"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={handleViewerTouchStart}
+              onTouchMove={handleViewerTouchMove}
+              onTouchEnd={handleViewerTouchEnd}
+            >
+              <button
+                type="button"
+                aria-label="Fechar"
+                className="absolute right-4 top-4 z-20 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setViewerOpen(false);
+                }}
+              >
+                <CloseIcon size={26} />
+              </button>
+
+              <img
+                src={images[activeImageIndex]}
+                alt={product?.title || 'Produto SaleDay'}
+                draggable="false"
+                className="z-10 max-w-full max-h-full object-contain"
+              />
+
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Imagem anterior"
+                  className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70 w-12 h-12 flex items-center justify-center"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goPrevImage();
+                  }}
+                >
+                  ‹
+                </button>
+              )}
+
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  aria-label="Próxima imagem"
+                  className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70 w-12 h-12 flex items-center justify-center"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    goNextImage();
+                  }}
+                >
+                  ›
+                </button>
+              )}
+            </div>
+          </div>,
+          viewerPortalRoot
+        )
+      : null;
+
   return (
     <section className="product-detail-page">
       <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
@@ -870,13 +1022,18 @@ export default function ProductDetail() {
       </div>
 
       {/* Galeria de imagens */}
-      <div className="w-full bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg relative border border-gray-200">
+      <div
+        className="w-full bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg relative border border-gray-200"
+        onTouchStart={handleGalleryTouchStart}
+        onTouchMove={handleGalleryTouchMove}
+        onTouchEnd={handleGalleryTouchEnd}
+      >
         {images.length > 0 ? (
           <img
             src={images[activeImageIndex]}
             alt={product.title}
             className="w-full h-72 md:h-[430px] object-cover cursor-zoom-in transition-all hover:scale-[1.02]"
-            onClick={() => setViewerOpen(true)}
+            onClick={handleGalleryClick}
           />
         ) : (
           <div className="w-full h-72 md:h-[420px] flex items-center justify-center text-gray-400">
@@ -1290,85 +1447,7 @@ export default function ProductDetail() {
       )}
 
 
-{viewerOpen && (
-  <div
-    className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm select-none overflow-hidden flex items-center justify-center"
-    onClick={() => setViewerOpen(false)}
-  >
-    <div
-      className="absolute inset-0 flex items-center justify-center px-4"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Botão fechar */}
-      <button
-        className="fixed top-4 right-4 bg-black/70 text-white rounded-full p-3 hover:bg-black/90 transition z-[999]"
-        onClick={(e) => {
-          e.stopPropagation();
-          setViewerOpen(false);
-        }}
-        aria-label="Fechar"
-      >
-        <CloseIcon size={26} />
-      </button>
-
-      {/* IMAGEM PRINCIPAL AJUSTADA */}
-      <img
-        src={images[activeImageIndex]}
-        alt={product.title}
-        className="max-h-[50vh] max-w-[70vw] object-contain rounded-xl drop-shadow-lg transition-transform duration-300" draggable="false"
-      />
-
-      {/* SETA ESQUERDA */}
-      {images.length > 1 && (
-        <button
-          className="absolute left-5 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition"
-          onClick={(e) => {
-            e.stopPropagation();
-            goPrevImage();
-          }}
-        >
-          ‹
-        </button>
-      )}
-
-      {/* SETA DIREITA */}
-      {images.length > 1 && (
-        <button
-          className="absolute right-5 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition"
-          onClick={(e) => {
-            e.stopPropagation();
-            goNextImage();
-          }}
-        >
-          ›
-        </button>
-      )}
-
-      {/* MINIATURAS REDUZIDAS */}
-      {images.length > 1 && (
-        <div className="absolute bottom-6 w-full flex justify-center gap-3 px-4">
-          {images.map((img, i) => (
-            <button
-              key={img + i}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveImageIndex(i);
-              }}
-              className={`h-12 w-12 rounded-xl overflow-hidden border transition ${
-                i === activeImageIndex
-                  ? 'border-emerald-400 ring-2 ring-emerald-300'
-                  : 'border-white/40 hover:border-white'
-              }`}
-            >
-              <img src={img} alt="" className="h-full w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-)}
-
+      {viewerPortal}
 
 
       {/* Modal de compartilhamento (fallback) */}
