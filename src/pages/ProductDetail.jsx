@@ -845,8 +845,22 @@ export default function ProductDetail() {
     { label: 'Condomínio', value: product.condo_fee },
     { label: 'Tipo de aluguel', value: product.rent_type }
   ].filter((entry) => entry.value);
+  const serviceSpecs = [
+    { label: 'Tipo de serviço', value: product.service_type },
+    { label: 'Duração / carga horária', value: product.service_duration },
+    { label: 'Valor por hora', value: product.service_rate },
+    { label: 'Local de atendimento', value: product.service_location }
+  ].filter((entry) => entry.value);
+  const jobSpecs = [
+    { label: 'Cargo', value: product.job_title },
+    { label: 'Tipo de vaga', value: product.job_type },
+    { label: 'Salário', value: product.job_salary },
+    { label: 'Requisitos', value: product.job_requirements }
+  ].filter((entry) => entry.value);
   const specEntries = [
     ...propertySpecs,
+    ...serviceSpecs,
+    ...jobSpecs,
     { label: 'Marca', value: product.brand },
     { label: 'Modelo', value: product.model },
     { label: 'Cor', value: product.color },

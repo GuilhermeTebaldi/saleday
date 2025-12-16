@@ -237,13 +237,42 @@ const formatNumberLabel = (value) => {
 
 const pickProductFacts = (product) => {
   if (!product) return [];
-  const category = (product.category || '').toLowerCase();
   const factPool = [];
   const addFact = (text) => {
-    if (text && !factPool.includes(text)) {
-      factPool.push(text);
+    if (text) {
+      const normalized = String(text).trim();
+      if (!normalized) return;
+      if (!factPool.includes(normalized)) {
+        factPool.push(normalized);
+      }
     }
   };
+  const category = (product.category || '').toLowerCase();
+  const addCategory = () => {
+    if (!product.category) return;
+    addFact(product.category);
+  };
+
+  addCategory();
+  const serviceType = product.service_type || product.serviceType;
+  const serviceDuration = product.service_duration || product.serviceDuration;
+  const serviceRate = product.service_rate || product.serviceRate;
+  const serviceLocation = product.service_location || product.serviceLocation;
+
+  if (serviceType) addFact(`Serviço: ${serviceType}`);
+  if (serviceDuration) addFact(`Duração: ${serviceDuration}`);
+  if (serviceRate) addFact(`Valor/h: ${serviceRate}`);
+  if (serviceLocation) addFact(`Local: ${serviceLocation}`);
+
+  const jobTitle = product.job_title || product.jobTitle;
+  const jobType = product.job_type || product.jobType;
+  const jobSalary = product.job_salary || product.jobSalary;
+  const jobRequirements = product.job_requirements || product.jobRequirements;
+
+  if (jobTitle) addFact(`Cargo: ${jobTitle}`);
+  if (jobType) addFact(`Vaga: ${jobType}`);
+  if (jobSalary) addFact(`Salário: ${jobSalary}`);
+  if (jobRequirements) addFact(`Requisitos: ${jobRequirements}`);
 
   const estateKeywords = [
     'apto',
@@ -316,7 +345,7 @@ const pickProductFacts = (product) => {
     }
   }
 
-  const maxFacts = isEstate ? 4 : 3;
+  const maxFacts = 5;
   return factPool.slice(0, maxFacts);
 };
 
