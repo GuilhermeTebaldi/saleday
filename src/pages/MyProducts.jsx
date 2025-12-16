@@ -1,7 +1,7 @@
 // frontend/src/pages/MyProducts.jsx
 // Página para o usuário gerenciar os próprios anúncios.
 import { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -12,24 +12,30 @@ import { buildProductSpecEntries } from '../utils/productSpecs.js';
 
 export default function MyProducts() {
   const { token } = useContext(AuthContext);
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [buyers, setBuyers] = useState({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-      api
+    setFetchError('');
+    api
         .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         if (!active) return;
         const items = Array.isArray(res.data?.data) ? res.data.data.slice() : [];
         setProducts(items);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        if (active) setFetchError('Não foi possível carregar seus anúncios. Atualize a página para tentar novamente.');
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token]);
+  }, [token, location.key]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -86,6 +92,7 @@ export default function MyProducts() {
   }
 
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
+  if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
   if (!products.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
 
   return (
