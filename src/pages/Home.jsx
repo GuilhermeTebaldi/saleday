@@ -17,6 +17,9 @@ import { isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
 import usePreventDrag from '../hooks/usePreventDrag.js';
+import BuyerOrdersList from '../components/BuyerOrdersList.jsx';
+import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
+import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -59,7 +62,6 @@ const formatPostDate = (value) => {
   }).format(date);
 };
 const isActive = (p) => (p?.status || 'active') !== 'sold';
-const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
 
 const normalizeId = (value) => {
@@ -557,12 +559,23 @@ export default function Home() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
+
+  const {
+    orders: buyerOrders,
+    hasUnseenOrders,
+    unseenCount,
+    markOrdersSeen
+  } = usePurchaseNotifications();
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const drawerParam = params.get('drawer');
     if (drawerParam !== 'favorites' && drawerParam !== 'orders') return;
     setDrawerTab(drawerParam);
     setActiveDrawer(true);
+    if (drawerParam === 'orders') {
+      markOrdersSeen?.();
+    }
     params.delete('drawer');
     const nextSearch = params.toString();
     navigate(
@@ -572,7 +585,7 @@ export default function Home() {
       },
       { replace: true }
     );
-  }, [location.search, location.pathname, navigate]);
+  }, [location.search, location.pathname, navigate, markOrdersSeen]);
   const drawerRef = useRef(null);
   const handlePersistMapCenter = useCallback((center) => {
     if (!center || !Number.isFinite(center.lat) || !Number.isFinite(center.lng)) return;
@@ -585,11 +598,6 @@ export default function Home() {
   const pulseTimerRef = useRef(null);
 
   // pedidos confirmados do comprador
-  const [buyerOrders, setBuyerOrders] = useState([]); // só pedidos confirmados
-  // flag "tem novidade" antes de abrir
-  // chave por usuário para não repetir badge depois que abriu
-  const buyerNotifKey = user?.id ? `buyerOrdersSeen:${user.id}` : null;
-  const [hasNewConfirmed, setHasNewConfirmed] = useState(false);
   const [searchSummary, setSearchSummary] = useState(null);
   const [locationSummary, setLocationSummary] = useState(null);
   const [locationCountry, setLocationCountry] = useState(null);
@@ -600,7 +608,6 @@ export default function Home() {
   const [countryShortcuts, setCountryShortcuts] = useState([]);
   const [countryShortcutsLoading, setCountryShortcutsLoading] = useState(false);
   const [countryShortcutApplying, setCountryShortcutApplying] = useState(false);
-  const [showConfirmedAttention, setShowConfirmedAttention] = useState(false);
 
   // controle de interseção de view
   const observedRef = useRef(new Set());
@@ -799,73 +806,10 @@ export default function Home() {
   }, []);
 
   // NOVO: carregar pedidos confirmados do comprador
-  useEffect(() => {
-    if (!token || !user?.id) {
-      setBuyerOrders([]);
-      setHasNewConfirmed(false);
-      return;
-    }
-    let active = true;
-    api
-      .get('/orders/buyer', { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        if (!active) return;
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
-        // só confirmados
-        const confirmed = list.filter((o) => o.status === 'confirmed');
-        setBuyerOrders(confirmed);
-
-        // detectar novidade pra badge verde
-        if (buyerNotifKey && typeof window !== 'undefined') {
-          let seenIds = [];
-          try {
-            const seenRaw = window.localStorage.getItem(buyerNotifKey);
-            seenIds = seenRaw ? JSON.parse(seenRaw) : [];
-          } catch {
-            seenIds = [];
-          }
-          const confirmedIds = confirmed.map((o) => o.id);
-          const unseen = confirmedIds.filter((id) => !seenIds.includes(id));
-          setHasNewConfirmed(unseen.length > 0);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        // não mostra toast aqui para não poluir a home
-      });
-    return () => {
-      active = false;
-    };
-  }, [token, user?.id, buyerNotifKey]);
-
-  useEffect(() => {
-    if (!hasNewConfirmed) {
-      setShowConfirmedAttention(false);
-      return;
-    }
-    setShowConfirmedAttention(true);
-    const timer = setTimeout(() => setShowConfirmedAttention(false), 2800);
-    return () => clearTimeout(timer);
-  }, [hasNewConfirmed]);
-
   const openFavoritesDrawer = useCallback(() => {
     setDrawerTab('favorites');
     setActiveDrawer(true);
   }, []);
-
-  const openOrdersDrawer = useCallback(() => {
-    setDrawerTab('orders');
-    setActiveDrawer(true);
-    if (buyerNotifKey && buyerOrders.length && typeof window !== 'undefined') {
-      const ids = buyerOrders.map((o) => o.id);
-      try {
-        window.localStorage.setItem(buyerNotifKey, JSON.stringify(ids));
-      } catch {
-        // ignora erro de storage
-      }
-      setHasNewConfirmed(false);
-    }
-  }, [buyerNotifKey, buyerOrders]);
 
   // registrar click e view
   const registerClick = useCallback((productId) => {
@@ -1646,6 +1590,9 @@ export default function Home() {
                     className={`home-drawer__tab ${drawerTab === 'orders' ? 'is-active' : ''}`}
                   >
                     Compras <span>({buyerOrders.length})</span>
+                    {hasUnseenOrders && (
+                      <span className="home-drawer__badge">+{unseenCount}</span>
+                    )}
                   </button>
                 </nav>
                 <button
@@ -1744,93 +1691,23 @@ export default function Home() {
                         : 'Nenhum pedido confirmado ainda'}
                     </h2>
 
-                    <div className="home-drawer__content">
-                      {buyerOrders.length === 0 ? (
-                        <p className="home-drawer__empty">
-                          Assim que um vendedor confirmar o seu pedido, ele aparece aqui.
-                        </p>
-                      ) : (
-                        buyerOrders.map((order) => {
-                          const imageList = parseImageList(order.image_urls);
-                          const productImage =
-                            imageList[0] ||
-                            toAbsoluteImageUrl(order.image_url) ||
-                            IMG_PLACEHOLDER;
-
-                          const productTitle =
-                            order.product_title ||
-                            `Produto #${order.product_id || ''}`;
-                          const productLink = `/product/${order.product_id}`;
-                          const messageLink = `/messages?product=${
-                            order.product_id
-                          }${order.seller_id ? `&seller=${order.seller_id}` : ''}${
-                            order.seller_name
-                              ? `&sellerName=${encodeURIComponent(order.seller_name)}`
-                              : ''
-                          }`;
-
-                          return (
-                            <article key={order.id} className="home-orders-card">
-                              <div className="home-orders-card__imgwrap">
-                                <img
-                                  src={productImage || IMG_PLACEHOLDER}
-                                  alt={productTitle}
-                                  className="home-orders-card__img"
-                                  onError={(e) => {
-                                    e.currentTarget.src = IMG_PLACEHOLDER;
-                                    e.currentTarget.onerror = null;
-                                  }}
-                                />
-                              </div>
-
-                              <div className="home-orders-card__body">
-                                <p className="home-orders-card__title">{productTitle}</p>
-
-                                <div className="home-orders-card__actions">
-                                  <Link
-                                    to={productLink}
-                                    className="home-orders-btn home-orders-btn--view"
-                                    onClick={() => {
-                                      if (order.product_id) registerClick(order.product_id);
-                                      navigate(productLink);
-                                      setActiveDrawer(false);
-                                    }}
-                                  >
-                                    Ver produto
-                                  </Link>
-
-                                  {order.seller_id ? (
-                                    <Link
-                                      to={`/users/${order.seller_id}`}
-                                      className="home-orders-btn home-orders-btn--rate"
-                                      onClick={() => setActiveDrawer(false)}
-                                    >
-                                      Avaliar vendedor
-                                    </Link>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      className="home-orders-btn home-orders-btn--rate home-orders-btn--disabled"
-                                      disabled
-                                    >
-                                      Avaliar vendedor
-                                    </button>
-                                  )}
-
-                                  <Link
-                                    to={messageLink}
-                                    className="home-orders-btn home-orders-btn--chat"
-                                    onClick={() => setActiveDrawer(false)}
-                                  >
-                                    Falar com o vendedor
-                                  </Link>
-                                </div>
-                              </div>
-                            </article>
-                          );
-                        })
-                      )}
-                    </div>
+                  <div className="home-drawer__content">
+                    {buyerOrders.length === 0 ? (
+                      <p className="home-drawer__empty">
+                        Assim que um vendedor confirmar o seu pedido, ele aparece aqui.
+                      </p>
+                    ) : (
+                      <BuyerOrdersList
+                        orders={buyerOrders}
+                        onViewProduct={(order) => {
+                          if (order?.product_id) {
+                            registerClick(order.product_id);
+                          }
+                        }}
+                        onClose={() => setActiveDrawer(false)}
+                      />
+                    )}
+                  </div>
                   </div>
                 )}
               </div>

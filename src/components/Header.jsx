@@ -7,6 +7,7 @@ import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { formatOfferAmount, parseOfferMessage, parseOfferResponse } from '../utils/offers.js';
 import { PRODUCT_CONTEXT_PREFIX } from '../utils/productContext.js';
+import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 
 const parseMessageContextPreview = (content) => {
   if (!content || typeof content !== 'string') return null;
@@ -75,6 +76,7 @@ function playUISound(file) {
 
 export default function Header() {
   const { user, token, logout } = useContext(AuthContext);
+  const { hasUnseenOrders, unseenCount } = usePurchaseNotifications();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [displayUnreadCount, setDisplayUnreadCount] = useState(0);
@@ -111,6 +113,12 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const closeDrawer = () => setDrawerOpen(false);
+  const purchaseLabel = hasUnseenOrders
+    ? `${unseenCount} compra${unseenCount > 1 ? 's' : ''} confirmada${unseenCount > 1 ? 's' : ''}`
+    : '';
+  const dashboardLabel = purchaseLabel
+    ? `Ir para o painel • ${purchaseLabel}`
+    : 'Ir para o painel';
 
   const handleMessagesNavigation = useCallback(
     (to) => {
@@ -675,10 +683,15 @@ export default function Header() {
             <Link
               to="/dashboard"
               className={`nav-icon-button${sellerAlerts.unseen > 0 ? ' nav-icon-button--alert' : ''}`}
-              aria-label="Ir para o painel"
+              aria-label={dashboardLabel}
               onClick={() => playUISound('open-home.mp3')}
             >
               <HomeIcon size={20} />
+              {hasUnseenOrders && (
+                <span className="nav-home-alert" aria-hidden="true">
+                  {unseenCount > 99 ? '99+' : unseenCount}
+                </span>
+              )}
               {sellerAlerts.unseen > 0 && (
                 <span className="nav-icon-button__badge">{sellerAlerts.unseen}</span>
               )}

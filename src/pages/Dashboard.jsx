@@ -1,14 +1,25 @@
 // frontend/src/pages/Dashboard.jsx
 // Página de painel com resumo e atalhos do usuário.
 
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 import { getUnseenSellerOrderIds } from '../utils/orders.js';
 import { toast } from 'react-hot-toast';
 import formatProductPrice from '../utils/currency.js';
 import { isProductFree } from '../utils/product.js';
+import { normalizeOrderStatus } from '../utils/orderStatus.js';
+import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -34,21 +45,6 @@ const formatLegalDate = (timestamp) => {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return 'Não informado';
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
-const IMG_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-const normalizeOrderStatus = (status) => {
-  const value = String(status || '').toLowerCase().trim();
-
-  if (value === 'pending' || value === 'pendente' || value === 'in_sospeso') {
-    return 'pending';
-  }
-
-  if (value === 'confirmed' || value === 'confirmado' || value === 'confermato') {
-    return 'confirmed';
-  }
-
-  return value;
 };
 
 
@@ -118,6 +114,32 @@ const ShopIcon = ({ className = '' }) => (
     />
     <path
       d="M3 9h18l-1.5 9H4.5L3 9z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const BagIcon = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path
+      d="M7 8V6a4 4 0 018 0v2"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 8h15l-1.5 12h-11z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M8 20V18h8v2"
       stroke="currentColor"
       strokeWidth="1.6"
       strokeLinecap="round"
@@ -304,33 +326,36 @@ const QuickAccessBar = ({ className = '', children, ...props }) => (
   </div>
 );
 
-const ActionCard = ({ title, description, icon, to, onClick, badge, className = '' }) => {
-  const Element = to ? Link : 'button';
-  const elementProps = {
-    className: `group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 ${className}`,
-    onClick,
-    ...(to ? { to } : { type: 'button' })
-  };
+const ActionCard = forwardRef(
+  ({ title, description, icon, to, onClick, badge, className = '' }, ref) => {
+    const Element = to ? Link : 'button';
+    const elementProps = {
+      className: `group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 ${className}`,
+      onClick,
+      ...(to ? { to } : { type: 'button' })
+    };
+    if (ref) elementProps.ref = ref;
 
-  return (
-    <Element {...elementProps}>
-      <div className="flex items-center justify-between">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 shadow-inner">
-          {icon}
-        </span>
-        {badge && (
-          <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-            {badge}
+    return (
+      <Element {...elementProps}>
+        <div className="flex items-center justify-between">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 shadow-inner">
+            {icon}
           </span>
-        )}
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-900">{title}</p>
-        <p className="text-xs text-slate-500">{description}</p>
-      </div>
-    </Element>
-  );
-};
+          {badge && (
+            <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+              {badge}
+            </span>
+          )}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="text-xs text-slate-500">{description}</p>
+        </div>
+      </Element>
+    );
+  }
+);
 
 const MobileMenu = ({ actions }) => (
   <div className="sm:hidden">
@@ -384,8 +409,15 @@ export default function Dashboard() {
   const [quickPanelTab, setQuickPanelTab] = useState(null);
   const [favoritePanelItems, setFavoritePanelItems] = useState([]);
   const [favoritePanelLoading, setFavoritePanelLoading] = useState(false);
+  const { hasUnseenOrders, unseenCount, markOrdersSeen } = usePurchaseNotifications();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef(null);
+  const purchaseActionRef = useRef(null);
+  const [hasAutoScrolledPurchases, setHasAutoScrolledPurchases] = useState(false);
+  const purchaseBadge = hasUnseenOrders ? `+${unseenCount}` : undefined;
+  const purchaseActionClasses = `h-full min-h-[140px] md:col-span-2 purchase-action-card ${
+    hasUnseenOrders ? 'purchase-action-card--alert' : ''
+  }`.trim();
 
   const userId = user?.id;
   const userAvatar = user?.profile_image_url ?? '';
@@ -415,6 +447,20 @@ export default function Dashboard() {
   const closeQuickPanel = useCallback(() => {
     setIsQuickPanelOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (!hasUnseenOrders) {
+      if (hasAutoScrolledPurchases) {
+        setHasAutoScrolledPurchases(false);
+      }
+      return;
+    }
+    if (hasAutoScrolledPurchases) return;
+    const node = purchaseActionRef.current;
+    if (!node) return;
+    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHasAutoScrolledPurchases(true);
+  }, [hasAutoScrolledPurchases, hasUnseenOrders]);
 
   const legalEntries = useMemo(() => {
     if (!user) return [];
@@ -920,6 +966,16 @@ export default function Dashboard() {
                   icon={<PlusIcon className="h-5 w-5 text-slate-500" />}
                   to="/new-product"
                   className="h-full min-h-[140px]"
+                />
+                <ActionCard
+                  ref={purchaseActionRef}
+                  title="Minhas compras"
+                  description="Reveja pedidos confirmados, acompanhe o contato e avalie vendedores."
+                  icon={<BagIcon className="h-5 w-5 text-slate-500" />}
+                  to="/buyer-purchases"
+                  badge={purchaseBadge}
+                  className={purchaseActionClasses}
+                  onClick={() => markOrdersSeen?.()}
                 />
               </div>
             </div>
