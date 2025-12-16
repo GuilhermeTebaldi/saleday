@@ -245,8 +245,39 @@ const pickProductFacts = (product) => {
     }
   };
 
-  const estateKeywords = ['apto', 'apartamento', 'imóvel', 'imoveis', 'casas', 'casa', 'aluguel', 'flat', 'kitnet'];
-  const fashionKeywords = ['moda', 'roupa', 'vestuário', 'vestidos', 'fashion', 'camisa', 'jeans', 'saia', 'terno'];
+  const estateKeywords = [
+    'apto',
+    'apartamento',
+    'imóvel',
+    'imóveis',
+    'imoveis',
+    'casas',
+    'casa',
+    'aluguel',
+    'flat',
+    'kitnet',
+    'terreno',
+    'quarto',
+    'quartos',
+    'temporada',
+    'ape',
+    'apê'
+  ];
+  const fashionKeywords = [
+    'moda',
+    'roupa',
+    'vestuário',
+    'vestidos',
+    'fashion',
+    'camisa',
+    'jeans',
+    'saia',
+    'terno',
+    'acessório',
+    'acessorio',
+    'acessórios',
+    'acessorios'
+  ];
   const isEstate =
     estateKeywords.some((keyword) => category.includes(keyword)) ||
     Boolean(product.property_type || product.surface_area || product.bedrooms || product.bathrooms || product.parking || product.rent_type);

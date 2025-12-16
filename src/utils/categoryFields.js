@@ -13,11 +13,6 @@ const PROPERTY_DETAILS = [
   { name: 'parking', label: 'Vagas', placeholder: 'Ex: 1', inputMode: 'numeric' }
 ];
 
-const RENTAL_EXTRA_DETAILS = [
-  ...PROPERTY_DETAILS,
-  { name: 'rentType', label: 'Tipo de aluguel', placeholder: 'Ex: Temporada ou mensal' }
-];
-
 const CATEGORY_FIELD_CONFIG = {
   Veículos: [
     { name: 'brand', label: 'Marca', placeholder: 'Ex: Toyota' },
@@ -25,13 +20,15 @@ const CATEGORY_FIELD_CONFIG = {
     { name: 'color', label: 'Cor', placeholder: 'Ex: Prata' },
     { name: 'year', label: 'Ano', placeholder: 'Ex: 2022', inputMode: 'numeric' }
   ],
-  'Eletrônicos': [
+  'Eletrônicos e Celulares': [
     { name: 'brand', label: 'Marca', placeholder: 'Ex: Apple' },
     { name: 'model', label: 'Modelo', placeholder: 'Ex: iPhone 15' }
   ],
-  Imóvel: { fields: PROPERTY_DETAILS, skipDefaults: true },
-  Apartamento: { fields: PROPERTY_DETAILS, skipDefaults: true },
-  Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true }
+  'Informática e Games': [
+    { name: 'brand', label: 'Marca', placeholder: 'Ex: Intel' },
+    { name: 'model', label: 'Modelo', placeholder: 'Ex: Legion 5i' }
+  ],
+  Imóveis: { fields: PROPERTY_DETAILS, skipDefaults: true }
 };
 
 export function getCategoryDetailFields(category) {

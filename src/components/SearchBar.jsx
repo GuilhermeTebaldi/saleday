@@ -67,7 +67,19 @@ const matchesProductQuery = (product, queryTokens) => {
     product.country,
     product.seller_name,
     product.subtitle,
-    product.brand
+    product.brand,
+    product.model,
+    product.color,
+    product.propertyType,
+    product.property_type,
+    product.area,
+    product.bedrooms,
+    product.bathrooms,
+    product.parking,
+    product.rentType,
+    product.rent_type,
+    product.neighborhood,
+    product.zip
   ]
     .filter(Boolean)
     .join(' ');
