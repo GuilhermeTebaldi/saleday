@@ -1,6 +1,6 @@
 // frontend/src/pages/MyProducts.jsx
 // Página para o usuário gerenciar os próprios anúncios.
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
@@ -17,13 +17,19 @@ export default function MyProducts() {
   const [buyers, setBuyers] = useState({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const abortFetchRef = useRef(() => {});
 
-  useEffect(() => {
+  const fetchProducts = useCallback(() => {
+    if (!token) return;
+    abortFetchRef.current?.();
     let active = true;
+    abortFetchRef.current = () => {
+      active = false;
+    };
     setLoading(true);
     setFetchError('');
     api
-        .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
+      .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         if (!active) return;
         const items = Array.isArray(res.data?.data) ? res.data.data.slice() : [];
@@ -31,11 +37,46 @@ export default function MyProducts() {
       })
       .catch((err) => {
         console.error(err);
-        if (active) setFetchError('Não foi possível carregar seus anúncios. Atualize a página para tentar novamente.');
+        if (active) {
+          setFetchError(
+            'Não foi possível carregar seus anúncios. Atualize a página para tentar novamente.'
+          );
+        }
       })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [token, location.pathname]);
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    fetchProducts();
+    return () => {
+      abortFetchRef.current?.();
+    };
+  }, [fetchProducts, location.pathname, token]);
+
+  useEffect(() => {
+    if (!token || typeof window === 'undefined' || typeof document === 'undefined') {
+      return undefined;
+    }
+    const refreshList = () => {
+      fetchProducts();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProducts();
+      }
+    };
+    window.addEventListener('pageshow', refreshList);
+    window.addEventListener('popstate', refreshList);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('pageshow', refreshList);
+      window.removeEventListener('popstate', refreshList);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchProducts, token]);
 
   useEffect(() => {
     if (!token) return undefined;
