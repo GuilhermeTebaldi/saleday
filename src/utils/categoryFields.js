@@ -13,6 +13,11 @@ const PROPERTY_DETAILS = [
   { name: 'parking', label: 'Vagas', placeholder: 'Ex: 1', inputMode: 'numeric' }
 ];
 
+const RENTAL_EXTRA_DETAILS = [
+  ...PROPERTY_DETAILS,
+  { name: 'rentType', label: 'Tipo de aluguel', placeholder: 'Ex: Temporada ou mensal' }
+];
+
 const SERVICE_FIELDS = [
   { name: 'serviceType', label: 'Tipo de serviço', placeholder: 'Ex: Aulas, consertos ou fotografia' },
   { name: 'serviceDuration', label: 'Duração / carga horária', placeholder: 'Ex: 2h por sessão, 40h/semana' },
