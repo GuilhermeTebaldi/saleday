@@ -5,11 +5,13 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import GeoContext from '../context/GeoContext.jsx';
 import { asStars } from '../utils/rating.js';
 import { isProductFree } from '../utils/product.js';
 import formatProductPrice from '../utils/currency.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { localeFromCountry } from '../i18n/localeMap.js';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -39,6 +41,7 @@ export default function SellerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
+  const geo = useContext(GeoContext);
 
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
@@ -469,16 +472,24 @@ export default function SellerProfile() {
     navigate(`/messages?${params.toString()}`);
   };
 
-  const formatReviewDate = (value) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  const reviewLocale = useMemo(() => {
+    const userLocale = user?.country ? localeFromCountry(user.country) : null;
+    return userLocale || geo?.locale || 'pt-BR';
+  }, [geo?.locale, user?.country]);
+
+  const formatReviewDate = useCallback(
+    (value) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleDateString(reviewLocale || 'pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    },
+    [reviewLocale]
+  );
 
   return (
     <>

@@ -13,6 +13,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import formatProductPrice from '../utils/currency.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
+import { localeFromCountry } from '../i18n/localeMap.js';
 import { isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
@@ -52,11 +53,12 @@ const resolveCountryName = (code) => {
   const normalized = String(code).trim().toUpperCase();
   return getCountryLabel(normalized) || regionDisplay?.of(normalized) || normalized;
 };
-const formatPostDate = (value) => {
+const formatPostDate = (value, locale = 'pt-BR') => {
   if (!value) return '';
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(locale, {
+    locale,
     day: '2-digit',
     month: 'short',
   }).format(date);
@@ -528,7 +530,8 @@ export default function Home() {
   const {
     country: detectedCountry,
     lat: detectedLat,
-    lng: detectedLng
+    lng: detectedLng,
+    locale: detectedLocale
   } = useContext(GeoContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -536,6 +539,10 @@ export default function Home() {
     () => detectPreferredCountry(user?.country, detectedCountry),
     [user?.country, detectedCountry]
   );
+  const homeLocale = useMemo(() => {
+    const userLocale = user?.country ? localeFromCountry(user.country) : null;
+    return userLocale || detectedLocale || 'pt-BR';
+  }, [detectedLocale, user?.country]);
   const [geoScope, setGeoScope] = useState(() => ({ type: 'country', country: preferredCountry }));
 
   // produtos / favoritos (já existia)
@@ -1457,7 +1464,7 @@ export default function Home() {
                 product.created_at ||
                 product.updated_at ||
                 '';
-              const postedAtLabel = formatPostDate(postTimestamp);
+              const postedAtLabel = formatPostDate(postTimestamp, homeLocale);
               
 
               return (
