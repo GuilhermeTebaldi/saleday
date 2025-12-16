@@ -69,6 +69,12 @@ export default function EditProduct() {
   const { id } = useParams();
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
+  const routeRefreshSignal = useRef(0);
+
+  const goToMyProducts = () => {
+    routeRefreshSignal.current = Date.now();
+    navigate('/my-products', { state: { refreshId: routeRefreshSignal.current } });
+  };
   const [form, setForm] = useState(initialFormState);
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -114,7 +120,7 @@ export default function EditProduct() {
         }
         if (data.hidden_by_seller) {
           toast.info('Este produto já foi removido e não pode ser editado.');
-          navigate('/my-products');
+          goToMyProducts();
           return;
         }
         const images = collectExistingImages(data.image_url, data.image_urls);
@@ -392,7 +398,7 @@ export default function EditProduct() {
       await api.put(`/products/${id}`, formData);
       toast.success('Produto atualizado.');
       resetUploads();
-      navigate('/my-products');
+      goToMyProducts();
     } catch (err) {
       console.error(err);
       toast.error('Erro ao atualizar produto.');
@@ -413,7 +419,7 @@ export default function EditProduct() {
       await api.delete(`/products/${id}`);
       toast.success('Produto ocultado da sua lista de anúncios.');
       resetUploads();
-      navigate('/my-products');
+      goToMyProducts();
     } catch (err) {
       console.error(err);
       toast.error('Erro ao excluir produto.');

@@ -1,6 +1,6 @@
 // frontend/src/pages/MyProducts.jsx
 // Página para o usuário gerenciar os próprios anúncios.
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
@@ -17,6 +17,9 @@ export default function MyProducts() {
   const [buyers, setBuyers] = useState({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const refreshId = useMemo(() => {
+    return location.state?.refreshId ?? 0;
+  }, [location.state]);
   const abortFetchRef = useRef(() => {});
 
   const fetchProducts = useCallback(() => {
@@ -54,7 +57,7 @@ export default function MyProducts() {
     return () => {
       abortFetchRef.current?.();
     };
-  }, [fetchProducts, location.pathname, token]);
+  }, [fetchProducts, location.pathname, token, refreshId]);
 
   useEffect(() => {
     if (!token || typeof window === 'undefined' || typeof document === 'undefined') {
