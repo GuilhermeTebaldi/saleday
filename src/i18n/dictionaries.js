@@ -618,6 +618,20 @@ const ENTRIES = [
   { key: 'Você comprou ', en: 'You bought ', es: 'Compraste ', it: 'Hai comprato ', ja: 'あなたは ' },
   { key: 'comprou', en: 'bought', es: 'compró', it: 'ha comprato', ja: '購入しました' },
   { key: 'Frete, mensagem e avaliação ficam disponíveis imediatamente.', en: 'Shipping, messaging and reviews become available immediately.', es: 'Envío, mensajes y valoraciones quedan disponibles de inmediato.', it: 'Spedizione, messaggi e recensioni sono disponibili immediatamente.', ja: '配送料、メッセージ、レビューがすぐに利用可能になります。' },
+  {
+    key: 'Assim que uma compra for confirmada pelo vendedor, você verá o produto aqui e poderá acompanhar o contato.',
+    en: 'As soon as a purchase is confirmed by the seller, you will see the product here and can follow the contact.',
+    es: 'Tan pronto como una compra sea confirmada por el vendedor, verás el producto aquí y podrás seguir el contacto.',
+    it: 'Appena un acquisto viene confermato dal venditore, vedrai il prodotto qui e potrai seguire il contatto.',
+    ja: '販売者が購入を承認するとすぐに、ここに商品が表示され、連絡のやり取りを追跡できます。'
+  },
+  {
+    key: 'Nenhuma compra confirmada ainda',
+    en: 'No confirmed purchases yet',
+    es: 'Aún no hay compras confirmadas',
+    it: 'Ancora nessun acquisto confermato',
+    ja: 'まだ確認済みの購入はありません'
+  },
   { key: 'Frete, mensagem e recensione ficam disponíveis imediatamente.', en: 'Shipping, messaging and reviews are immediately available.', es: 'Envío, mensajes y reseñas están disponibles de inmediato.', it: 'Spedizione, messaggi e recensioni sono subito disponibili.', ja: '配送料、メッセージ、レビューがすぐに利用可能です。' },
   { key: 'Ver produto', en: 'View product', es: 'Ver producto', it: 'Vedi prodotto', ja: '商品を見る' },
   { key: 'VER COMPRAS', en: 'VIEW PURCHASES', es: 'VER COMPRAS', it: 'VEDI ACQUISTI', ja: '購入履歴を見る' },
