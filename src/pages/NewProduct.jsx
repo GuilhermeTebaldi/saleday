@@ -83,6 +83,14 @@ const initialFormState = {
   bathrooms: '',
   parking: '',
   rentType: '',
+  serviceType: '',
+  serviceDuration: '',
+  serviceRate: '',
+  serviceLocation: '',
+  jobTitle: '',
+  jobType: '',
+  jobSalary: '',
+  jobRequirements: '',
   isFree: false,
   pickupOnly: false
 };
@@ -780,6 +788,14 @@ export default function NewProduct() {
       bathrooms: form.bathrooms?.trim() || null,
       parking: form.parking?.trim() || null,
       rentType: form.rentType?.trim() || null,
+      serviceType: form.serviceType?.trim() || null,
+      serviceDuration: form.serviceDuration?.trim() || null,
+      serviceRate: form.serviceRate?.trim() || null,
+      serviceLocation: form.serviceLocation?.trim() || null,
+      jobTitle: form.jobTitle?.trim() || null,
+      jobType: form.jobType?.trim() || null,
+      jobSalary: form.jobSalary?.trim() || null,
+      jobRequirements: form.jobRequirements?.trim() || null,
       is_free: form.isFree ? 'true' : 'false',
       pickup_only: form.pickupOnly ? 'true' : 'false'
     };
@@ -1126,7 +1142,7 @@ export default function NewProduct() {
                     className={FIELD_BASE_CLASS}
                     name={field.name}
                     placeholder={field.placeholder}
-                    value={form[field.name]}
+                    value={form[field.name] ?? ''}
                     onChange={handleChange}
                     inputMode={field.inputMode}
                   />

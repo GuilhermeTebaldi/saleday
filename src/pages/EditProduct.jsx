@@ -33,6 +33,14 @@ const initialFormState = {
   bathrooms: '',
   parking: '',
   rentType: '',
+  serviceType: '',
+  serviceDuration: '',
+  serviceRate: '',
+  serviceLocation: '',
+  jobTitle: '',
+  jobType: '',
+  jobSalary: '',
+  jobRequirements: '',
   isFree: false,
   pickupOnly: false
 };
@@ -138,6 +146,14 @@ export default function EditProduct() {
           bathrooms: normalizeFieldValue(data.bathrooms),
           parking: normalizeFieldValue(data.parking),
           rentType: normalizeFieldValue(data.rentType ?? data.rent_type),
+          serviceType: normalizeFieldValue(data.serviceType ?? data.service_type),
+          serviceDuration: normalizeFieldValue(data.serviceDuration ?? data.service_duration),
+          serviceRate: normalizeFieldValue(data.serviceRate ?? data.service_rate),
+          serviceLocation: normalizeFieldValue(data.serviceLocation ?? data.service_location),
+          jobTitle: normalizeFieldValue(data.jobTitle ?? data.job_title),
+          jobType: normalizeFieldValue(data.jobType ?? data.job_type),
+          jobSalary: normalizeFieldValue(data.jobSalary ?? data.job_salary),
+          jobRequirements: normalizeFieldValue(data.jobRequirements ?? data.job_requirements),
           isFree,
           pickupOnly: isFree ? true : Boolean(data.pickup_only)
         });
@@ -287,6 +303,14 @@ export default function EditProduct() {
       bathrooms: form.bathrooms?.trim() || null,
       parking: form.parking?.trim() || null,
       rentType: form.rentType?.trim() || null,
+      serviceType: form.serviceType?.trim() || null,
+      serviceDuration: form.serviceDuration?.trim() || null,
+      serviceRate: form.serviceRate?.trim() || null,
+      serviceLocation: form.serviceLocation?.trim() || null,
+      jobTitle: form.jobTitle?.trim() || null,
+      jobType: form.jobType?.trim() || null,
+      jobSalary: form.jobSalary?.trim() || null,
+      jobRequirements: form.jobRequirements?.trim() || null,
       is_free: form.isFree ? 'true' : 'false',
       pickup_only: form.pickupOnly ? 'true' : 'false'
     };

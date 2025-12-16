@@ -13,6 +13,22 @@ const PROPERTY_DETAILS = [
   { name: 'parking', label: 'Vagas', placeholder: 'Ex: 1', inputMode: 'numeric' }
 ];
 
+const SERVICE_FIELDS = [
+  { name: 'serviceType', label: 'Tipo de serviço', placeholder: 'Ex: Aulas, consertos ou fotografia' },
+  { name: 'serviceDuration', label: 'Duração / carga horária', placeholder: 'Ex: 2h por sessão, 40h/semana' },
+  { name: 'serviceRate', label: 'Valor por hora', placeholder: 'Ex: R$ 120,00', inputMode: 'decimal' },
+  { name: 'serviceLocation', label: 'Local de atendimento', placeholder: 'Ex: Online, em domicílio ou loja' }
+];
+
+const JOB_FIELDS = [
+  { name: 'jobTitle', label: 'Cargo', placeholder: 'Ex: Assistente administrativo' },
+  { name: 'jobType', label: 'Tipo de vaga', placeholder: 'Ex: CLT, PJ, freelance' },
+  { name: 'jobSalary', label: 'Salário', placeholder: 'Ex: R$ 2.500,00', inputMode: 'decimal' },
+  { name: 'jobRequirements', label: 'Requisitos', placeholder: 'Ex: Ensino médio completo ou experiência' }
+];
+
+const REAL_ESTATE_CONFIG = { fields: PROPERTY_DETAILS, skipDefaults: true };
+
 const CATEGORY_FIELD_CONFIG = {
   Veículos: [
     { name: 'brand', label: 'Marca', placeholder: 'Ex: Toyota' },
@@ -28,7 +44,12 @@ const CATEGORY_FIELD_CONFIG = {
     { name: 'brand', label: 'Marca', placeholder: 'Ex: Intel' },
     { name: 'model', label: 'Modelo', placeholder: 'Ex: Legion 5i' }
   ],
-  Imóveis: { fields: PROPERTY_DETAILS, skipDefaults: true }
+  Imóveis: REAL_ESTATE_CONFIG,
+  Imóvel: REAL_ESTATE_CONFIG,
+  Apartamento: REAL_ESTATE_CONFIG,
+  Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true },
+  Serviços: { fields: SERVICE_FIELDS, skipDefaults: true },
+  Empregos: { fields: JOB_FIELDS, skipDefaults: true }
 };
 
 export function getCategoryDetailFields(category) {
