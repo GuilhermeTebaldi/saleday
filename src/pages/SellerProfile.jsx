@@ -472,24 +472,19 @@ export default function SellerProfile() {
     navigate(`/messages?${params.toString()}`);
   };
 
-  const reviewLocale = useMemo(() => {
-    const userLocale = user?.country ? localeFromCountry(user.country) : null;
-    return userLocale || geo?.locale || 'pt-BR';
-  }, [geo?.locale, user?.country]);
+  const reviewLocale =
+    (user?.country ? localeFromCountry(user.country) : null) || geo?.locale || 'pt-BR';
 
-  const formatReviewDate = useCallback(
-    (value) => {
-      if (!value) return '';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '';
-      return date.toLocaleDateString(reviewLocale || 'pt-BR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    },
-    [reviewLocale]
-  );
+  const formatReviewDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString(reviewLocale || 'pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   return (
     <>
