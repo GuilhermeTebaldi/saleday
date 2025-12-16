@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { asStars } from '../utils/rating.js';
 import { isProductFree } from '../utils/product.js';
 import formatProductPrice from '../utils/currency.js';
+import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 function getInitial(name) {
@@ -48,6 +49,8 @@ export default function SellerProfile() {
   const [editingReviewText, setEditingReviewText] = useState('');
   const [savingReviewId, setSavingReviewId] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const shareMenuRef = useRef(null);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -205,6 +208,17 @@ export default function SellerProfile() {
       setShowAvatarMenu(false);
     }
   }, [isSelf, showAvatarMenu]);
+
+  useEffect(() => {
+    if (!shareMenuOpen || typeof document === 'undefined') return undefined;
+    const handleClickOutside = (event) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
+        setShareMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [shareMenuOpen]);
 
   const reloadSellerProfile = useCallback(async () => {
     try {
@@ -371,6 +385,33 @@ export default function SellerProfile() {
   const handleAvatarClick = () => {
     if (!isSelf) return;
     setShowAvatarMenu((prev) => !prev);
+  };
+  const shareLogoSrc = '/logo-saleday.png';
+
+  const sellerDisplayName = seller?.username || 'Vendedor SaleDay';
+  const profileUrl = seller?.id
+    ? typeof window === 'undefined'
+      ? `/users/${seller.id}`
+      : `${window.location.origin}/users/${seller.id}`
+    : '';
+  const shareLabel = `${sellerDisplayName} · SaleDay`;
+  const shareMessage = profileUrl
+    ? `${shareLabel}\nConfira o perfil completo: ${profileUrl}`
+    : `${shareLabel}\nVeja as novidades do vendedor na SaleDay.`;
+  const encodedShareMessage = encodeURIComponent(shareMessage);
+  const whatsappShareHref = `https://wa.me/?text=${encodedShareMessage}`;
+  const emailSubject = encodeURIComponent(`Perfil de ${sellerDisplayName} no SaleDay`);
+  const emailBody = encodeURIComponent(`${shareLabel}\n${profileUrl || 'https://saleday.com'}`);
+  const emailShareHref = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+  const displayProfileLink = profileUrl ? profileUrl.replace(/^https?:\/\//, '') : '';
+  const handleCopyProfileLink = async () => {
+    if (!profileUrl) return;
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      toast.success('Link copiado.');
+    } catch {
+      toast.error('Falha ao copiar o link.');
+    }
   };
 
   function registerClick(productId) {
@@ -570,6 +611,65 @@ export default function SellerProfile() {
                 </>
               )}
 
+              <div ref={shareMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShareMenuOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+                >
+                  <Share2 size={14} className="text-slate-500" />
+                  Compartilhar perfil
+                </button>
+                {shareMenuOpen && (
+                  <div className="absolute right-0 z-20 mt-2 w-64 space-y-2 rounded-2xl border border-slate-200 bg-white py-3 px-3 shadow-lg">
+                    <div className="space-y-1 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-3 py-2 text-white shadow">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wider text-slate-200 font-semibold">SaleDay · Perfil</p>
+                          <p className="truncate text-sm font-semibold">{sellerDisplayName}</p>
+                        </div>
+                        <img
+                          src={shareLogoSrc}
+                          alt="SaleDay logo"
+                          className="h-10 w-10 rounded-full border border-white/30 bg-white/10 object-contain p-1"
+                        />
+                      </div>
+                      {displayProfileLink && (
+                        <div className="mt-1 flex items-center justify-between gap-3 rounded-xl bg-white/20 px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-100">
+                          <span className="truncate">{displayProfileLink}</span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              handleCopyProfileLink();
+                            }}
+                            className="rounded-full border border-white/40 px-2 py-0.5 text-[9px]"
+                          >
+                            Copiar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <a
+                      href={whatsappShareHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white"
+                    >
+                      WhatsApp
+                      <span className="text-[10px] text-slate-500">↗</span>
+                    </a>
+                    <a
+                      href={emailShareHref}
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-white"
+                    >
+                      E-mail
+                      <span className="text-[10px] text-slate-500">✉</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
               {isSelf && (
                 <span className="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-600 px-3 py-1 mt-1">
                 Este é o seu perfil público
@@ -686,6 +786,7 @@ export default function SellerProfile() {
                       return (
                         <Link
                           to={`/product/${p.id}`}
+                          state={{ fromSellerProfile: true, sellerId: seller?.id }}
                           key={p.id}
                           className="group relative overflow-hidden rounded-xl bg-slate-50 border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
                           onClick={() => registerClick(p.id)}

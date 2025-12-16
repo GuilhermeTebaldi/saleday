@@ -3,7 +3,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon } from 'lucide-react';
+import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -749,7 +749,17 @@ export default function ProductDetail() {
   const sellerName = product?.seller_name || 'Usuário SaleDay';
   const sellerAvatar = product?.seller_avatar || '';
   const sellerInitial = useMemo(() => getInitial(sellerName), [sellerName]);
+  const entryState = location.state;
+  const stateSellerId = entryState?.sellerId;
   const sellerProfilePath = product?.user_id ? `/users/${product.user_id}` : '';
+  const cameFromSellerProfile =
+    Boolean(entryState?.fromSellerProfile) &&
+    (stateSellerId == null || Number(stateSellerId) === Number(product?.user_id));
+  const showReturnToSellerProfile = cameFromSellerProfile && Boolean(sellerProfilePath);
+  const handleReturnToSellerProfile = useCallback(() => {
+    if (!sellerProfilePath) return;
+    navigate(sellerProfilePath);
+  }, [navigate, sellerProfilePath]);
   const viewsCount = viewCountFromProduct(product);
   const likesCount = favoriteCountFromProduct(product);
   const visibleProductQuestions = useMemo(() => {
@@ -974,41 +984,57 @@ export default function ProductDetail() {
     <section className="product-detail-page">
       <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
         {/* Cabeçalho com vendedor */}
-        <header className="product-detail__header flex flex-col md:flex-row md:items-center md:justify-between border-b pb-3 gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-snug">
-            {product.title}
-          </h1>
-          {isSold && (
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700">
-              Vendido
-            </span>
-          )}
-          {!isSold && isFreeProduct && (
-            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700 font-semibold">
-              Grátis
-            </span>
-          )}
-          <p className="text-gray-600 flex items-center gap-1 text-xs md:text-sm mt-1">
-            <MapPin size={14} /> {locCity || 'Local não informado'}{locState ? `, ${locState}` : ''}{locCountry ? ` (${locCountry})` : ''}
-          </p>
-        </div>
-        {sellerProfilePath ? (
-          <Link
-            to={sellerProfilePath}
-            className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition"
-            aria-label={`Ver perfil completo de ${sellerName}`}
-          >
-            {sellerCardContent}
-          </Link>
-        ) : (
-          <div className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition">
-            {sellerCardContent}
+        <header className="product-detail__header flex flex-col gap-3 border-b pb-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-snug">
+              {product.title}
+            </h1>
+            {isSold && (
+              <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700">
+                Vendido
+              </span>
+            )}
+            {!isSold && isFreeProduct && (
+              <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700 font-semibold">
+                Grátis
+              </span>
+            )}
+            <p className="text-gray-600 flex items-center gap-1 text-xs md:text-sm mt-1">
+              <MapPin size={14} /> {locCity || 'Local não informado'}
+              {locState ? `, ${locState}` : ''}
+              {locCountry ? ` (${locCountry})` : ''}
+            </p>
           </div>
-        )}
-      </header>
 
-      <div className="flex flex-wrap gap-2 text-xs md:text-sm text-gray-600 mt-2">
+          <div className="flex flex-col items-start gap-3 md:items-end">
+            {sellerProfilePath ? (
+              <Link
+                to={sellerProfilePath}
+                className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition md:min-w-[220px]"
+                aria-label={`Ver perfil completo de ${sellerName}`}
+              >
+                {sellerCardContent}
+              </Link>
+            ) : (
+              <div className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition md:min-w-[220px]">
+                {sellerCardContent}
+              </div>
+            )}
+
+            {showReturnToSellerProfile && (
+              <button
+                type="button"
+                onClick={handleReturnToSellerProfile}
+                className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+              >
+                <ChevronLeft size={14} />
+                Voltar ao perfil
+              </button>
+            )}
+          </div>
+        </header>
+
+          <div className="flex flex-wrap gap-2 text-xs md:text-sm text-gray-600 mt-2">
         <div className="flex items-center gap-1 rounded-full bg-white/70 backdrop-blur-sm border border-gray-200 px-3 py-1 shadow-sm">
           <Eye size={16} className="text-gray-500" aria-hidden="true" />
           <span className="font-semibold text-gray-900">{viewsCount}</span>

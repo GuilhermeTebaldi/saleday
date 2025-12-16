@@ -196,6 +196,7 @@ const CogIcon = ({ className = '' }) => (
 
 const BOOST_LINK_TARGET = '/dashboard/impulsiona';
 const BOOST_LINK_STATE = undefined;
+const watermarkLogoSrc = '/logo-saleday.png';
 
 const PrimaryButton = ({
   as: Component = 'button',
@@ -388,6 +389,7 @@ export default function Dashboard() {
 
   const userId = user?.id;
   const userAvatar = user?.profile_image_url ?? '';
+  const sellerProfilePath = userId ? `/users/${userId}` : '';
 
   const userInitial = useMemo(
     () => getInitial(user?.username || user?.email || 'SaleDay'),
@@ -767,7 +769,12 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="rounded-[32px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="relative overflow-hidden rounded-[42px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+          <img
+            src={watermarkLogoSrc}
+            alt="SaleDay logo"
+            className="pointer-events-none absolute top-[-4px] right-[-14px] h-40 w-40 opacity-20 mix-blend-multiply blur-sm lg:hidden"
+          />
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <UserCard
               user={user}
@@ -778,7 +785,7 @@ export default function Dashboard() {
               avatarMenuRef={avatarMenuRef}
             />
             <div className="flex flex-wrap gap-3">
-            <PrimaryButton
+              <PrimaryButton
                 as={Link}
                 to="/sales-requests"
                 icon={<ArrowRightIcon className="h-4 w-4 text-white" />}
@@ -797,6 +804,16 @@ export default function Dashboard() {
                   'Gerenciar pedidos'
                 )}
               </PrimaryButton>
+              {sellerProfilePath && (
+                <PrimaryButton
+                  as={Link}
+                  to={sellerProfilePath}
+                  variant="secondary"
+                  className="min-w-[180px]"
+                >
+                  Meu perfil público
+                </PrimaryButton>
+              )}
 
             </div>
           </div>
