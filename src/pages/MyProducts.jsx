@@ -35,7 +35,7 @@ export default function MyProducts() {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token, location.key]);
+  }, [token, location.pathname]);
 
   useEffect(() => {
     if (!token) return undefined;
