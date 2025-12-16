@@ -570,6 +570,7 @@ const ENTRIES = [
   { key: 'Compras confirmadas.', en: 'Confirmed purchases.', es: 'Compras confirmadas.', it: 'Acquisti confermati.', ja: '確認済みの購入。' },
   { key: 'Compras confirmadas', en: 'Confirmed purchases', es: 'Compras confirmadas', it: 'Acquisti confermati', ja: '確認済みの購入' },
   { key: 'compras confirmadas', en: 'confirmed purchases', es: 'compras confirmadas', it: 'acquisti confermati', ja: '確認済みの購入' },
+  { key: 'Aqui você pode conferir produtos já confirmados e avaliar os vendedores assim que receber.', en: 'Here you can review confirmed products and rate sellers as soon as you receive them.', es: 'Aquí puedes revisar productos confirmados y calificar a los vendedores apenas los recibas.', it: 'Qui puoi controllare i prodotti confermati e valutare i venditori non appena li ricevi.', ja: 'ここで確認済みの商品をチェックし、受け取ったらすぐに出品者を評価できます。' },
   { key: 'Meus pedidos confirmados', en: 'My confirmed orders', es: 'Mis pedidos confirmados', it: 'I miei ordini confermati', ja: '確認済みの注文' },
   { key: 'Compra confirmada', en: 'Confirmed purchase', es: 'Compra confirmada', it: 'Acquisto confermato', ja: '購入が確定しました' },
   { key: 'COMPRA CONFIRMADA', en: 'CONFIRMED PURCHASE', es: 'COMPRA CONFIRMADA', it: 'ACQUISTO CONFERMATO', ja: '購入が確定しました' },
