@@ -104,6 +104,11 @@ export default function EditProduct() {
           toast.error('Produto não encontrado.');
           return;
         }
+        if (data.hidden_by_seller) {
+          toast.info('Este produto já foi removido e não pode ser editado.');
+          navigate('/my-products');
+          return;
+        }
         const images = collectExistingImages(data.image_url, data.image_urls);
         const isFree = Boolean(data.is_free) || data.price === null || Number(data.price) === 0;
         setExistingImages(images);
@@ -382,7 +387,7 @@ export default function EditProduct() {
 
     try {
       await api.delete(`/products/${id}`);
-      toast.success('Produto excluído.');
+      toast.success('Produto ocultado da sua lista de anúncios.');
       resetUploads();
       navigate('/my-products');
     } catch (err) {
