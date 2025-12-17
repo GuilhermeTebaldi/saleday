@@ -17,23 +17,29 @@ export default function MyProducts() {
   const [buyers, setBuyers] = useState({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
-  const refreshId = useMemo(() => {
-    return location.state?.refreshId ?? 0;
-  }, [location.state]);
+  const refreshId = useMemo(() => location.state?.refreshId ?? 0, [location.state]);
   const abortFetchRef = useRef(() => {});
   const fetchInFlightRef = useRef(false);
   const logPrefix = '[MyProducts]';
-  const MOBILE_DEBUG_MODE = false;
+  const safeProducts = Array.isArray(products) ? products : [];
 
-  const shouldRenderImages = !MOBILE_DEBUG_MODE;
-  const shouldRenderBuyerInfo = !MOBILE_DEBUG_MODE;
+  const isValidImageSource = (url) =>
+    typeof url === 'string' &&
+    url.trim().length > 0 &&
+    /^(https?:\/\/|\/)/i.test(url.trim());
+
+  const getProductPriceLabel = (product) => {
+    try {
+      return formatProductPrice(product?.price, product?.country);
+    } catch (error) {
+      console.error(`${logPrefix} price render failure`, product?.id, error);
+      return 'Valor indisponível';
+    }
+  };
 
   const fetchProducts = useCallback(() => {
     if (!token) return;
-    if (fetchInFlightRef.current) {
-      console.log(`${logPrefix} fetchProducts already running, skipping new call`);
-      return;
-    }
+    if (fetchInFlightRef.current) return;
     abortFetchRef.current?.();
     let active = true;
     abortFetchRef.current = () => {
@@ -41,22 +47,17 @@ export default function MyProducts() {
     };
     setLoading(true);
     setFetchError('');
-    console.log(`${logPrefix} fetchProducts start`, { token });
     fetchInFlightRef.current = true;
+
     api
       .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
-        console.log(`${logPrefix} /products/my response`, {
-          status: res.status,
-          data: res.data,
-          payload: res.data?.data
-        });
         if (!active) return;
         const items = Array.isArray(res.data?.data) ? res.data.data.slice() : [];
         setProducts(items);
       })
       .catch((err) => {
-        console.error(err);
+        console.error(`${logPrefix} fetchProducts error`, err);
         if (active) {
           setFetchError(
             'Não foi possível carregar seus anúncios. Atualize a página para tentar novamente.'
@@ -65,7 +66,6 @@ export default function MyProducts() {
       })
       .finally(() => {
         fetchInFlightRef.current = false;
-        console.log(`${logPrefix} fetchProducts done`, { active });
         if (active) setLoading(false);
       });
   }, [token]);
@@ -82,24 +82,20 @@ export default function MyProducts() {
     if (!token || typeof window === 'undefined' || typeof document === 'undefined') {
       return undefined;
     }
-    const refreshList = (source) => {
-      console.log(`${logPrefix} ${source} listener triggered`);
+    const refreshList = () => {
       fetchProducts();
     };
     const handleVisibility = () => {
-      console.log(`${logPrefix} visibilitychange listener`, { state: document.visibilityState });
       if (document.visibilityState === 'visible') {
         fetchProducts();
       }
     };
-    const handlePopstate = () => refreshList('popstate');
-    const handlePageshow = () => refreshList('pageshow');
-    window.addEventListener('pageshow', handlePageshow);
-    window.addEventListener('popstate', handlePopstate);
+    window.addEventListener('pageshow', refreshList);
+    window.addEventListener('popstate', refreshList);
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
-      window.removeEventListener('pageshow', handlePageshow);
-      window.removeEventListener('popstate', handlePopstate);
+      window.removeEventListener('pageshow', refreshList);
+      window.removeEventListener('popstate', refreshList);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [fetchProducts, token]);
@@ -114,11 +110,6 @@ export default function MyProducts() {
       api
         .get(`/orders/product/${product.id}/buyer`, { headers: { Authorization: `Bearer ${token}` } })
         .then((res) => {
-          console.log(`${logPrefix} /orders/product/${product.id}/buyer response`, {
-            status: res.status,
-            data: res.data,
-            payload: res.data?.data
-          });
           if (!active) return;
           const buyerName =
             res.data?.data?.buyer_name || res.data?.data?.buyerName || 'Um comprador';
@@ -127,21 +118,28 @@ export default function MyProducts() {
             [product.id]: { name: buyerName, id: res.data?.data?.buyer_id ?? null }
           }));
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error(`${logPrefix} buyer fetch error`, err);
+        });
     });
     return () => {
       active = false;
     };
-  }, [products, buyers, token]);
+  }, [buyers, products, token]);
 
   async function markAsSold(id) {
     try {
-      await api.put(`/products/${id}/status`, { status: 'sold' }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setProducts((prev) => prev.map(p => p.id === id ? { ...p, status: 'sold' } : p));
+      await api.put(
+        `/products/${id}/status`,
+        { status: 'sold' },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'sold' } : p)));
       toast.success('Produto marcado como vendido.');
-    } catch {
+    } catch (error) {
+      console.error(`${logPrefix} markAsSold error`, error);
       toast.error('Falha ao marcar como vendido.');
     }
   }
@@ -158,70 +156,48 @@ export default function MyProducts() {
         return next;
       });
       toast.success('Produto removido.');
-    } catch {
+    } catch (error) {
+      console.error(`${logPrefix} deleteProduct error`, error);
       toast.error('Falha ao remover o produto.');
     }
   }
 
-  const previewProducts = products.slice(0, 3).map((product) => ({
-    id: product.id,
-    title: product.title,
-    mainImage: product.image_urls?.[0] || product.image_url
-  }));
-  console.log(`${logPrefix} render state`, {
-    loading,
-    fetchError,
-    productCount: products.length,
-    previewProducts,
-    buyersKeys: Object.keys(buyers)
-  });
-
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
-  if (!products.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
+  if (!safeProducts.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
 
   return (
     <div className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
-      {products.map((product) => {
-        const isSold = product.status === 'sold';
-        const mainImage = product.image_urls?.[0] || product.image_url;
-        const freeTag = isProductFree(product);
-        const specEntries = buildProductSpecEntries(product);
-        const categoryLabel = product.category || 'Não informada';
-        const locationLabel = [product.city, product.state, product.country]
-          .filter(Boolean)
-          .join(', ');
-        const buyerInfo = buyers[product.id];
-        const formattedPrice = MOBILE_DEBUG_MODE
-          ? 'Preço desativado em debug'
-          : formatProductPrice(product.price, product.country);
-        const isValidImage =
-          typeof mainImage === 'string' &&
-          mainImage.trim().length > 0 &&
-          (mainImage.startsWith('http') || mainImage.startsWith('/'));
-        console.groupCollapsed(`${logPrefix} product ${product.id}`);
-        console.log('title', product.title);
-        console.log('mainImage', mainImage);
-        console.log('buyerInfo', buyerInfo);
-        console.log('formattedPrice', formattedPrice);
-        console.groupEnd();
-        console.log(`${logPrefix} rendering product`, {
-          id: product.id,
-          title: product.title,
-          mainImage,
-          buyer: buyerInfo
-        });
-        return (
-          <article key={product.id} className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
-            <div className="relative">
-              {shouldRenderImages ? (
-                isValidImage ? (
+      {safeProducts.map((product, index) => {
+        try {
+          if (!product) {
+            throw new Error('Produto inválido');
+          }
+          const isSold = product.status === 'sold';
+          const mainImage = product.image_urls?.[0] || product.image_url;
+          const freeTag = isProductFree(product);
+          const specEntries = buildProductSpecEntries(product);
+          const categoryLabel = product.category || 'Não informada';
+          const locationLabel = [product.city, product.state, product.country]
+            .filter(Boolean)
+            .join(', ');
+          const buyerInfo = buyers[product.id];
+          const priceLabel = freeTag ? 'Grátis' : getProductPriceLabel(product);
+          const imageSource = isValidImageSource(mainImage) ? mainImage : null;
+
+          return (
+            <article
+              key={product.id ?? `product-${index}`}
+              className="my-product-card border rounded bg-white shadow-sm overflow-hidden"
+            >
+              <div className="relative">
+                {imageSource ? (
                   <img
-                    src={mainImage}
+                    src={imageSource}
                     alt={product.title || 'Produto'}
                     className="my-product-card__image w-full h-44 object-cover"
                     onError={(event) => {
-                      console.error('[MyProducts] image load error', mainImage);
+                      console.error('[MyProducts] image load error', imageSource);
                       event.currentTarget.style.display = 'none';
                     }}
                   />
@@ -229,97 +205,101 @@ export default function MyProducts() {
                   <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
                     Sem imagem
                   </div>
-                )
-              ) : (
-                <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
-                  Imagens desativadas em modo debug
-                </div>
-              )}
-              {isSold && <SoldBadge className="absolute -top-1 -left-1" />}
-              {freeTag && !isSold && (
-                <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                  Grátis
-                </span>
-              )}
-            </div>
-              <div className="my-product-card__body p-3 space-y-1">
-              <h3 className="font-semibold line-clamp-2">{product.title}</h3>
-              <p className={`font-medium ${freeTag ? 'text-emerald-600' : 'text-green-600'}`}>
-                {freeTag ? 'Grátis' : formattedPrice}
-              </p>
-              <div className="text-xs text-gray-500 space-y-1 mt-1">
-                <p>
-                  Categoria:{' '}
-                  <span className="text-gray-800">{categoryLabel}</span>
-                </p>
-                {locationLabel && (
-                  <p>
-                    Local:{' '}
-                    <span className="text-gray-800">{locationLabel}</span>
-                  </p>
+                )}
+                {isSold && <SoldBadge className="absolute -top-1 -left-1" />}
+                {freeTag && !isSold && (
+                  <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                    Grátis
+                  </span>
                 )}
               </div>
-              {specEntries.length > 0 && (
-                <div className="text-[11px] text-gray-600 grid grid-cols-2 gap-1">
-                  {specEntries.slice(0, 2).map((entry) => (
-                    <p key={entry.label}>
-                      {entry.label}:{' '}
-                      <span className="text-gray-800">{entry.value}</span>
+              <div className="my-product-card__body p-3 space-y-1">
+                <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+                <p className={`font-medium ${freeTag ? 'text-emerald-600' : 'text-green-600'}`}>
+                  {priceLabel}
+                </p>
+                <div className="text-xs text-gray-500 space-y-1 mt-1">
+                  <p>
+                    Categoria:{' '}
+                    <span className="text-gray-800">{categoryLabel}</span>
+                  </p>
+                  {locationLabel && (
+                    <p>
+                      Local:{' '}
+                      <span className="text-gray-800">{locationLabel}</span>
                     </p>
-                  ))}
+                  )}
                 </div>
-              )}
-              {isSold && shouldRenderBuyerInfo && (
-                <p className="text-xs text-rose-600">
-                  Esse produto foi comprado por{' '}
-                  {buyerInfo?.id ? (
-                    MOBILE_DEBUG_MODE ? (
-                      <span className="text-rose-500 underline">{buyerInfo.name}</span>
-                    ) : (
+                {specEntries.length > 0 && (
+                  <div className="text-[11px] text-gray-600 grid grid-cols-2 gap-1">
+                    {specEntries.slice(0, 2).map((entry) => (
+                      <p key={entry.label}>
+                        {entry.label}:{' '}
+                        <span className="text-gray-800">{entry.value}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {isSold && (
+                  <p className="text-xs text-rose-600">
+                    Esse produto foi comprado por{' '}
+                    {buyerInfo?.id ? (
                       <Link className="text-rose-500 underline" to={`/users/${buyerInfo.id}`}>
                         {buyerInfo.name}
                       </Link>
-                    )
-                  ) : (
-                    buyerInfo?.name || 'um comprador'
-                  )}
-                  .
-                </p>
-              )}
-              <div className="flex items-center gap-2 pt-2">
-                {!isSold ? (
-                  <>
-                    {!MOBILE_DEBUG_MODE ? (
-                      <Link
-                        to={`/edit-product/${product.id}`}
-                        className="my-product-card__edit px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
-                      >
-                        Editar
-                      </Link>
                     ) : (
-                      <span className="my-product-card__edit px-3 py-1.5 text-sm border rounded text-gray-500">
-                        Editar (debug)
-                      </span>
+                      buyerInfo?.name || 'um comprador'
                     )}
-                    <button
-                      onClick={() => markAsSold(product.id)}
-                      className="px-3 py-1.5 text-sm rounded bg-gray-800 text-white hover:bg-gray-900"
-                    >
-                      Marcar como vendido
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="px-3 py-1.5 text-sm rounded bg-rose-500 text-white hover:bg-rose-600"
-                  >
-                    Excluir produto
-                  </button>
+                    .
+                  </p>
                 )}
+                <div className="flex items-center gap-2 pt-2">
+                  {!isSold ? (
+                    <>
+                      {product.id ? (
+                        <Link
+                          to={`/edit-product/${product.id}`}
+                          className="my-product-card__edit px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                        >
+                          Editar
+                        </Link>
+                      ) : (
+                        <span className="my-product-card__edit px-3 py-1.5 text-sm border rounded text-gray-500">
+                          Editar
+                        </span>
+                      )}
+                      <button
+                        onClick={() => markAsSold(product.id)}
+                        className="px-3 py-1.5 text-sm rounded bg-gray-800 text-white hover:bg-gray-900"
+                      >
+                        Marcar como vendido
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className="px-3 py-1.5 text-sm rounded bg-rose-500 text-white hover:bg-rose-600"
+                    >
+                      Excluir produto
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </article>
-        );
+            </article>
+          );
+        } catch (renderError) {
+          console.error(`${logPrefix} render error`, product?.id ?? index, renderError);
+          return (
+            <article
+              key={`product-error-${product?.id ?? index}`}
+              className="my-product-card border rounded bg-white shadow-sm overflow-hidden"
+            >
+              <div className="h-44 bg-gray-100 flex items-center justify-center text-sm text-rose-500">
+                Erro ao renderizar este produto.
+              </div>
+            </article>
+          );
+        }
       })}
     </div>
   );
