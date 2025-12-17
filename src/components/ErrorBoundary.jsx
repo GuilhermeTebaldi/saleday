@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { addOverlayError } from '../utils/errorOverlayStore.js';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -16,6 +17,12 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('ErrorBoundary capturou um erro:', error, info);
+    addOverlayError({
+      type: 'errorboundary',
+      message: error?.message || 'Erro desconhecido',
+      stack: error?.stack,
+      meta: info
+    });
     this.setState({ info });
   }
 
