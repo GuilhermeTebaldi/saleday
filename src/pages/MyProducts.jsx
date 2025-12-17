@@ -23,7 +23,7 @@ export default function MyProducts() {
   const abortFetchRef = useRef(() => {});
   const fetchInFlightRef = useRef(false);
   const logPrefix = '[MyProducts]';
-  const MOBILE_DEBUG_MODE = true;
+  const MOBILE_DEBUG_MODE = false;
 
   const shouldRenderImages = !MOBILE_DEBUG_MODE;
   const shouldRenderBuyerInfo = !MOBILE_DEBUG_MODE;
