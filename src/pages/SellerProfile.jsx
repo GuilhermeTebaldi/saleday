@@ -412,6 +412,13 @@ const CATALOG_PREVIEW_META = {
   }
 };
 
+const CATALOG_THUMBNAILS = {
+  premium: '/catalogo/premium-mini.png',
+  classic: '/catalogo/classic-mini.png',
+  vibrant: '/catalogo/vibrant-mini.png',
+  modern: '/catalogo/modern-mini.png'
+};
+
 async function drawVibrantCatalog({
   doc,
   margin,
@@ -769,8 +776,7 @@ export default function SellerProfile() {
   const catalogSelectionCount = catalogSelection.length;
   const isCatalogReady = selectedProductsForCatalog.length > 0;
   const [catalogStyle, setCatalogStyle] = useState('premium');
-  const [catalogPreviewOpen, setCatalogPreviewOpen] = useState(false);
-  const [previewCatalogStyle, setPreviewCatalogStyle] = useState('premium');
+  const [catalogPanelOpen, setCatalogPanelOpen] = useState(false);
 
   const handleGenerateCatalog = useCallback(async () => {
     if (selectedProductsForCatalog.length === 0) {
@@ -832,20 +838,6 @@ export default function SellerProfile() {
       }
       return [...prev, normalizedId];
     });
-  }, []);
-
-  const handlePreviewStyleSelect = useCallback((styleKey) => {
-    setPreviewCatalogStyle(styleKey);
-    setCatalogStyle(styleKey);
-  }, []);
-
-  const openCatalogPreview = useCallback(() => {
-    setPreviewCatalogStyle(catalogStyle);
-    setCatalogPreviewOpen(true);
-  }, [catalogStyle]);
-
-  const closeCatalogPreview = useCallback(() => {
-    setCatalogPreviewOpen(false);
   }, []);
 
   // carregar vendedor + produtos
@@ -962,21 +954,6 @@ export default function SellerProfile() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [shareMenuOpen]);
 
-  useEffect(() => {
-    setPreviewCatalogStyle(catalogStyle);
-  }, [catalogStyle]);
-
-  useEffect(() => {
-    if (!catalogPreviewOpen) return undefined;
-    const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        closeCatalogPreview();
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [catalogPreviewOpen, closeCatalogPreview]);
-
   const reloadSellerProfile = useCallback(async () => {
     try {
       const sellerRes = await api.get(`/users/${id}`);
@@ -987,6 +964,10 @@ export default function SellerProfile() {
       // manter estado atual em caso de falha
     }
   }, [id]);
+
+  const toggleCatalogPanel = useCallback(() => {
+    setCatalogPanelOpen((prev) => !prev);
+  }, []);
 
   // enviar review (aqui continua chamando POST /users/:id/reviews
   // se seu backend também não tem isso ainda você pode remover todo esse bloco e o modal)
@@ -1482,79 +1463,114 @@ export default function SellerProfile() {
             </div>
 
           </div>
-          <p className="mt-3 text-[11px] text-slate-500 text-left">
-            Perfil SaleDay · Negocie com segurança, sempre dentro da plataforma.
-          </p>
+          
         </div>
 
 
         {isSelf && (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={openCatalogPreview}
-                className="flex-1 min-w-[210px] flex flex-col items-start rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-4 py-3 text-left text-white shadow-lg transition hover:from-slate-800 hover:to-slate-700 focus-visible:outline-none focus-visible:ring focus-visible:ring-blue-400"
-              >
-                <p className="text-[10px] uppercase tracking-wide text-blue-200">
-                  Catálogo SaleDay
-                </p>
-                <p className="mt-1 text-lg font-semibold leading-snug text-white">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-0 text-sm text-slate-600 shadow-sm">
+            <button
+              type="button"
+              onClick={toggleCatalogPanel}
+              aria-expanded={catalogPanelOpen}
+              className="flex w-full items-center justify-between gap-3 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 px-3 py-2 text-left text-white transition hover:from-slate-800 hover:to-slate-700 focus-visible:outline-none focus-visible:ring focus-visible:ring-blue-400"
+            >
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-blue-200">Catálogo SaleDay</p>
+                <p className="text-sm font-semibold leading-tight text-white">
                   {catalogSelectionCount} produto{catalogSelectionCount === 1 ? '' : 's'}
                 </p>
-                <p className="text-[11px] text-blue-100">
-                  Visualize os modelos e escolha a identidade ideal.
-                </p>
-              </button>
-              <button
-                type="button"
-                className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wider transition ${
-                  isCatalogReady
-                    ? 'bg-slate-900 text-white shadow-sm hover:bg-slate-800'
-                    : 'border border-slate-200 bg-white text-slate-500 cursor-not-allowed'
-                }`}
-                disabled={!isCatalogReady || generatingCatalog}
-                onClick={handleGenerateCatalog}
-              >
-                {generatingCatalog ? 'Gerando catálogo...' : 'Gerar meu catálogo SaleDay'}
-              </button>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-              {CATALOG_STYLE_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setCatalogStyle(option.key)}
-                  className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
-                    catalogStyle === option.key
-                      ? 'border-slate-900 bg-slate-900 text-white'
-                      : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400'
+               
+              </div>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider">
+                <span>{catalogPanelOpen ? 'Ocultar' : 'Modelos'}</span>
+                <span
+                  className={`inline-flex h-4 w-4 items-center justify-center rounded-full border border-white/30 text-[12px] transition ${
+                    catalogPanelOpen ? 'rotate-180' : ''
                   }`}
                 >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            {isCatalogReady && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
-                {selectedProductsForCatalog.slice(0, 5).map((product) => (
-                  <span
-                    key={product.id}
-                    className="max-w-[13rem] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 shadow-sm"
+                  ⌄
+                </span>
+              </span>
+            </button>
+            {catalogPanelOpen && (
+              <div className="border-t border-slate-100 bg-white p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                
+                  <button
+                    type="button"
+                    className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wider transition md:order-1 ${
+                      isCatalogReady
+                        ? 'bg-slate-900 text-white shadow-sm hover:bg-slate-800'
+                        : 'border border-slate-200 bg-white text-slate-500 cursor-not-allowed'
+                    }`}
+                    disabled={!isCatalogReady || generatingCatalog}
+                    onClick={handleGenerateCatalog}
                   >
-                    {product.title}
-                  </span>
-                ))}
-                {selectedProductsForCatalog.length > 5 && (
-                  <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    +{selectedProductsForCatalog.length - 5} outros
-                  </span>
+                    {generatingCatalog ? 'Gerando catálogo...' : 'Gerar meu catálogo SaleDay'}
+                  </button>
+                </div>
+                <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-slate-500">
+                    <span>Roleta de catálogo</span>
+                    <span className="text-[9px] text-slate-400">Miniaturas</span>
+                  </div>
+                  <div className="mt-3 flex gap-3 overflow-x-auto px-1 py-2">
+                    {CATALOG_STYLE_OPTIONS.map((option) => {
+                      const meta = CATALOG_PREVIEW_META[option.key];
+                      const thumbSrc = CATALOG_THUMBNAILS[option.key] || '/catalogo/catalogo.jpg';
+                      const selected = catalogStyle === option.key;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setCatalogStyle(option.key)}
+                          className={`flex-shrink-0 w-32 sm:w-36 rounded-2xl border p-2 text-left transition ${
+                            selected
+                              ? 'border-slate-900 bg-slate-50 shadow-lg'
+                              : 'border-slate-200 bg-white hover:border-slate-400'
+                          }`}
+                        >
+                          <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100">
+                            <img
+                              src={thumbSrc}
+                              alt={`${option.label} SaleDay`}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="mt-2 space-y-0.5">
+                            <p className="text-xs font-semibold text-slate-900">{option.label}</p>
+                            {meta?.badge && (
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-slate-500">
+                                {meta.badge}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {isCatalogReady && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
+                    {selectedProductsForCatalog.slice(0, 5).map((product) => (
+                      <span
+                        key={product.id}
+                        className="max-w-[13rem] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 shadow-sm"
+                      >
+                        {product.title}
+                      </span>
+                    ))}
+                    {selectedProductsForCatalog.length > 5 && (
+                      <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        +{selectedProductsForCatalog.length - 5} outros
+                      </span>
+                    )}
+                  </div>
                 )}
+                
               </div>
             )}
-            <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-400">
-              Adicione os produtos acima e depois gere o catálogo com a identidade SaleDay.
-            </p>
           </div>
         )}
 
@@ -1672,7 +1688,7 @@ export default function SellerProfile() {
                                   event.stopPropagation();
                                   toggleProductSelection(p.id);
                                 }}
-                                className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                                className={`inline-flex items-center justify-center rounded-full border px-2 py-1 text-[10px] font-semibold transition ${
                                   isSelectedForCatalog
                                     ? 'border-emerald-500 bg-emerald-50 text-emerald-600 shadow-sm'
                                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
@@ -1862,131 +1878,6 @@ export default function SellerProfile() {
       </section>
 
       {/* modal de avaliação */}
-      {catalogPreviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-          <div
-            className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity"
-            onClick={closeCatalogPreview}
-          />
-          <div
-            className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-white/40 bg-white/95 p-6 shadow-2xl backdrop-blur-lg"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                  Catálogo SaleDay
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-                  {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  {CATALOG_PREVIEW_META[previewCatalogStyle]?.description}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeCatalogPreview}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:bg-slate-50"
-              >
-                Fechar
-              </button>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-              {CATALOG_STYLE_OPTIONS.map((option) => {
-                const meta = CATALOG_PREVIEW_META[option.key];
-                if (!meta) return null;
-                const selected = option.key === previewCatalogStyle;
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => handlePreviewStyleSelect(option.key)}
-                    className={`inline-flex flex-col items-center gap-1 rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition ${
-                      selected
-                        ? 'border-slate-900 text-white shadow-lg'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-500'
-                    }`}
-                    style={
-                      selected
-                        ? { backgroundImage: meta.gradient, backgroundSize: '220%' }
-                        : undefined
-                    }
-                  >
-                    <span className="text-[10px] text-inherit">{option.label}</span>
-                    <span className="text-[9px] text-inherit">{meta.badge}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <div
-                className="rounded-3xl shadow-xl"
-                style={{
-                  backgroundImage: CATALOG_PREVIEW_META[previewCatalogStyle]?.gradient,
-                  backgroundSize: 'cover'
-                }}
-              >
-                <div className="p-6 text-white">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/70">
-                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.badge}
-                  </p>
-                  <h4 className="mt-2 text-2xl font-semibold">
-                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
-                  </h4>
-                  <p className="mt-3 text-sm text-white/80 leading-relaxed">
-                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.description}
-                  </p>
-                </div>
-                <div className="p-6">
-                  <div className="h-32 rounded-2xl bg-white/20" />
-                  <div className="mt-4 grid grid-cols-3 gap-3">
-                    <div className="h-16 rounded-2xl bg-white/30" />
-                    <div className="h-16 rounded-2xl bg-white/30" />
-                    <div className="h-16 rounded-2xl bg-white/30" />
-                  </div>
-                </div>
-                <div className="p-6 border-t border-white/10 text-sm text-white/90 space-y-2">
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-white/70">
-                    Recursos marcantes
-                  </p>
-                  <ul className="space-y-1">
-                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.bullets.map((bullet) => (
-                      <li key={bullet} className="flex items-center gap-2 text-[13px] text-white/90">
-                        <span className="inline-flex h-2 w-2 rounded-full bg-white" />
-                        {bullet}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                  Pré-visualização breve
-                </p>
-                <div className="mt-4 space-y-3">
-                  <p className="text-lg font-semibold text-slate-900">
-                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
-                  </p>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    Verifique cores, estruturas e a assinatura SaleDay antes de gerar o arquivo final.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handlePreviewStyleSelect(previewCatalogStyle)}
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-slate-800"
-                >
-                  Usar este modelo
-                </button>
-                <p className="mt-4 text-[11px] uppercase tracking-wider text-slate-400">
-                  Clique fora do card para fechar.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {rateOpen && (
         <div className="ig-rate-overlay">
           <div className="ig-rate-sheet">
