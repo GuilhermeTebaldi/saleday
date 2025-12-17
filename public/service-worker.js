@@ -1,14 +1,12 @@
-const CACHE_NAME = 'saleday-cache-v5';
+const CACHE_NAME = 'saleday-cache-v6';
 const FALLBACK_URL = '/index.html';
 const FILES_TO_CACHE = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(FILES_TO_CACHE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
