@@ -201,6 +201,19 @@ export default function MyProducts() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const previousTranslate = document.documentElement.getAttribute('translate');
+    document.documentElement.setAttribute('translate', 'no');
+    return () => {
+      if (previousTranslate == null) {
+        document.documentElement.removeAttribute('translate');
+      } else {
+        document.documentElement.setAttribute('translate', previousTranslate);
+      }
+    };
+  }, []);
+
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
   if (!safeProducts.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
