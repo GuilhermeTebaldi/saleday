@@ -17,12 +17,38 @@ const ENTRIES = [
   { key: 'Vibrante', en: 'Vibrant', es: 'Vibrante', it: 'Vivace', ja: 'ヴィブラント' },
   { key: 'Moderno', en: 'Modern', es: 'Moderno', it: 'Moderno', ja: 'モダン' },
   { key: 'Miniaturas', en: 'Thumbnails', es: 'Miniaturas', it: 'Miniature', ja: 'サムネイル' },
-  { key: 'Roleta de catálogo', en: 'Catalog selector', es: 'Selector de catálogo', it: 'Selettore catalogo', ja: 'カタログセレクター' },
-  { key: 'Premium', en: 'Premium', es: 'Premium', it: 'Premium', ja: 'プレミアム' },
-  { key: 'Clássico', en: 'Classic', es: 'Clásico', it: 'Classico', ja: 'クラシック' },
-  { key: 'Vibrante', en: 'Vibrant', es: 'Vibrante', it: 'Vivace', ja: 'ヴィブラント' },
-  { key: 'Moderno', en: 'Modern', es: 'Moderno', it: 'Moderno', ja: 'モダン' },
-  { key: 'Miniaturas', en: 'Thumbnails', es: 'Miniaturas', it: 'Miniature', ja: 'サムネイル' },
+  { key: 'Tipo de imóvel', en: 'Property type', es: 'Tipo de propiedad', it: 'Tipo di immobile', ja: '物件タイプ' },
+  { key: 'Área (m²)', en: 'Area (m²)', es: 'Área (m²)', it: 'Superficie (m²)', ja: '面積 (m²)' },
+  { key: 'Quartos', en: 'Bedrooms', es: 'Habitaciones', it: 'Camere', ja: '寝室' },
+  { key: 'Banheiros', en: 'Bathrooms', es: 'Baños', it: 'Bagni', ja: 'バスルーム' },
+  { key: 'Vagas', en: 'Parking spaces', es: 'Plazas de estacionamiento', it: 'Posti auto', ja: '駐車スペース' },
+  { key: 'Catálogo de', en: 'Catalog of', es: 'Catálogo de', it: 'Catalogo di', ja: 'カタログ・' },
+  { key: 'Catálogo', en: 'Catalog', es: 'Catálogo', it: 'Catalogo', ja: 'カタログ' },
+  { key: 'Vendedor:', en: 'Seller:', es: 'Vendedor:', it: 'Venditore:', ja: '出品者:' },
+  { key: 'Página', en: 'Page', es: 'Página', it: 'Pagina', ja: 'ページ' },
+  { key: 'Pág.', en: 'Pg.', es: 'Pág.', it: 'Pag.', ja: 'ページ' },
+  { key: 'Chame no chat', en: 'Chat with us', es: 'Chatea con nosotros', it: 'Chiacchiera con noi', ja: 'チャットで連絡' },
+  { key: 'Abrir no site', en: 'Open on the site', es: 'Abrir en el sitio', it: 'Apri sul sito', ja: 'サイトで開く' },
+  { key: 'Abrir no SaleDay', en: 'Open on SaleDay', es: 'Abrir en SaleDay', it: 'Apri su SaleDay', ja: 'SaleDayで開く' },
+  { key: 'Escaneie para ver o produto', en: 'Scan to view the product', es: 'Escanea para ver el producto', it: 'Scansiona per vedere il prodotto', ja: '商品を見るにはスキャンしてください' },
+  { key: 'Escaneie o QR para abrir o produto', en: 'Scan the QR to open the product', es: 'Escanea el QR para abrir el producto', it: 'Scansiona il QR per aprire il prodotto', ja: 'QRをスキャンして商品を開く' },
+  {
+    key: 'Escaneie o QR para ver o anúncio completo e conversar no chat.',
+    en: 'Scan the QR to view the full listing and chat.',
+    es: 'Escanea el QR para ver el anuncio completo y conversar en el chat.',
+    it: 'Scansiona il QR per vedere l\'annuncio completo e chattare.',
+    ja: 'QRをスキャンして完全な出品情報を表示し、チャットでやり取りしてください。'
+  },
+  { key: 'Sobre', en: 'About', es: 'Sobre', it: 'Informazioni', ja: '概要' },
+  { key: 'Descrição não informada.', en: 'Description not provided.', es: 'Descripción no informada.', it: 'Descrizione non fornita.', ja: '説明は記載されていません。' },
+  { key: 'Destaques', en: 'Highlights', es: 'Destacados', it: 'Punti salienti', ja: '見どころ' },
+  { key: 'Imagem principal', en: 'Main image', es: 'Imagen principal', it: 'Immagine principale', ja: 'メイン画像' },
+  { key: 'Detalhe', en: 'Detail', es: 'Detalle', it: 'Dettaglio', ja: 'ディテール' },
+  { key: 'Mais detalhes', en: 'More details', es: 'Más detalles', it: 'Altri dettagli', ja: '詳細情報' },
+  { key: 'Imagem indisponível', en: 'Image unavailable', es: 'Imagen no disponible', it: 'Immagine non disponibile', ja: '画像が利用できません' },
+  { key: 'Imagem não definida', en: 'Image not set', es: 'Imagen no definida', it: 'Immagine non impostata', ja: '画像が設定されていません' },
+  { key: 'Preço a combinar', en: 'Price upon request', es: 'Precio a convenir', it: 'Prezzo da concordare', ja: '価格応相談' },
+  { key: 'Venda na SaleDay', en: 'Sell on SaleDay', es: 'Vende en SaleDay', it: 'Vendi su SaleDay', ja: 'SaleDayで販売する' },
   { key: 'Visualize os modelos e escolha a identidade ideal.', en: 'Preview the styles and choose the ideal identity.', es: 'Visualiza los modelos y elige la identidad ideal.', it: 'Visualizza i modelli e scegli l’identità ideale.', ja: 'モデルをプレビューして理想のアイデンティティを選択してください。' },
   { key: 'Gerar meu catálogo SaleDay', en: 'Generate my SaleDay catalog', es: 'Generar mi catálogo SaleDay', it: 'Genera il mio catalogo SaleDay', ja: 'SaleDayカタログを生成' },
   { key: 'Adicionar ao catálogo', en: 'Add to catalog', es: 'Agregar al catálogo', it: 'Aggiungi al catalogo', ja: 'カタログに追加' },
@@ -773,6 +799,7 @@ const ENTRIES = [
   { key: 'Curtidas', en: 'Likes', es: 'Me gusta', it: 'Mi piace', ja: 'いいね' }
 ];
 
+const PT = {};
 const EN = {};
 const ES = {};
 const IT = {};
@@ -782,6 +809,7 @@ const ZH = {};
 
 for (const { key, en, es, it } of ENTRIES) {
   const fallback = en ?? key;
+  PT[key] = key;
   EN[key] = fallback;
   ES[key] = es ?? fallback;
   IT[key] = it ?? fallback;
@@ -791,6 +819,7 @@ for (const { key, en, es, it } of ENTRIES) {
 }
 
 export const DICTS = {
+  'pt-BR': PT,
   'en-US': EN,
   'en-GB': EN,
   'en-IN': EN,

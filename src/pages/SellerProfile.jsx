@@ -15,6 +15,7 @@ import { localeFromCountry } from '../i18n/localeMap.js';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { buildProductSpecEntries } from '../utils/productSpecs.js';
+import { DICTS } from '../i18n/dictionaries.js';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -58,13 +59,40 @@ async function fetchImageAsDataUrl(imageUrl) {
   }
 }
 
+const DEFAULT_CATALOG_LOCALE = 'pt-BR';
+
+function createCatalogTranslator(locale) {
+  const dict = DICTS[locale] || DICTS[DEFAULT_CATALOG_LOCALE] || {};
+  return (key, fallback) => {
+    if (!key) return fallback ?? '';
+    if (dict[key]) return dict[key];
+    if (fallback != null) return fallback;
+    return key;
+  };
+}
+
+function translateSpecLine(translate, spec) {
+  if (!spec) return '';
+  const label = spec.label?.trim();
+  const value = spec.value ?? '';
+  if (!label) {
+    return value ? `• ${value}` : '';
+  }
+  const translatedLabel = translate(label, label);
+  if (value) {
+    return `• ${translatedLabel}: ${value}`;
+  }
+  return `• ${translatedLabel}`;
+}
+
 async function drawPremiumCatalog({
   doc,
   margin,
   pageWidth,
   pageHeight,
   sellerDisplayName,
-  selectedProductsForCatalog
+  selectedProductsForCatalog,
+  translate
 }) {
   const headerHeight = 100;
   doc.setFillColor(3, 37, 76);
@@ -77,11 +105,8 @@ async function drawPremiumCatalog({
   doc.setTextColor(255);
   doc.text('', margin + 5, 72);
   doc.setFontSize(12);
-  doc.text(
-    `Catálogo de ${sellerDisplayName}`,
-    margin + 5,
-    headerHeight - 8
-  );
+  const catalogLabel = `${translate('Catálogo de', 'Catalog of')} ${sellerDisplayName}`;
+  doc.text(catalogLabel, margin + 5, headerHeight - 8);
   let cursorY = headerHeight + 20;
 
   for (const product of selectedProductsForCatalog) {
@@ -116,18 +141,28 @@ async function drawPremiumCatalog({
         doc.roundedRect(imageX, imageY, imageWidth, imageHeight, 10, 10, 'F');
         doc.setFontSize(10);
         doc.setTextColor(148, 163, 184);
-        doc.text('Imagem indisponível', imageX + imageWidth / 2, imageY + imageHeight / 2, {
-          align: 'center'
-        });
+        doc.text(
+          translate('Imagem indisponível', 'Image unavailable'),
+          imageX + imageWidth / 2,
+          imageY + imageHeight / 2,
+          {
+            align: 'center'
+          }
+        );
       }
     } else {
       doc.setFillColor(229, 232, 238);
       doc.roundedRect(imageX, imageY, imageWidth, imageHeight, 10, 10, 'F');
       doc.setFontSize(10);
       doc.setTextColor(148, 163, 184);
-      doc.text('Imagem não definida', imageX + imageWidth / 2, imageY + imageHeight / 2, {
-        align: 'center'
-      });
+      doc.text(
+        translate('Imagem não definida', 'Image not set'),
+        imageX + imageWidth / 2,
+        imageY + imageHeight / 2,
+        {
+          align: 'center'
+        }
+      );
     }
 
     doc.setFillColor(12, 97, 168);
@@ -142,7 +177,7 @@ async function drawPremiumCatalog({
     const priceLabel =
       product.price != null
         ? formatProductPrice(product.price, product.country || 'BR')
-        : 'Preço a combinar';
+        : translate('Preço a combinar', 'Price upon request');
     doc.setFontSize(16);
     doc.setTextColor(255, 214, 0);
     doc.text(priceLabel, margin + cardWidth - imageWidth - 20, cursorY + 26, {
@@ -166,7 +201,9 @@ async function drawPremiumCatalog({
 
     const specs = buildProductSpecEntries(product);
     specs.slice(0, 3).forEach((spec) => {
-      doc.text(`• ${spec.label}: ${spec.value}`, margin + 16, textY, {
+      const specLine = translateSpecLine(translate, spec);
+      if (!specLine) return;
+      doc.text(specLine, margin + 16, textY, {
         maxWidth: cardWidth - imageWidth - 50
       });
       textY += 12;
@@ -193,9 +230,14 @@ async function drawPremiumCatalog({
       doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
       doc.setFontSize(8);
       doc.setTextColor(75, 85, 99);
-      doc.text('Escaneie para ver o produto', qrX + qrSize / 2, qrY + qrSize + 10, {
-        align: 'center'
-      });
+      doc.text(
+        translate('Escaneie para ver o produto', 'Scan to view the product'),
+        qrX + qrSize / 2,
+        qrY + qrSize + 10,
+        {
+          align: 'center'
+        }
+      );
     } catch {
       // QR falhou, continuar
     }
@@ -213,7 +255,11 @@ async function drawPremiumCatalog({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(255);
-  doc.text('Venda na SaleDay', margin + 16, footerY + 26);
+  doc.text(
+    translate('Venda na SaleDay', 'Sell on SaleDay'),
+    margin + 16,
+    footerY + 26
+  );
   doc.setFontSize(10);
   doc.setTextColor(226, 232, 240);
   doc.text('www.saleday.com.br', margin + 16, footerY + 44);
@@ -230,7 +276,8 @@ async function drawClassicCatalog({
   pageWidth,
   pageHeight,
   sellerDisplayName,
-  selectedProductsForCatalog
+  selectedProductsForCatalog,
+  translate
 }) {
   const gap = 14;
   const inset = margin;
@@ -265,7 +312,12 @@ async function drawClassicCatalog({
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(148, 163, 184);
-        doc.text('Imagem indisponível', x + w / 2, y + h / 2, { align: 'center' });
+        doc.text(
+          translate('Imagem indisponível', 'Image unavailable'),
+          x + w / 2,
+          y + h / 2,
+          { align: 'center' }
+        );
       }
     }
 
@@ -313,15 +365,20 @@ async function drawClassicCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(238, 238, 238);
-    doc.text(`Catálogo de ${sellerDisplayName}`, leftX + 16, contentY + 48, {
-      maxWidth: leftW - 32
-    });
+    doc.text(
+      `${translate('Catálogo de', 'Catalog of')} ${sellerDisplayName}`,
+      leftX + 16,
+      contentY + 48,
+      {
+        maxWidth: leftW - 32
+      }
+    );
 
     // price big
     const priceLabel =
       product.price != null
         ? formatProductPrice(product.price, product.country || 'BR')
-        : 'Preço a combinar';
+        : translate('Preço a combinar', 'Price upon request');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
     doc.setTextColor(255);
@@ -355,7 +412,7 @@ async function drawClassicCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(30, 41, 59);
-    doc.text('Sobre', leftX + 16, textY);
+    doc.text(translate('Sobre', 'About'), leftX + 16, textY);
     textY += 10;
 
     doc.setDrawColor(203, 213, 225);
@@ -375,7 +432,12 @@ async function drawClassicCatalog({
         textY += 11;
       });
     } else {
-      doc.text('Descrição não informada.', leftX + 16, textY, { maxWidth: leftW - 32 });
+      doc.text(
+        translate('Descrição não informada.', 'Description not provided.'),
+        leftX + 16,
+        textY,
+        { maxWidth: leftW - 32 }
+      );
       textY += 12;
     }
 
@@ -385,7 +447,7 @@ async function drawClassicCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(30, 41, 59);
-    doc.text('Destaques', leftX + 16, textY);
+    doc.text(translate('Destaques', 'Highlights'), leftX + 16, textY);
     textY += 10;
 
     doc.setDrawColor(203, 213, 225);
@@ -399,7 +461,9 @@ async function drawClassicCatalog({
 
     const specs = buildProductSpecEntries(product);
     specs.slice(0, 7).forEach((spec) => {
-      doc.text(`• ${spec.label}: ${spec.value}`, leftX + 18, textY, {
+      const specLine = translateSpecLine(translate, spec);
+      if (!specLine) return;
+      doc.text(specLine, leftX + 18, textY, {
         maxWidth: leftW - 34
       });
       textY += 11;
@@ -432,14 +496,24 @@ async function drawClassicCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(255);
-    doc.text('Chame no chat', ctaX, footerY + 36, { maxWidth: leftW - (ctaX - leftX) - 14 });
+    doc.text(
+      translate('Chame no chat', 'Chat with us'),
+      ctaX,
+      footerY + 36,
+      { maxWidth: leftW - (ctaX - leftX) - 14 }
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(226, 232, 240);
-    doc.text('Escaneie o QR para abrir o produto', ctaX, footerY + 54, {
-      maxWidth: leftW - (ctaX - leftX) - 14
-    });
+    doc.text(
+      translate('Escaneie o QR para abrir o produto', 'Scan the QR to open the product'),
+      ctaX,
+      footerY + 54,
+      {
+        maxWidth: leftW - (ctaX - leftX) - 14
+      }
+    );
     doc.setFontSize(9);
     doc.text('www.saleday.com.br', ctaX, footerY + 74, {
       maxWidth: leftW - (ctaX - leftX) - 14
@@ -457,7 +531,11 @@ async function drawClassicCatalog({
     const imgUrls = [first, second, third];
     
 
-    const labels = ['Imagem principal', 'Detalhe', 'Mais detalhes'];
+    const labels = [
+      translate('Imagem principal', 'Main image'),
+      translate('Detalhe', 'Detail'),
+      translate('Mais detalhes', 'More details')
+    ];
 
     for (let k = 0; k < 3; k += 1) {
       const y = contentY + k * (imgH + imgGap);
@@ -543,7 +621,8 @@ async function drawVibrantCatalog({
   pageWidth,
   pageHeight,
   sellerDisplayName,
-  selectedProductsForCatalog
+  selectedProductsForCatalog,
+  translate
 }) {
   const headerHeight = 118;
   const footerHeight = 44;
@@ -580,17 +659,25 @@ async function drawVibrantCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(203, 213, 225);
-    doc.text('Catálogo ', margin + 6, 82);
+    doc.text(translate('Catálogo', 'Catalog'), margin + 6, 82);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(226, 232, 240);
-    doc.text(`Vendedor: ${sellerDisplayName}`, margin + 6, 104);
+    doc.text(
+      `${translate('Vendedor:', 'Seller:')} ${sellerDisplayName}`,
+      margin + 6,
+      104
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(148, 163, 184);
-    doc.text(`Página ${pageNumber}`, pageWidth - margin - 60, 104);
+    doc.text(
+      `${translate('Página', 'Page')} ${pageNumber}`,
+      pageWidth - margin - 60,
+      104
+    );
   };
 
   const drawFooter = (pageNumber) => {
@@ -602,7 +689,11 @@ async function drawVibrantCatalog({
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(`Pág. ${pageNumber}`, pageWidth - margin - 40, y);
+    doc.text(
+      `${translate('Pág.', 'Pg.')} ${pageNumber}`,
+      pageWidth - margin - 40,
+      y
+    );
   };
 
   let pageNumber = 1;
@@ -664,16 +755,26 @@ async function drawVibrantCatalog({
       if (productImageData) {
         doc.addImage(productImageData, 'PNG', imageX, imageY, imageW, imageH);
       } else {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(148, 163, 184);
-        doc.text('Imagem indisponível', imageX + imageW / 2, imageY + imageH / 2, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        translate('Imagem indisponível', 'Image unavailable'),
+        imageX + imageW / 2,
+        imageY + imageH / 2,
+        { align: 'center' }
+      );
       }
     } else {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(148, 163, 184);
-      doc.text('Sem imagem', imageX + imageW / 2, imageY + imageH / 2, { align: 'center' });
+      doc.text(
+        translate('Sem imagem', 'No image'),
+        imageX + imageW / 2,
+        imageY + imageH / 2,
+        { align: 'center' }
+      );
     }
 
     // título
@@ -690,7 +791,7 @@ async function drawVibrantCatalog({
     if (isProductFree(product)) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      const label = 'Grátis';
+      const label = translate('Grátis', 'Free');
       const w = safeTextWidth(label) + 16;
       doc.setFillColor(15, 23, 42);
       doc.roundedRect(badgeX, badgeY - 12, w, 18, 9, 9, 'F');
@@ -703,7 +804,7 @@ async function drawVibrantCatalog({
     const priceLabel =
       product.price != null
         ? formatProductPrice(product.price, product.country || 'BR')
-        : 'Preço a combinar';
+        : translate('Preço a combinar', 'Price upon request');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     const priceW = Math.min(safeTextWidth(priceLabel) + 18, titleMaxW);
@@ -728,7 +829,9 @@ async function drawVibrantCatalog({
     doc.setTextColor(51, 65, 85);
     const specs = buildProductSpecEntries(product);
     specs.slice(0, 4).forEach((spec) => {
-      doc.text(`• ${spec.label}: ${spec.value}`, textX, infoY, { maxWidth: titleMaxW });
+      const specLine = translateSpecLine(translate, spec);
+      if (!specLine) return;
+      doc.text(specLine, textX, infoY, { maxWidth: titleMaxW });
       infoY += 13;
     });
 
@@ -759,7 +862,12 @@ async function drawVibrantCatalog({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
       doc.setTextColor(100, 116, 139);
-      doc.text('Abrir no site', qrX + qrSize / 2, qrY + qrSize + 12, { align: 'center' });
+      doc.text(
+        translate('Abrir no site', 'Open on the site'),
+        qrX + qrSize / 2,
+        qrY + qrSize + 12,
+        { align: 'center' }
+      );
     } catch {
       // ignore
     }
@@ -776,7 +884,8 @@ async function drawModernCatalog({
   pageWidth,
   pageHeight,
   sellerDisplayName,
-  selectedProductsForCatalog
+  selectedProductsForCatalog,
+  translate
 }) {
   const safeTextWidth = (text) => {
     try {
@@ -811,7 +920,7 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(148, 163, 184);
-    doc.text('Sem imagem', x + 16, y + h - 16);
+    doc.text(translate('Sem imagem', 'No image'), x + 16, y + h - 16);
   };
 
   const drawThumb = async (imageUrl, x, y, w, h) => {
@@ -859,9 +968,14 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(203, 213, 225);
-    doc.text(`Catálogo · ${sellerDisplayName}`, margin, 66, {
-      maxWidth: pageWidth - margin * 2 - 90
-    });
+    doc.text(
+      `${translate('Catálogo', 'Catalog')} · ${sellerDisplayName}`,
+      margin,
+      66,
+      {
+        maxWidth: pageWidth - margin * 2 - 90
+      }
+    );
 
     doc.setFontSize(9);
     doc.setTextColor(148, 163, 184);
@@ -910,7 +1024,7 @@ async function drawModernCatalog({
     const priceLabel =
       product.price != null
         ? formatProductPrice(product.price, product.country || 'BR')
-        : 'Preço a combinar';
+        : translate('Preço a combinar', 'Price upon request');
 
     let y = contentTop + 14;
 
@@ -929,7 +1043,7 @@ async function drawModernCatalog({
     if (isProductFree(product)) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
-      const label = 'Grátis';
+      const label = translate('Grátis', 'Free');
       const w = safeTextWidth(label) + 18;
       doc.setFillColor(15, 23, 42);
       doc.roundedRect(badgeX, badgeY - 14, w, 22, 11, 11, 'F');
@@ -973,7 +1087,7 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 41, 59);
-    doc.text('Destaques', leftX + 14, y + 26);
+    doc.text(translate('Destaques', 'Highlights'), leftX + 14, y + 26);
 
     let chipY = y + 42;
     let chipX = leftX + 14;
@@ -984,8 +1098,9 @@ async function drawModernCatalog({
     doc.setFontSize(9.5);
 
     specs.forEach((spec) => {
-      const label = `${spec.label}: ${spec.value}`;
-      const w = Math.min(safeTextWidth(label) + 16, leftW - 28);
+      const specLine = translateSpecLine(translate, spec);
+      if (!specLine) return;
+      const w = Math.min(safeTextWidth(specLine) + 16, leftW - 28);
 
       if (chipX + w > chipMaxX) {
         chipX = leftX + 14;
@@ -997,7 +1112,7 @@ async function drawModernCatalog({
       doc.setFillColor(241, 245, 249);
       doc.roundedRect(chipX, chipY - 14, w, chipH, 10, 10, 'F');
       doc.setTextColor(71, 85, 105);
-      doc.text(label, chipX + 8, chipY);
+      doc.text(specLine, chipX + 8, chipY);
       chipX += w + 8;
     });
 
@@ -1020,14 +1135,14 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 41, 59);
-    doc.text('Sobre', leftX + 14, y + 26);
+    doc.text(translate('Sobre', 'About'), leftX + 14, y + 26);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(71, 85, 105);
 
     const description = (product.description || '').trim();
-    const descText = description || 'Descrição não informada.';
+    const descText = description || translate('Descrição não informada.', 'Description not provided.');
     const descLines = doc.splitTextToSize(descText, leftW - 28);
     const maxLines = Math.max(5, Math.floor((descH - 54) / 12));
     descLines.slice(0, maxLines).forEach((line, i) => {
@@ -1047,14 +1162,26 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(15, 23, 42);
-    doc.text('Abrir no SaleDay', margin + 16, ctaY + 30);
+    doc.text(
+      translate('Abrir no SaleDay', 'Open on SaleDay'),
+      margin + 16,
+      ctaY + 30
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(100, 116, 139);
-    doc.text('Escaneie o QR para ver o anúncio completo e conversar no chat.', margin + 16, ctaY + 48, {
-      maxWidth: innerW - 130
-    });
+    doc.text(
+      translate(
+        'Escaneie o QR para ver o anúncio completo e conversar no chat.',
+        'Scan the QR to view the full listing and chat.'
+      ),
+      margin + 16,
+      ctaY + 48,
+      {
+        maxWidth: innerW - 130
+      }
+    );
 
     // QR
     try {
@@ -1160,14 +1287,35 @@ export default function SellerProfile() {
   const isCatalogReady = selectedProductsForCatalog.length > 0;
   const [catalogStyle, setCatalogStyle] = useState('premium');
   const [catalogPanelOpen, setCatalogPanelOpen] = useState(false);
+  const catalogLocale = useMemo(() => {
+    if (user?.country) return localeFromCountry(user.country);
+    if (seller?.country) return localeFromCountry(seller.country);
+    if (geo?.locale) return geo.locale;
+    if (geo?.country) return localeFromCountry(geo.country);
+    return DEFAULT_CATALOG_LOCALE;
+  }, [user?.country, seller?.country, geo?.locale, geo?.country]);
+  const catalogTranslator = useMemo(
+    () => createCatalogTranslator(catalogLocale),
+    [catalogLocale]
+  );
 
   const handleGenerateCatalog = useCallback(async () => {
     if (selectedProductsForCatalog.length === 0) {
-      toast.error('Selecione ao menos um produto para gerar o catálogo.');
+      toast.error(
+        catalogTranslator(
+          'Selecione ao menos um produto para gerar o catálogo.',
+          'Select at least one product to generate the catalog.'
+        )
+      );
       return;
     }
     if (typeof window === 'undefined') {
-      toast.error('Não foi possível gerar o catálogo neste ambiente.');
+      toast.error(
+        catalogTranslator(
+          'Não foi possível gerar o catálogo neste ambiente.',
+          'Could not generate the catalog in this environment.'
+        )
+      );
       return;
     }
     setGeneratingCatalog(true);
@@ -1182,7 +1330,8 @@ export default function SellerProfile() {
         pageWidth,
         pageHeight,
         sellerDisplayName,
-        selectedProductsForCatalog
+        selectedProductsForCatalog,
+        translate: catalogTranslator
       };
       if (catalogStyle === 'classic') {
         await drawClassicCatalog(props);
@@ -1199,17 +1348,28 @@ export default function SellerProfile() {
           .replace(/[^a-zA-Z0-9-_]/g, '') || 'SaleDay'
       );
       doc.save(`${safeName}-catalogo.pdf`);
-      toast.success('Catálogo gerado com sucesso.');
+      toast.success(
+        catalogTranslator(
+          'Catálogo gerado com sucesso.',
+          'Catalog generated successfully.'
+        )
+      );
     } catch (error) {
       console.error(error);
-      toast.error('Não foi possível gerar o catálogo.');
+      toast.error(
+        catalogTranslator(
+          'Não foi possível gerar o catálogo.',
+          'Could not generate the catalog.'
+        )
+      );
     } finally {
       setGeneratingCatalog(false);
     }
   }, [
     catalogStyle,
     selectedProductsForCatalog,
-    sellerDisplayName
+    sellerDisplayName,
+    catalogTranslator
   ]);
 
   const toggleProductSelection = useCallback((productId) => {

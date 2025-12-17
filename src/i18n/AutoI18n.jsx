@@ -187,6 +187,12 @@ function matchSupportedLocale(value) {
   );
 }
 
+const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+const isMobileSafari =
+  /Safari/.test(userAgent) &&
+  !/Chrome|CriOS|FxiOS|EdgiOS|Edge|OPiOS/.test(userAgent) &&
+  /Mobile|iPhone|iPad|iPod/.test(userAgent);
+
 export default function AutoI18n() {
   const { user } = useContext(AuthContext);
   const { locale: geoLocale } = useContext(GeoContext);
@@ -218,6 +224,7 @@ export default function AutoI18n() {
   }, [user, geoLocale]);
 
   useEffect(() => {
+    if (isMobileSafari) return undefined;
     if (!locale) return;
     if (typeof window !== 'undefined') {
       localStorage.setItem('saleday.locale', locale);
