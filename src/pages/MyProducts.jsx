@@ -21,6 +21,27 @@ export default function MyProducts() {
     return location.state?.refreshId ?? 0;
   }, [location.state]);
   const abortFetchRef = useRef(() => {});
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return undefined;
+    const reloadTopic = 'saleday:my-products:chrome-reloaded';
+    if (sessionStorage.getItem(reloadTopic)) return undefined;
+
+    const entries =
+      typeof window.performance?.getEntriesByType === 'function'
+        ? window.performance.getEntriesByType('navigation')
+        : [];
+    const navType = entries[0]?.type || '';
+    if (navType === 'reload') return undefined;
+
+    const ua = navigator.userAgent || '';
+    const isChrome = /Chrome/.test(ua) && !/(Edg|Edge|OPR|SamsungBrowser)/.test(ua);
+    const isMobile = /Mobi|Android|iPhone|iPad/.test(ua);
+    if (!isChrome || !isMobile) return undefined;
+
+    sessionStorage.setItem(reloadTopic, '1');
+    window.location.reload();
+    return undefined;
+  }, []);
 
   const fetchProducts = useCallback(() => {
     if (!token) return;
