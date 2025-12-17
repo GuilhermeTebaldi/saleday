@@ -442,25 +442,68 @@ export default function SearchBar({
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
+          const lat = coords.latitude;
+          const lng = coords.longitude;
           const bbox = {
-            minLat: coords.latitude - 0.05,
-            maxLat: coords.latitude + 0.05,
-            minLng: coords.longitude - 0.05,
-            maxLng: coords.longitude + 0.05
+            minLat: lat - 0.05,
+            maxLat: lat + 0.05,
+            minLng: lng - 0.05,
+            maxLng: lng + 0.05
           };
-          const r = await api.get('/products', { params: { ...bbox, sort: 'rank' } });
-          if (r.data.success) {
-            const payload = {
-              label: 'Perto de você',
-              lat: coords.latitude,
-              lng: coords.longitude
+
+          let locationDetails = null;
+          try {
+            const reverse = await api.get('/geo/reverse', {
+              params: { lat, lng }
+            });
+            if (reverse.data?.success) {
+              locationDetails = reverse.data.data || null;
+            }
+          } catch (reverseError) {
+            console.error('reverse geocode failed', reverseError);
+          }
+
+          const fetchProducts = async (params) => {
+            const response = await api.get('/products', { params });
+            return response.data?.success ? response.data.data ?? [] : [];
+          };
+
+          let products = await fetchProducts({ sort: 'rank', ...bbox });
+
+          if ((!products || products.length === 0) && locationDetails?.city) {
+            const fallbackParams = {
+              sort: 'rank',
+              city: locationDetails.city
             };
-            onProductsLoaded?.(r.data.data);
+            if (locationDetails.country) {
+              fallbackParams.country = locationDetails.country;
+            }
+            products = await fetchProducts(fallbackParams);
+          }
+
+          if (products?.length) {
+            const derivedLabel = buildLocationLabel({
+              city: locationDetails?.city,
+              state: locationDetails?.state,
+              country: locationDetails?.country
+            });
+            const payload = {
+              label: derivedLabel || (locationDetails?.city ? `Perto de ${locationDetails.city}` : 'Perto de você'),
+              lat,
+              lng,
+              city: locationDetails?.city || null,
+              state: locationDetails?.state || null,
+              country: locationDetails?.country || null,
+              bounds: bbox
+            };
+            onProductsLoaded?.(products);
             onFiltersChange?.({
               type: 'address',
               value: payload
             });
             toast.success('Produtos próximos.');
+          } else {
+            toast.error('Nenhum produto encontrado nos arredores.');
           }
         } catch {
           toast.error('Erro ao buscar próximos.');
