@@ -1,4 +1,5 @@
 const CACHE_NAME = 'saleday-cache-v2';
+const FALLBACK_URL = '/index.html';
 const FILES_TO_CACHE = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {
@@ -49,7 +50,12 @@ const navigationRequest = (event) => {
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => cacheResponse(event.request, networkResponse))
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        // Fallback to the cached shell when navigation request fails or is not cached.
+        const match = await caches.match(event.request);
+        if (match) return match;
+        return caches.match(FALLBACK_URL);
+      })
   );
 };
 
