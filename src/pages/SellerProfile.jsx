@@ -1299,6 +1299,19 @@ export default function SellerProfile() {
     [catalogLocale]
   );
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const previousTranslate = document.documentElement.getAttribute('translate');
+    document.documentElement.setAttribute('translate', 'no');
+    return () => {
+      if (previousTranslate == null) {
+        document.documentElement.removeAttribute('translate');
+      } else {
+        document.documentElement.setAttribute('translate', previousTranslate);
+      }
+    };
+  }, []);
+
   const handleGenerateCatalog = useCallback(async () => {
     if (selectedProductsForCatalog.length === 0) {
       toast.error(
