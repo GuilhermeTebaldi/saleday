@@ -13,8 +13,16 @@ const sanitizeUser = (rawUser) => {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
+    let initial = null;
+    try {
+      const raw = localStorage.getItem('user');
+      initial = raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.error('Erro ao parsear user do localStorage:', localStorage.getItem('user'));
+      localStorage.removeItem('user');
+      initial = null;
+    }
+    return initial;
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);

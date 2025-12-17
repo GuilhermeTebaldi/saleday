@@ -33,6 +33,7 @@ import AdminRanking from './pages/admin/AdminRanking.jsx';
 import AdminHistory from './pages/admin/AdminHistory.jsx';
 import AdminSupport from './pages/admin/AdminSupport.jsx';
 import Legal from './pages/Legal.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // i18n automático por país do usuário
 import AutoI18n from './i18n/AutoI18n.jsx';
@@ -117,7 +118,9 @@ export default function App() {
                   path="/my-products"
                   element={
                     <ProtectedRoute>
-                      <MyProducts />
+                      <ErrorBoundary>
+                        <MyProducts />
+                      </ErrorBoundary>
                     </ProtectedRoute>
                   }
                 />

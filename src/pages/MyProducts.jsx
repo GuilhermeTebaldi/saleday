@@ -21,9 +21,19 @@ export default function MyProducts() {
     return location.state?.refreshId ?? 0;
   }, [location.state]);
   const abortFetchRef = useRef(() => {});
+  const fetchInFlightRef = useRef(false);
+  const logPrefix = '[MyProducts]';
+  const MOBILE_DEBUG_MODE = false;
+
+  const shouldRenderImages = !MOBILE_DEBUG_MODE;
+  const shouldRenderBuyerInfo = !MOBILE_DEBUG_MODE;
 
   const fetchProducts = useCallback(() => {
     if (!token) return;
+    if (fetchInFlightRef.current) {
+      console.log(`${logPrefix} fetchProducts already running, skipping new call`);
+      return;
+    }
     abortFetchRef.current?.();
     let active = true;
     abortFetchRef.current = () => {
@@ -31,9 +41,16 @@ export default function MyProducts() {
     };
     setLoading(true);
     setFetchError('');
+    console.log(`${logPrefix} fetchProducts start`, { token });
+    fetchInFlightRef.current = true;
     api
       .get('/products/my', { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
+        console.log(`${logPrefix} /products/my response`, {
+          status: res.status,
+          data: res.data,
+          payload: res.data?.data
+        });
         if (!active) return;
         const items = Array.isArray(res.data?.data) ? res.data.data.slice() : [];
         setProducts(items);
@@ -47,6 +64,8 @@ export default function MyProducts() {
         }
       })
       .finally(() => {
+        fetchInFlightRef.current = false;
+        console.log(`${logPrefix} fetchProducts done`, { active });
         if (active) setLoading(false);
       });
   }, [token]);
@@ -63,20 +82,24 @@ export default function MyProducts() {
     if (!token || typeof window === 'undefined' || typeof document === 'undefined') {
       return undefined;
     }
-    const refreshList = () => {
+    const refreshList = (source) => {
+      console.log(`${logPrefix} ${source} listener triggered`);
       fetchProducts();
     };
     const handleVisibility = () => {
+      console.log(`${logPrefix} visibilitychange listener`, { state: document.visibilityState });
       if (document.visibilityState === 'visible') {
         fetchProducts();
       }
     };
-    window.addEventListener('pageshow', refreshList);
-    window.addEventListener('popstate', refreshList);
+    const handlePopstate = () => refreshList('popstate');
+    const handlePageshow = () => refreshList('pageshow');
+    window.addEventListener('pageshow', handlePageshow);
+    window.addEventListener('popstate', handlePopstate);
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
-      window.removeEventListener('pageshow', refreshList);
-      window.removeEventListener('popstate', refreshList);
+      window.removeEventListener('pageshow', handlePageshow);
+      window.removeEventListener('popstate', handlePopstate);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [fetchProducts, token]);
@@ -91,13 +114,18 @@ export default function MyProducts() {
       api
         .get(`/orders/product/${product.id}/buyer`, { headers: { Authorization: `Bearer ${token}` } })
         .then((res) => {
+          console.log(`${logPrefix} /orders/product/${product.id}/buyer response`, {
+            status: res.status,
+            data: res.data,
+            payload: res.data?.data
+          });
           if (!active) return;
           const buyerName =
             res.data?.data?.buyer_name || res.data?.data?.buyerName || 'Um comprador';
-        setBuyers((prev) => ({
-          ...prev,
-          [product.id]: { name: buyerName, id: res.data?.data?.buyer_id ?? null }
-        }));
+          setBuyers((prev) => ({
+            ...prev,
+            [product.id]: { name: buyerName, id: res.data?.data?.buyer_id ?? null }
+          }));
         })
         .catch(() => {});
     });
@@ -135,6 +163,19 @@ export default function MyProducts() {
     }
   }
 
+  const previewProducts = products.slice(0, 3).map((product) => ({
+    id: product.id,
+    title: product.title,
+    mainImage: product.image_urls?.[0] || product.image_url
+  }));
+  console.log(`${logPrefix} render state`, {
+    loading,
+    fetchError,
+    productCount: products.length,
+    previewProducts,
+    buyersKeys: Object.keys(buyers)
+  });
+
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
   if (!products.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
@@ -150,13 +191,26 @@ export default function MyProducts() {
         const locationLabel = [product.city, product.state, product.country]
           .filter(Boolean)
           .join(', ');
+        const buyerInfo = buyers[product.id];
+        console.log(`${logPrefix} rendering product`, {
+          id: product.id,
+          title: product.title,
+          mainImage,
+          buyer: buyerInfo
+        });
         return (
           <article key={product.id} className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
             <div className="relative">
-              {mainImage ? (
-                <img src={mainImage} alt={product.title} className="my-product-card__image w-full h-44 object-cover" />
+              {shouldRenderImages ? (
+                mainImage ? (
+                  <img src={mainImage} alt={product.title} className="my-product-card__image w-full h-44 object-cover" />
+                ) : (
+                  <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">Sem imagem</div>
+                )
               ) : (
-                <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">Sem imagem</div>
+                <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
+                  Imagens desativadas em modo debug
+                </div>
               )}
               {isSold && <SoldBadge className="absolute -top-1 -left-1" />}
               {freeTag && !isSold && (
@@ -192,15 +246,15 @@ export default function MyProducts() {
                   ))}
                 </div>
               )}
-              {isSold && (
+              {isSold && shouldRenderBuyerInfo && (
                 <p className="text-xs text-rose-600">
                   Esse produto foi comprado por{' '}
-                  {buyers[product.id]?.id ? (
-                    <Link className="text-rose-500 underline" to={`/users/${buyers[product.id].id}`}>
-                      {buyers[product.id].name}
+                  {buyerInfo?.id ? (
+                    <Link className="text-rose-500 underline" to={`/users/${buyerInfo.id}`}>
+                      {buyerInfo.name}
                     </Link>
                   ) : (
-                    buyers[product.id]?.name || 'um comprador'
+                    buyerInfo?.name || 'um comprador'
                   )}
                   .
                 </p>
