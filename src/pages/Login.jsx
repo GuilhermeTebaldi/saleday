@@ -14,6 +14,7 @@ export default function Login() {
     return localStorage.getItem('saleday.loginEmail') ?? '';
   });
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -72,14 +73,24 @@ export default function Login() {
         />
 
         <label htmlFor="password">Senha</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Digite sua senha"
-          required
-        />
+        <div className="password-field">
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Digite sua senha"
+            required
+          />
+          <button
+            type="button"
+            className="auth-form__toggle-password"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
+          >
+            {showPassword ? 'Ocultar' : 'Ver'}
+          </button>
+        </div>
 
         <label className="auth-form__remember">
           <input
