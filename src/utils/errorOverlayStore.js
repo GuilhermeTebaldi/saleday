@@ -1,6 +1,8 @@
 const MAX_ERRORS = 12;
 const listeners = new Set();
+const pauseListeners = new Set();
 let errors = [];
+let overlayPaused = true;
 
 const getOverlayFlag = () => {
   if (typeof window !== 'undefined' && window.SHOW_ERROR_OVERLAY === true) {
@@ -45,4 +47,15 @@ export const subscribeErrorOverlay = (listener) => {
   listeners.add(listener);
   listener(errors.slice(-MAX_ERRORS));
   return () => listeners.delete(listener);
+};
+
+export const subscribeOverlayPause = (listener) => {
+  pauseListeners.add(listener);
+  listener(overlayPaused);
+  return () => pauseListeners.delete(listener);
+};
+
+export const setOverlayPaused = (value) => {
+  overlayPaused = !!value;
+  pauseListeners.forEach((listener) => listener(overlayPaused));
 };

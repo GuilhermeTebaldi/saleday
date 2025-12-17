@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/global.css';
 import ErrorOverlay from './components/ErrorOverlay.jsx';
-import { addOverlayError, logOverlayError } from './utils/errorOverlayStore.js';
+import { addOverlayError, logOverlayError, setOverlayPaused } from './utils/errorOverlayStore.js';
 
 if (typeof window !== 'undefined') {
   try {
@@ -47,6 +47,8 @@ if (typeof window !== 'undefined') {
     });
   });
   window.logOverlayError = (payload) => logOverlayError(payload);
+  window.hideErrorOverlay = () => setOverlayPaused(true);
+  window.showErrorOverlay = () => setOverlayPaused(false);
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

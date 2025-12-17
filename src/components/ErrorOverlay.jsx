@@ -1,17 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
-import { overlayEnabled, subscribeErrorOverlay } from '../utils/errorOverlayStore.js';
+import {
+  overlayEnabled,
+  subscribeErrorOverlay,
+  subscribeOverlayPause,
+  setOverlayPaused
+} from '../utils/errorOverlayStore.js';
 
 const MAX_DISPLAY_ERRORS = 4;
 
 export default function ErrorOverlay({ enabled = overlayEnabled }) {
   const [errors, setErrors] = useState([]);
   const [visible, setVisible] = useState(true);
+  const [paused, setPaused] = useState(true);
 
   useEffect(() => {
     if (!enabled) return undefined;
     return subscribeErrorOverlay((next) => {
       setErrors(next.slice(-MAX_DISPLAY_ERRORS));
       setVisible(() => next.length > 0);
+    });
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    return subscribeOverlayPause((flag) => {
+      setPaused(flag);
     });
   }, [enabled]);
 
@@ -36,7 +49,7 @@ export default function ErrorOverlay({ enabled = overlayEnabled }) {
     }
   };
 
-  if (!enabled || !visible || !latestError) {
+  if (!enabled || paused || !visible || !latestError) {
     return null;
   }
 
@@ -74,7 +87,9 @@ export default function ErrorOverlay({ enabled = overlayEnabled }) {
             Copiar
           </button>
           <button
-            onClick={() => setVisible(false)}
+            onClick={() => {
+              setOverlayPaused(true);
+            }}
             style={{
               background: 'rgba(255,255,255,0.12)',
               border: 'none',

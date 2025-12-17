@@ -22,6 +22,7 @@ export default function MyProducts() {
   const safeProducts = Array.isArray(products)
     ? products.filter((product) => product && typeof product === 'object' && typeof product.title === 'string')
     : [];
+  const [resetVisible, setResetVisible] = useState(false);
 
   const isValidImageSource = (url) =>
     typeof url === 'string' &&
@@ -190,6 +191,16 @@ export default function MyProducts() {
     });
   }, [safeProducts.length, buyers, token]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    window.showResetAppButton = () => setResetVisible(true);
+    window.hideResetAppButton = () => setResetVisible(false);
+    return () => {
+      window.showResetAppButton = undefined;
+      window.hideResetAppButton = undefined;
+    };
+  }, []);
+
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
   if (!safeProducts.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
@@ -198,13 +209,15 @@ export default function MyProducts() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleHardReset}
-        className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-600 text-white rounded shadow-lg"
-      >
-        Reset App
-      </button>
+      {resetVisible && (
+        <button
+          type="button"
+          onClick={handleHardReset}
+          className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-600 text-white rounded shadow-lg"
+        >
+          Reset App
+        </button>
+      )}
       {hasProductsList && (
         <section className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
           {safeProducts.map((product, index) => (
