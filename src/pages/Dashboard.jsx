@@ -299,7 +299,7 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
         </div>
       </button>
       {avatarMenuOpen && (
-        <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2">
+        <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2 z-50">
           <PrimaryButton
             as={Link}
             to="/edit-profile"
@@ -815,7 +815,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="relative overflow-hidden rounded-[42px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="relative overflow-visible rounded-[42px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <img
             src={watermarkLogoSrc}
             alt="SaleDay logo"
