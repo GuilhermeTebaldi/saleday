@@ -50,6 +50,20 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return undefined;
+    }
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister().then(() => {
+          console.log('[SW] Desregistrado com sucesso', registration.scope);
+        });
+      });
+    });
+    return undefined;
+  }, []);
+
   return (
     <Auth0ProviderWrapper>
       <AuthProvider>

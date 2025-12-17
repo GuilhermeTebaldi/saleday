@@ -21,7 +21,9 @@ export default function MyProducts() {
   const abortFetchRef = useRef(() => {});
   const fetchInFlightRef = useRef(false);
   const logPrefix = '[MyProducts]';
-  const safeProducts = Array.isArray(products) ? products : [];
+  const safeProducts = Array.isArray(products)
+    ? products.filter((product) => product && typeof product === 'object' && typeof product.title === 'string')
+    : [];
 
   const isValidImageSource = (url) =>
     typeof url === 'string' &&
@@ -162,13 +164,30 @@ export default function MyProducts() {
     }
   }
 
+  const handleHardReset = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.clear();
+    if ('caches' in window) {
+      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+    }
+    window.location.reload();
+  };
+
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
   if (!safeProducts.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
 
   return (
-    <div className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
-      {safeProducts.map((product, index) => {
+    <>
+      <button
+        type="button"
+        onClick={handleHardReset}
+        className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-600 text-white rounded shadow-lg"
+      >
+        Reset App
+      </button>
+      <div className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
+        {safeProducts.map((product, index) => {
         try {
           if (!product) {
             throw new Error('Produto inválido');
@@ -302,5 +321,6 @@ export default function MyProducts() {
         }
       })}
     </div>
+  </>
   );
 }
