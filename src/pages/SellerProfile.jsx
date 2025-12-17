@@ -213,10 +213,10 @@ async function drawPremiumCatalog({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(255);
-  doc.text('Venda com segurança na SaleDay', margin + 16, footerY + 26);
+  doc.text('Venda na SaleDay', margin + 16, footerY + 26);
   doc.setFontSize(10);
   doc.setTextColor(226, 232, 240);
-  doc.text('www.saleday.com.br · Entre em contato pelo chat do site', margin + 16, footerY + 44);
+  doc.text('www.saleday.com.br', margin + 16, footerY + 44);
 }
 
 const VIBRANT_PALETTE = [
@@ -598,7 +598,7 @@ async function drawVibrantCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text('SaleDay · Compartilhe este catálogo com clientes em potencial.', margin, y);
+    doc.text('SaleDay.', margin, y);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
