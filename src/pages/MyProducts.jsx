@@ -188,7 +188,7 @@ export default function MyProducts() {
       </button>
       <div className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
         {safeProducts.map((product, index) => {
-        try {
+          try {
           if (!product) {
             throw new Error('Produto inválido');
           }

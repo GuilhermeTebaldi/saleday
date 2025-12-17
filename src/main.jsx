@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/global.css';
+import ErrorOverlay from './components/ErrorOverlay.jsx';
+import { addOverlayError, logOverlayError } from './utils/errorOverlayStore.js';
 
 if (typeof window !== 'undefined') {
   try {
@@ -22,11 +24,34 @@ if (typeof window !== 'undefined') {
   }
 
   window.addEventListener('error', (evt) => {
+    const message = evt.error?.message || evt.message || 'Erro global não identificado';
+    const stack = evt.error?.stack || `${evt.filename}:${evt.lineno}:${evt.colno}`;
     console.error('Global error:', evt.error || evt.message, evt);
+    addOverlayError({
+      type: 'global',
+      message,
+      stack,
+      meta: { filename: evt.filename, lineno: evt.lineno, colno: evt.colno }
+    });
   });
   window.addEventListener('unhandledrejection', (evt) => {
+    const reason = evt.reason;
+    const message = reason?.message || String(reason);
+    const stack = reason?.stack || '';
     console.error('Unhandled rejection:', evt.reason);
+    addOverlayError({
+      type: 'unhandledrejection',
+      message,
+      stack,
+      meta: { reason }
+    });
   });
+  window.logOverlayError = (payload) => logOverlayError(payload);
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <>
+    <App />
+    <ErrorOverlay />
+  </>
+);
