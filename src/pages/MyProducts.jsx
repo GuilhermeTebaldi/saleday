@@ -235,8 +235,8 @@ export default function MyProducts() {
             });
 
             return (
-              <article
-                key={product.id ? `product-${product.id}` : `product-${index}`}
+            <article
+                key={`product-${String(product.id ?? `idx-${index}`)}`}
                 className="my-product-card border rounded bg-white shadow-sm overflow-hidden"
               >
                 <div className="relative">
@@ -255,8 +255,8 @@ export default function MyProducts() {
                       Sem imagem
                     </div>
                   )}
-                  {isSold && <SoldBadge className="absolute -top-1 -left-1" />}
-                  {freeTag && !isSold && (
+                {!!isSold && <SoldBadge className="absolute -top-1 -left-1" />}
+                {!!freeTag && !isSold && (
                     <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
                       Grátis
                     </span>
@@ -272,14 +272,14 @@ export default function MyProducts() {
                       Categoria:{' '}
                       <span className="text-gray-800">{categoryLabel}</span>
                     </p>
-                    {locationLabel && (
+                  {!!locationLabel && (
                       <p>
                         Local:{' '}
                         <span className="text-gray-800">{locationLabel}</span>
                       </p>
                     )}
                   </div>
-                  {specEntries.length > 0 && (
+                  {!!specEntries.length && (
                     <div className="text-[11px] text-gray-600 grid grid-cols-2 gap-1">
                       {specEntries.slice(0, 2).map((entry) => (
                         <p key={entry.label}>
@@ -289,7 +289,7 @@ export default function MyProducts() {
                       ))}
                     </div>
                   )}
-                  {isSold && (
+                {!!isSold && (
                     <p className="text-xs text-rose-600">
                       Esse produto foi comprado por{' '}
                       {buyerInfo?.id ? (
