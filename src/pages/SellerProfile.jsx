@@ -12,6 +12,9 @@ import formatProductPrice from '../utils/currency.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { localeFromCountry } from '../i18n/localeMap.js';
+import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
+import { buildProductSpecEntries } from '../utils/productSpecs.js';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -37,6 +40,653 @@ function makeAbsolute(urlLike) {
   }
 }
 
+async function fetchImageAsDataUrl(imageUrl) {
+  if (!imageUrl || typeof window === 'undefined') return null;
+  try {
+    const resolved = makeAbsolute(imageUrl);
+    const response = await fetch(resolved, { mode: 'cors' });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function drawPremiumCatalog({
+  doc,
+  margin,
+  pageWidth,
+  pageHeight,
+  sellerDisplayName,
+  selectedProductsForCatalog
+}) {
+  const headerHeight = 100;
+  doc.setFillColor(3, 37, 76);
+  doc.rect(0, 0, pageWidth, headerHeight, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(38);
+  doc.setTextColor(255, 214, 0);
+  doc.text('SaleDay', margin + 5, 52);
+  doc.setFontSize(14);
+  doc.setTextColor(255);
+  doc.text('', margin + 5, 72);
+  doc.setFontSize(12);
+  doc.text(
+    `Catálogo de ${sellerDisplayName}`,
+    margin + 5,
+    headerHeight - 8
+  );
+  let cursorY = headerHeight + 20;
+
+  for (const product of selectedProductsForCatalog) {
+    const cardHeight = 210;
+    const cardWidth = pageWidth - margin * 2;
+    if (cursorY + cardHeight > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+    }
+
+    doc.setFillColor(240, 244, 249);
+    doc.roundedRect(margin - 2, cursorY - 2, cardWidth + 4, cardHeight + 4, 18, 18, 'F');
+    doc.setFillColor(255);
+    doc.roundedRect(margin, cursorY, cardWidth, cardHeight, 16, 16, 'F');
+
+    const imageWidth = 150;
+    const imageHeight = cardHeight - 70;
+    const imageX = margin + cardWidth - imageWidth - 20;
+    const imageY = cursorY + 55;
+    const productImageUrl =
+      (Array.isArray(product.image_urls) && product.image_urls[0]) ||
+      product.image_url ||
+      '';
+    if (productImageUrl) {
+      const productImageData = await fetchImageAsDataUrl(productImageUrl);
+      if (productImageData) {
+        doc.setFillColor(229, 232, 238);
+        doc.roundedRect(imageX - 2, imageY - 2, imageWidth + 4, imageHeight + 4, 10, 10, 'F');
+        doc.addImage(productImageData, 'PNG', imageX, imageY, imageWidth, imageHeight);
+      } else {
+        doc.setFillColor(229, 232, 238);
+        doc.roundedRect(imageX, imageY, imageWidth, imageHeight, 10, 10, 'F');
+        doc.setFontSize(10);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Imagem indisponível', imageX + imageWidth / 2, imageY + imageHeight / 2, {
+          align: 'center'
+        });
+      }
+    } else {
+      doc.setFillColor(229, 232, 238);
+      doc.roundedRect(imageX, imageY, imageWidth, imageHeight, 10, 10, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Imagem não definida', imageX + imageWidth / 2, imageY + imageHeight / 2, {
+        align: 'center'
+      });
+    }
+
+    doc.setFillColor(12, 97, 168);
+    doc.roundedRect(margin, cursorY, cardWidth, 42, 16, 16, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(255);
+    const title = (product.title || 'Produto SaleDay').trim();
+    doc.text(title, margin + 16, cursorY + 24, {
+      maxWidth: cardWidth - imageWidth - 40
+    });
+    const priceLabel =
+      product.price != null
+        ? formatProductPrice(product.price, product.country || 'BR')
+        : 'Preço a combinar';
+    doc.setFontSize(16);
+    doc.setTextColor(255, 214, 0);
+    doc.text(priceLabel, margin + cardWidth - imageWidth - 20, cursorY + 26, {
+      maxWidth: cardWidth - imageWidth - 30,
+      align: 'right'
+    });
+
+    let textY = cursorY + 62;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(55, 63, 104);
+    const locationLabel = [product.city, product.state, product.country]
+      .filter(Boolean)
+      .join(' · ');
+    if (locationLabel) {
+      doc.text(locationLabel, margin + 16, textY, {
+        maxWidth: cardWidth - imageWidth - 50
+      });
+      textY += 14;
+    }
+
+    const specs = buildProductSpecEntries(product);
+    specs.slice(0, 3).forEach((spec) => {
+      doc.text(`• ${spec.label}: ${spec.value}`, margin + 16, textY, {
+        maxWidth: cardWidth - imageWidth - 50
+      });
+      textY += 12;
+    });
+
+    const description = product.description?.trim();
+    if (description) {
+      const descriptionLines = doc.splitTextToSize(
+        description,
+        cardWidth - imageWidth - 50
+      );
+      descriptionLines.slice(0, 3).forEach((line) => {
+        doc.text(line, margin + 16, textY);
+        textY += 10;
+      });
+    }
+
+    try {
+      const productUrl = `${window.location.origin}/product/${product.id}`;
+      const qrDataUrl = await QRCode.toDataURL(productUrl, { width: 80, margin: 0 });
+      const qrSize = 70;
+      const qrX = margin + 16;
+      const qrY = cursorY + cardHeight - qrSize - 20;
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      doc.setFontSize(8);
+      doc.setTextColor(75, 85, 99);
+      doc.text('Escaneie para ver o produto', qrX + qrSize / 2, qrY + qrSize + 10, {
+        align: 'center'
+      });
+    } catch {
+      // QR falhou, continuar
+    }
+
+    cursorY += cardHeight + 20;
+  }
+
+  let footerY = pageHeight - margin - 60;
+  if (cursorY + 70 > pageHeight - margin) {
+    doc.addPage();
+    footerY = pageHeight - margin - 60;
+  }
+  doc.setFillColor(3, 37, 76);
+  doc.roundedRect(margin, footerY, pageWidth - margin * 2, 60, 14, 14, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(255);
+  doc.text('Venda com segurança na SaleDay', margin + 16, footerY + 26);
+  doc.setFontSize(10);
+  doc.setTextColor(226, 232, 240);
+  doc.text('www.saleday.com · Entre em contato pelo chat do site', margin + 16, footerY + 44);
+}
+
+const VIBRANT_PALETTE = [
+  { card: [33, 80, 155], accent: [255, 214, 0], text: [236, 244, 255] },
+  { card: [175, 82, 193], accent: [255, 130, 67], text: [255, 255, 255] },
+  { card: [27, 158, 150], accent: [255, 214, 0], text: [255, 255, 255] }
+];
+
+async function drawClassicCatalog({
+  doc,
+  margin,
+  pageWidth,
+  pageHeight,
+  sellerDisplayName,
+  selectedProductsForCatalog
+}) {
+  doc.setFillColor(7, 24, 46);
+  doc.rect(margin, margin, pageWidth - margin * 2, 160, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(28);
+  doc.setTextColor(255, 214, 0);
+  doc.text('SaleDay', margin + 18, margin + 42);
+  doc.setFontSize(16);
+  doc.setTextColor(255);
+  doc.text(`Catálogo de ${sellerDisplayName}`, margin + 18, margin + 66);
+  doc.setFontSize(10);
+  doc.text('destaque da SaleDay', margin + 18, margin + 88);
+  let cursorY = margin + 180;
+
+  for (const product of selectedProductsForCatalog) {
+    const cardHeight = 190;
+    const cardWidth = pageWidth - margin * 2;
+    if (cursorY + cardHeight > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+    }
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(margin, cursorY, cardWidth, cardHeight, 16, 16, 'F');
+  doc.setFillColor(17, 24, 39);
+  doc.rect(margin, cursorY, 12, cardHeight, 'F');
+
+  const imageWidth = 150;
+  const imageHeight = cardHeight - 40;
+  const imageX = margin + cardWidth - imageWidth - 20;
+  const imageY = cursorY + 20;
+  const textMaxWidth = cardWidth - imageWidth - 45;
+    const productImageUrl =
+      (Array.isArray(product.image_urls) && product.image_urls[0]) ||
+      product.image_url ||
+      '';
+  if (productImageUrl) {
+    const productImageData = await fetchImageAsDataUrl(productImageUrl);
+    if (productImageData) {
+      doc.addImage(productImageData, 'PNG', imageX, imageY, imageWidth, imageHeight);
+    } else {
+      doc.setFillColor(226, 232, 240);
+      doc.rect(imageX, imageY, imageWidth, imageHeight, 'F');
+        doc.setFontSize(10);
+        doc.setTextColor(148, 163, 184);
+        doc.text('Imagem indisponível', imageX + imageWidth / 2, imageY + imageHeight / 2, {
+          align: 'center'
+        });
+      }
+    } else {
+      doc.setFillColor(226, 232, 240);
+      doc.rect(imageX, imageY, imageWidth, imageHeight, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Imagem não definida', imageX + imageWidth / 2, imageY + imageHeight / 2, {
+        align: 'center'
+      });
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(12, 97, 168);
+    const title = (product.title || 'Produto SaleDay').trim();
+    doc.text(title, margin + 16, cursorY + 30, {
+      maxWidth: textMaxWidth
+    });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    const priceLabel =
+      product.price != null
+        ? formatProductPrice(product.price, product.country || 'BR')
+        : 'Preço a combinar';
+    doc.text(priceLabel, margin + 16, cursorY + 52);
+
+    let textY = cursorY + 70;
+    doc.setFontSize(11);
+    doc.setTextColor(75, 85, 99);
+    const specs = buildProductSpecEntries(product);
+    specs.slice(0, 4).forEach((spec) => {
+      doc.text(`• ${spec.label}: ${spec.value}`, margin + 16, textY, {
+        maxWidth: textMaxWidth
+      });
+      textY += 12;
+    });
+
+    const description = product.description?.trim();
+    if (description) {
+      const descriptionLines = doc.splitTextToSize(description, cardWidth - 40);
+      descriptionLines.slice(0, 2).forEach((line) => {
+        doc.text(line, margin + 16, textY);
+        textY += 10;
+      });
+    }
+
+    try {
+      const productUrl = `${window.location.origin}/product/${product.id}`;
+      const qrDataUrl = await QRCode.toDataURL(productUrl, { width: 70, margin: 0 });
+      const qrX = margin + cardWidth - 90;
+      const qrY = cursorY + cardHeight - 90;
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, 70, 70);
+    } catch {
+      // ignore
+    }
+
+    cursorY += cardHeight + 16;
+  }
+
+  const footerY = pageHeight - margin - 80;
+  doc.setFillColor(12, 97, 168);
+  doc.roundedRect(margin, footerY, pageWidth - margin * 2, 70, 16, 16, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255);
+  doc.text('SaleDay · Confiança em cada transação', margin + 16, footerY + 34);
+}
+
+const CATALOG_STYLE_OPTIONS = [
+  { key: 'premium', label: 'Premium' },
+  { key: 'classic', label: 'Clássico' },
+  { key: 'vibrant', label: 'Vibrante' },
+  { key: 'modern', label: 'Moderno' }
+];
+
+const CATALOG_PREVIEW_META = {
+  premium: {
+    badge: 'Premium',
+    title: 'Capas amplas com contraste suave',
+    description:
+      '/Header com logo dourado, tipografia elegante e espaço para uma hero image impactante sem perder clareza.',
+    gradient: 'linear-gradient(135deg, #070c24, #1d2c63)',
+    accent: '#FCE043',
+    bullets: [
+      'Manchete ampla com logo SaleDay',
+      'Imagem principal envolvente em destaque',
+      'Área de detalhes e QR discreto'
+    ]
+  },
+  classic: {
+    badge: 'Clássico',
+    title: 'Linhas limpas e foco em credibilidade',
+    description:
+      'Layout com blocos claros, barra lateral minimalista e tipografia marcada para deixar informações bem alinhadas.',
+    gradient: 'linear-gradient(135deg, #f8fafc, #dbeafe)',
+    accent: '#0f172a',
+    bullets: [
+      'Card branco com cantos arredondados',
+      'Coluna lateral com destaques e specs',
+      'QR e detalhes bem equilibrados'
+    ]
+  },
+  vibrant: {
+    badge: 'Vibrante',
+    title: 'Cores vivas e energia editorial',
+    description:
+      'Painéis coloridos com vinhetas graduadas, fontes modernas e blocos curvos para valorizar qualquer produto.',
+    gradient: 'linear-gradient(135deg, #021f4d, #8c1aff)',
+    accent: '#ffaf0b',
+    bullets: [
+      'Topo com degradê e tipografia em branco',
+      'Seções coloridas por card',
+      'Miniatura e QR em destaque'
+    ]
+  },
+  modern: {
+    badge: 'Moderno',
+    title: 'Editorial com camadas e elementos circulares',
+    description:
+      'Fundo escuro elegante, moldura com efeitos de margem e círculos para múltiplas imagens e detalhes refinados.',
+    gradient: 'linear-gradient(135deg, #030712, #1348b5)',
+    accent: '#ffd166',
+    bullets: [
+      'Frame azul profundo com eixo central',
+      'Círculos sobrepostos com thumbnails',
+      'Texto em blocos e QR clean'
+    ]
+  }
+};
+
+async function drawVibrantCatalog({
+  doc,
+  margin,
+  pageWidth,
+  pageHeight,
+  sellerDisplayName,
+  selectedProductsForCatalog
+}) {
+  doc.setFillColor(12, 63, 138);
+  doc.rect(0, 0, pageWidth, 140, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(36);
+  doc.setTextColor(255);
+  doc.text('SaleDay', margin + 8, 56);
+  doc.setFontSize(16);
+  doc.text('Catálogo SaleDay · Inspiração global', margin + 8, 82);
+  doc.setFontSize(10);
+  doc.setTextColor(224, 231, 255);
+  doc.text('Estilo editorial para todo tipo de lançamento em destaque', margin + 8, 102);
+
+  let cursorY = 160;
+  for (const [index, product] of selectedProductsForCatalog.entries()) {
+    const palette = VIBRANT_PALETTE[index % VIBRANT_PALETTE.length];
+    const cardHeight = 200;
+    const cardWidth = pageWidth - margin * 2;
+    if (cursorY + cardHeight > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+    }
+
+    doc.setFillColor(...palette.card);
+    doc.roundedRect(margin, cursorY, cardWidth, cardHeight, 18, 18, 'F');
+    doc.setFillColor(...palette.accent);
+    doc.rect(margin, cursorY, cardWidth, 36, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(...palette.text);
+    const title = (product.title || 'Produto SaleDay').trim();
+    doc.text(title, margin + 16, cursorY + 24, {
+      maxWidth: cardWidth - 32
+    });
+
+    const priceLabel =
+      product.price != null
+        ? formatProductPrice(product.price, product.country || 'BR')
+        : 'Preço a combinar';
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text(priceLabel, margin + 16, cursorY + 46);
+
+    const imageWidth = 130;
+    const imageHeight = 130;
+    const imageX = margin + cardWidth - imageWidth - 20;
+    const imageY = cursorY + 50;
+    const productImageUrl =
+      (Array.isArray(product.image_urls) && product.image_urls[0]) ||
+      product.image_url ||
+      '';
+    if (productImageUrl) {
+      const productImageData = await fetchImageAsDataUrl(productImageUrl);
+      if (productImageData) {
+        doc.addImage(productImageData, 'PNG', imageX, imageY, imageWidth, imageHeight);
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(imageX, imageY, imageWidth, imageHeight, 'F');
+      }
+    } else {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(imageX, imageY, imageWidth, imageHeight, 'F');
+    }
+
+    let textY = cursorY + 78;
+    doc.setFontSize(11);
+    doc.setTextColor(255);
+    const specs = buildProductSpecEntries(product);
+    specs.slice(0, 4).forEach((spec) => {
+      doc.text(`${spec.label}: ${spec.value}`, margin + 16, textY, {
+        maxWidth: cardWidth - imageWidth - 60
+      });
+      textY += 12;
+    });
+
+    const description = product.description?.trim();
+    if (description) {
+      const descriptionLines = doc.splitTextToSize(description, cardWidth - imageWidth - 60);
+      descriptionLines.slice(0, 2).forEach((line) => {
+        doc.text(line, margin + 16, textY, {
+          maxWidth: cardWidth - imageWidth - 60
+        });
+        textY += 10;
+      });
+    }
+
+    try {
+      const productUrl = `${window.location.origin}/product/${product.id}`;
+      const qrDataUrl = await QRCode.toDataURL(productUrl, { width: 64, margin: 0 });
+      const qrX = margin + 16;
+      const qrY = cursorY + cardHeight - 80;
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, 64, 64);
+    } catch {
+      // ignore
+    }
+
+    cursorY += cardHeight + 18;
+  }
+
+  const footerY = pageHeight - margin - 70;
+  doc.setFillColor(27, 35, 69);
+  doc.roundedRect(margin, footerY, pageWidth - margin * 2, 60, 12, 12, 'F');
+  doc.setFontSize(12);
+  doc.setTextColor(255);
+  doc.text('SaleDay · Cores vivas, negócios reais', margin + 16, footerY + 28);
+}
+
+async function drawModernCatalog({
+  doc,
+  margin,
+  pageWidth,
+  pageHeight,
+  sellerDisplayName,
+  selectedProductsForCatalog
+}) {
+  let firstPage = true;
+  for (const product of selectedProductsForCatalog) {
+    if (!firstPage) {
+      doc.addPage();
+    }
+    firstPage = false;
+
+    doc.setFillColor(8, 14, 36);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    const frameInset = margin + 12;
+    doc.setFillColor(11, 42, 101);
+    doc.roundedRect(frameInset, frameInset, pageWidth - frameInset * 2, pageHeight - frameInset * 2, 36, 36, 'F');
+    doc.setFillColor(16, 88, 168);
+    doc.roundedRect(frameInset + 8, frameInset + 12, pageWidth - frameInset * 2 - 16, 140, 28, 28, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(34);
+    doc.setTextColor(255, 214, 0);
+    doc.text('SaleDay', frameInset + 20, frameInset + 62);
+    doc.setFontSize(14);
+    doc.setTextColor(230, 233, 244);
+    doc.text('Catálogo exclusivo', frameInset + 20, frameInset + 86);
+    doc.setFontSize(10);
+    doc.setTextColor(194, 201, 218);
+    doc.text(sellerDisplayName, frameInset + 20, frameInset + 104);
+
+    const heroY = frameInset + 120;
+    const heroHeight = 280;
+    const heroWidth = pageWidth - frameInset * 2 - 40;
+    const heroImageUrl =
+      (Array.isArray(product.image_urls) && product.image_urls[0]) ||
+      product.image_url ||
+      '';
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(frameInset + 18, heroY, heroWidth, heroHeight, 32, 32, 'F');
+    if (heroImageUrl) {
+      const heroImage = await fetchImageAsDataUrl(heroImageUrl);
+      if (heroImage) {
+        doc.addImage(
+          heroImage,
+          'PNG',
+          frameInset + 18,
+          heroY,
+          heroWidth,
+          heroHeight
+        );
+      } else {
+        doc.setFillColor(229, 232, 238);
+        doc.roundedRect(frameInset + 18, heroY, heroWidth, heroHeight, 32, 32, 'F');
+      }
+    }
+
+    const circleCenters = [
+      { x: frameInset + heroWidth - 40, y: heroY + 60, r: 56 },
+      { x: frameInset + heroWidth - 80, y: heroY + heroHeight - 90, r: 48 },
+      { x: frameInset + heroWidth + 10, y: heroY + heroHeight / 2, r: 38 }
+    ];
+    const otherImages =
+      Array.isArray(product.image_urls) && product.image_urls.length > 1
+        ? product.image_urls.slice(1)
+        : [];
+    for (const [index, circle] of circleCenters.entries()) {
+      doc.setFillColor(255, 255, 255);
+      doc.circle(circle.x, circle.y, circle.r, 'F');
+      const thumbUrl = otherImages[index];
+      if (thumbUrl) {
+        doc.setFillColor(238, 242, 248);
+        doc.circle(circle.x, circle.y, circle.r - 6, 'F');
+        const smallImage = await fetchImageAsDataUrl(thumbUrl);
+        if (smallImage) {
+          doc.addImage(
+            smallImage,
+            'PNG',
+            circle.x - (circle.r - 6),
+            circle.y - (circle.r - 6),
+            (circle.r - 6) * 2,
+            (circle.r - 6) * 2
+          );
+        }
+      }
+    }
+
+    const headlineY = heroY + heroHeight + 40;
+    doc.setFontSize(22);
+    doc.setTextColor(255);
+    doc.text((product.title || 'Produto SaleDay').trim(), frameInset + 26, headlineY);
+
+    const priceLabel =
+      product.price != null
+        ? formatProductPrice(product.price, product.country || 'BR')
+        : 'Preço sob consulta';
+    doc.setFillColor(255, 214, 0);
+    doc.roundedRect(frameInset + 26, headlineY + 16, 220, 32, 16, 16, 'F');
+    doc.setFontSize(16);
+    doc.setTextColor(8, 14, 36);
+    doc.text(priceLabel, frameInset + 36, headlineY + 38);
+
+    const description = product.description?.trim();
+    const descStartY = headlineY + 70;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(220, 226, 237);
+    if (description) {
+      const descriptionLines = doc.splitTextToSize(description, heroWidth - 20);
+      descriptionLines.slice(0, 5).forEach((line, index) => {
+        doc.text(line, frameInset + 26, descStartY + index * 14, {
+          maxWidth: heroWidth - 40
+        });
+      });
+    }
+
+    const specs = buildProductSpecEntries(product);
+    const featureY = descStartY + 90;
+    doc.setFontSize(11);
+    doc.setTextColor(243, 178, 68);
+    doc.text('Recursos em destaque', frameInset + 26, featureY);
+    doc.setFontSize(11);
+    doc.setTextColor(235, 239, 247);
+    specs.slice(0, 5).forEach((spec, index) => {
+      const y = featureY + 18 + index * 12;
+      doc.text(`• ${spec.label}: ${spec.value}`, frameInset + 26, y, {
+        maxWidth: heroWidth - 40
+      });
+    });
+
+    const qrSize = 68;
+    const qrX = pageWidth - margin - qrSize;
+    const qrY = pageHeight - margin - qrSize - 20;
+    try {
+      const productUrl = `${window.location.origin}/product/${product.id}`;
+      const qrDataUrl = await QRCode.toDataURL(productUrl, { width: qrSize, margin: 0 });
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      doc.setFontSize(9);
+      doc.setTextColor(104, 113, 138);
+      doc.text('Escaneie para visualizar', qrX + qrSize / 2, qrY - 6, {
+        align: 'center'
+      });
+    } catch {
+      // ignore
+    }
+
+    doc.setFontSize(10);
+    doc.setTextColor(172, 182, 204);
+    doc.text(
+      'Compartilhe este catálogo SaleDay com clientes em potencial.',
+      frameInset + 26,
+      pageHeight - margin - 26
+    );
+  }
+}
+
 export default function SellerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -54,6 +704,8 @@ export default function SellerProfile() {
   const [deletingReviewId, setDeletingReviewId] = useState(null);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const shareMenuRef = useRef(null);
+  const [catalogSelection, setCatalogSelection] = useState([]);
+  const [generatingCatalog, setGeneratingCatalog] = useState(false);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -108,6 +760,93 @@ export default function SellerProfile() {
   const purchasesCount = Number.isFinite(Number(seller?.purchase_count))
     ? Number(seller.purchase_count)
     : 0;
+  const sellerDisplayName = seller?.username || 'Vendedor SaleDay';
+  const selectedProductsForCatalog = useMemo(() => {
+    if (!catalogSelection.length) return [];
+    const ids = new Set(catalogSelection);
+    return products.filter((product) => product?.id && ids.has(String(product.id)));
+  }, [catalogSelection, products]);
+  const catalogSelectionCount = catalogSelection.length;
+  const isCatalogReady = selectedProductsForCatalog.length > 0;
+  const [catalogStyle, setCatalogStyle] = useState('premium');
+  const [catalogPreviewOpen, setCatalogPreviewOpen] = useState(false);
+  const [previewCatalogStyle, setPreviewCatalogStyle] = useState('premium');
+
+  const handleGenerateCatalog = useCallback(async () => {
+    if (selectedProductsForCatalog.length === 0) {
+      toast.error('Selecione ao menos um produto para gerar o catálogo.');
+      return;
+    }
+    if (typeof window === 'undefined') {
+      toast.error('Não foi possível gerar o catálogo neste ambiente.');
+      return;
+    }
+    setGeneratingCatalog(true);
+    try {
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 30;
+      const props = {
+        doc,
+        margin,
+        pageWidth,
+        pageHeight,
+        sellerDisplayName,
+        selectedProductsForCatalog
+      };
+      if (catalogStyle === 'classic') {
+        await drawClassicCatalog(props);
+      } else if (catalogStyle === 'vibrant') {
+        await drawVibrantCatalog(props);
+      } else if (catalogStyle === 'modern') {
+        await drawModernCatalog(props);
+      } else {
+        await drawPremiumCatalog(props);
+      }
+      const safeName = (
+        (sellerDisplayName || 'SaleDay')
+          .replace(/\s+/g, '_')
+          .replace(/[^a-zA-Z0-9-_]/g, '') || 'SaleDay'
+      );
+      doc.save(`${safeName}-catalogo.pdf`);
+      toast.success('Catálogo gerado com sucesso.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Não foi possível gerar o catálogo.');
+    } finally {
+      setGeneratingCatalog(false);
+    }
+  }, [
+    catalogStyle,
+    selectedProductsForCatalog,
+    sellerDisplayName
+  ]);
+
+  const toggleProductSelection = useCallback((productId) => {
+    if (!productId) return;
+    const normalizedId = String(productId);
+    setCatalogSelection((prev) => {
+      if (prev.includes(normalizedId)) {
+        return prev.filter((id) => id !== normalizedId);
+      }
+      return [...prev, normalizedId];
+    });
+  }, []);
+
+  const handlePreviewStyleSelect = useCallback((styleKey) => {
+    setPreviewCatalogStyle(styleKey);
+    setCatalogStyle(styleKey);
+  }, []);
+
+  const openCatalogPreview = useCallback(() => {
+    setPreviewCatalogStyle(catalogStyle);
+    setCatalogPreviewOpen(true);
+  }, [catalogStyle]);
+
+  const closeCatalogPreview = useCallback(() => {
+    setCatalogPreviewOpen(false);
+  }, []);
 
   // carregar vendedor + produtos
   useEffect(() => {
@@ -222,6 +961,21 @@ export default function SellerProfile() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [shareMenuOpen]);
+
+  useEffect(() => {
+    setPreviewCatalogStyle(catalogStyle);
+  }, [catalogStyle]);
+
+  useEffect(() => {
+    if (!catalogPreviewOpen) return undefined;
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') {
+        closeCatalogPreview();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [catalogPreviewOpen, closeCatalogPreview]);
 
   const reloadSellerProfile = useCallback(async () => {
     try {
@@ -391,7 +1145,6 @@ export default function SellerProfile() {
   };
   const shareLogoSrc = '/logo-saleday.png';
 
-  const sellerDisplayName = seller?.username || 'Vendedor SaleDay';
   const profileUrl = seller?.id
     ? typeof window === 'undefined'
       ? `/users/${seller.id}`
@@ -685,54 +1438,125 @@ export default function SellerProfile() {
           </header>
 
         {/* BARRA DE RESUMO */}
-<div className="bg-white border-t border-slate-200 px-3 py-3 shadow-sm w-full min-h-[110px]">
-  <div className="grid grid-cols-4 gap-2 w-full">
+        <div className="bg-white border-t border-slate-200 px-3 py-3 shadow-sm w-full min-h-[110px]">
+          <div className="grid grid-cols-4 gap-2 w-full">
 
-    {/* PUBLICAÇÕES */}
-    <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-      <span className="text-sm font-extrabold text-blue-700 leading-none">
-        {products.length}
-      </span>
-      <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-        {products.length === 1 ? 'Publicação' : 'Publicações'}
-      </span>
-    </div>
+            {/* PUBLICAÇÕES */}
+            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
+              <span className="text-sm font-extrabold text-blue-700 leading-none">
+                {products.length}
+              </span>
+              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
+                {products.length === 1 ? 'Publicação' : 'Publicações'}
+              </span>
+            </div>
 
-    {/* NOTA MÉDIA */}
-    <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-      <span className="text-sm font-extrabold text-yellow-600 leading-none">
-        {hasRatings ? avgRating.toFixed(1) : '—'}
-      </span>
-      <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-        Nota média
-      </span>
-    </div>
+            {/* NOTA MÉDIA */}
+            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
+              <span className="text-sm font-extrabold text-yellow-600 leading-none">
+                {hasRatings ? avgRating.toFixed(1) : '—'}
+              </span>
+              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
+                Nota média
+              </span>
+            </div>
 
-    {/* VENDAS */}
-    <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-      <span className="text-sm font-extrabold text-green-600 leading-none">
-        {salesCount}
-      </span>
-      <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-        {salesCount === 1 ? 'Venda' : 'Vendas'}
-      </span>
-    </div>
+            {/* VENDAS */}
+            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
+              <span className="text-sm font-extrabold text-green-600 leading-none">
+                {salesCount}
+              </span>
+              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
+                {salesCount === 1 ? 'Venda' : 'Vendas'}
+              </span>
+            </div>
 
-    {/* COMPRAS */}
-    <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-      <span className="text-sm font-extrabold text-blue-600 leading-none">
-        {purchasesCount}
-      </span>
-      <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-        {purchasesCount === 1 ? 'Compra' : 'Compras'}
-      </span>
-    </div>
+            {/* COMPRAS */}
+            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
+              <span className="text-sm font-extrabold text-blue-600 leading-none">
+                {purchasesCount}
+              </span>
+              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
+                {purchasesCount === 1 ? 'Compra' : 'Compras'}
+              </span>
+            </div>
 
-  </div>
-  <p className="mt-3 text-[11px] text-slate-500 text-left">
-    Perfil SaleDay · Negocie com segurança, sempre dentro da plataforma.
-  </p>
-</div>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500 text-left">
+            Perfil SaleDay · Negocie com segurança, sempre dentro da plataforma.
+          </p>
+        </div>
+
+
+        {isSelf && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={openCatalogPreview}
+                className="flex-1 min-w-[210px] flex flex-col items-start rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-4 py-3 text-left text-white shadow-lg transition hover:from-slate-800 hover:to-slate-700 focus-visible:outline-none focus-visible:ring focus-visible:ring-blue-400"
+              >
+                <p className="text-[10px] uppercase tracking-wide text-blue-200">
+                  Catálogo SaleDay
+                </p>
+                <p className="mt-1 text-lg font-semibold leading-snug text-white">
+                  {catalogSelectionCount} produto{catalogSelectionCount === 1 ? '' : 's'}
+                </p>
+                <p className="text-[11px] text-blue-100">
+                  Visualize os modelos e escolha a identidade ideal.
+                </p>
+              </button>
+              <button
+                type="button"
+                className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-wider transition ${
+                  isCatalogReady
+                    ? 'bg-slate-900 text-white shadow-sm hover:bg-slate-800'
+                    : 'border border-slate-200 bg-white text-slate-500 cursor-not-allowed'
+                }`}
+                disabled={!isCatalogReady || generatingCatalog}
+                onClick={handleGenerateCatalog}
+              >
+                {generatingCatalog ? 'Gerando catálogo...' : 'Gerar meu catálogo SaleDay'}
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+              {CATALOG_STYLE_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setCatalogStyle(option.key)}
+                  className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                    catalogStyle === option.key
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {isCatalogReady && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-600">
+                {selectedProductsForCatalog.slice(0, 5).map((product) => (
+                  <span
+                    key={product.id}
+                    className="max-w-[13rem] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600 shadow-sm"
+                  >
+                    {product.title}
+                  </span>
+                ))}
+                {selectedProductsForCatalog.length > 5 && (
+                  <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    +{selectedProductsForCatalog.length - 5} outros
+                  </span>
+                )}
+              </div>
+            )}
+            <p className="mt-2 text-[10px] uppercase tracking-wide text-slate-400">
+              Adicione os produtos acima e depois gere o catálogo com a identidade SaleDay.
+            </p>
+          </div>
+        )}
 
 
           {/* GRID / COMENTÁRIOS */}
@@ -788,6 +1612,9 @@ export default function SellerProfile() {
                     {products.map((p) => {
                       const img = p.image_urls?.[0] || p.image_url || '';
                       const free = isProductFree(p);
+                      const normalizedProductId = p.id ? String(p.id) : '';
+                      const isSelectedForCatalog =
+                        normalizedProductId && catalogSelection.includes(normalizedProductId);
 
                       return (
                         <Link
@@ -837,7 +1664,23 @@ export default function SellerProfile() {
                             <p className="text-[11px] text-slate-500 truncate">
                               {[p.city, p.state].filter(Boolean).join(' · ') || 'Local não informado'}
                             </p>
-                            {!isSelf && (
+                            {isSelf ? (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  toggleProductSelection(p.id);
+                                }}
+                                className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                                  isSelectedForCatalog
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600 shadow-sm'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                }`}
+                              >
+                                {isSelectedForCatalog ? 'Remover do catálogo' : 'Adicionar ao catálogo'}
+                              </button>
+                            ) : (
                               <button
                                 type="button"
                                 className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition"
@@ -1019,6 +1862,131 @@ export default function SellerProfile() {
       </section>
 
       {/* modal de avaliação */}
+      {catalogPreviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity"
+            onClick={closeCatalogPreview}
+          />
+          <div
+            className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-white/40 bg-white/95 p-6 shadow-2xl backdrop-blur-lg"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                  Catálogo SaleDay
+                </p>
+                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                  {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  {CATALOG_PREVIEW_META[previewCatalogStyle]?.description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCatalogPreview}
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:bg-slate-50"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              {CATALOG_STYLE_OPTIONS.map((option) => {
+                const meta = CATALOG_PREVIEW_META[option.key];
+                if (!meta) return null;
+                const selected = option.key === previewCatalogStyle;
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => handlePreviewStyleSelect(option.key)}
+                    className={`inline-flex flex-col items-center gap-1 rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-wide transition ${
+                      selected
+                        ? 'border-slate-900 text-white shadow-lg'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-500'
+                    }`}
+                    style={
+                      selected
+                        ? { backgroundImage: meta.gradient, backgroundSize: '220%' }
+                        : undefined
+                    }
+                  >
+                    <span className="text-[10px] text-inherit">{option.label}</span>
+                    <span className="text-[9px] text-inherit">{meta.badge}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div
+                className="rounded-3xl shadow-xl"
+                style={{
+                  backgroundImage: CATALOG_PREVIEW_META[previewCatalogStyle]?.gradient,
+                  backgroundSize: 'cover'
+                }}
+              >
+                <div className="p-6 text-white">
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/70">
+                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.badge}
+                  </p>
+                  <h4 className="mt-2 text-2xl font-semibold">
+                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
+                  </h4>
+                  <p className="mt-3 text-sm text-white/80 leading-relaxed">
+                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.description}
+                  </p>
+                </div>
+                <div className="p-6">
+                  <div className="h-32 rounded-2xl bg-white/20" />
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="h-16 rounded-2xl bg-white/30" />
+                    <div className="h-16 rounded-2xl bg-white/30" />
+                    <div className="h-16 rounded-2xl bg-white/30" />
+                  </div>
+                </div>
+                <div className="p-6 border-t border-white/10 text-sm text-white/90 space-y-2">
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-white/70">
+                    Recursos marcantes
+                  </p>
+                  <ul className="space-y-1">
+                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.bullets.map((bullet) => (
+                      <li key={bullet} className="flex items-center gap-2 text-[13px] text-white/90">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-white" />
+                        {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                  Pré-visualização breve
+                </p>
+                <div className="mt-4 space-y-3">
+                  <p className="text-lg font-semibold text-slate-900">
+                    {CATALOG_PREVIEW_META[previewCatalogStyle]?.title}
+                  </p>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    Verifique cores, estruturas e a assinatura SaleDay antes de gerar o arquivo final.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePreviewStyleSelect(previewCatalogStyle)}
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-slate-800"
+                >
+                  Usar este modelo
+                </button>
+                <p className="mt-4 text-[11px] uppercase tracking-wider text-slate-400">
+                  Clique fora do card para fechar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {rateOpen && (
         <div className="ig-rate-overlay">
           <div className="ig-rate-sheet">
