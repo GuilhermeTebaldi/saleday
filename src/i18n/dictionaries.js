@@ -116,6 +116,7 @@ const ENTRIES = [
   { key: 'E-mail', en: 'Email', es: 'Correo electrónico', it: 'Email' , ja: 'メール' },
   { key: 'Senha', en: 'Password', es: 'Contraseña', it: 'Password' , ja: 'パスワード' },
   { key: 'Crie uma senha', en: 'Create a password', es: 'Crea una contraseña', it: 'Crea una password' , ja: 'パスワードを作成してください' },
+  { key: 'Ver', en: 'View', es: 'Ver', it: 'Visualizza' , ja: '見る' },
   { key: 'Mostrar', en: 'Show', es: 'Mostrar', it: 'Mostra' , ja: '表示' },
   { key: 'Ocultar', en: 'Hide', es: 'Ocultar', it: 'Nascondi' , ja: '非表示' },
   { key: 'País de origem', en: 'Country of origin', es: 'País de origen', it: 'Paese di origine' , ja: '出身国' },
