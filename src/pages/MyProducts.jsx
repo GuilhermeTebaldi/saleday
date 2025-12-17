@@ -222,17 +222,21 @@ export default function MyProducts() {
             const buyerInfo = buyers[product.id];
             const priceLabel = freeTag ? 'Grátis' : getProductPriceLabel(product);
             const imageSource = isValidImageSource(mainImage) ? mainImage : null;
-            window.logOverlayError?.({
-              message: 'render trace',
-              meta: {
-                productId: product.id,
-                title: product.title,
-                mainImage,
-                hasBuyer: !!buyerInfo,
-                buyerId: buyerInfo?.id,
-                formattedPrice: priceLabel
-              }
-            });
+            if (typeof window !== 'undefined') {
+              setTimeout(() => {
+                window.logOverlayError?.({
+                  message: 'render trace',
+                  meta: {
+                    productId: product.id,
+                    title: product.title,
+                    mainImage,
+                    hasBuyer: !!buyerInfo,
+                    buyerId: buyerInfo?.id,
+                    formattedPrice: priceLabel
+                  }
+                });
+              }, 0);
+            }
 
             return (
             <article
