@@ -195,6 +195,10 @@ export default function MyProducts() {
         const formattedPrice = MOBILE_DEBUG_MODE
           ? 'Preço desativado em debug'
           : formatProductPrice(product.price, product.country);
+        const isValidImage =
+          typeof mainImage === 'string' &&
+          mainImage.trim().length > 0 &&
+          (mainImage.startsWith('http') || mainImage.startsWith('/'));
         console.groupCollapsed(`${logPrefix} product ${product.id}`);
         console.log('title', product.title);
         console.log('mainImage', mainImage);
@@ -211,10 +215,20 @@ export default function MyProducts() {
           <article key={product.id} className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
             <div className="relative">
               {shouldRenderImages ? (
-                mainImage ? (
-                  <img src={mainImage} alt={product.title} className="my-product-card__image w-full h-44 object-cover" />
+                isValidImage ? (
+                  <img
+                    src={mainImage}
+                    alt={product.title || 'Produto'}
+                    className="my-product-card__image w-full h-44 object-cover"
+                    onError={(event) => {
+                      console.error('[MyProducts] image load error', mainImage);
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
-                  <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">Sem imagem</div>
+                  <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
+                    Sem imagem
+                  </div>
                 )
               ) : (
                 <div className="my-product-card__placeholder w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
