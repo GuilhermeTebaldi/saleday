@@ -166,12 +166,31 @@ export default function MyProducts() {
 
   const handleHardReset = () => {
     if (typeof window === 'undefined') return;
+    window.logOverlayError?.({
+      message: 'reset acionado',
+      meta: {
+        productsLength: safeProducts.length,
+        buyersCount: Object.keys(buyers).length,
+        tokenExistente: !!token
+      }
+    });
     localStorage.clear();
     if ('caches' in window) {
       caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
     }
     window.location.reload();
   };
+
+  useEffect(() => {
+    window.logOverlayError?.({
+      message: 'checagem MyProducts',
+      meta: {
+        productsCount: safeProducts.length,
+        buyersCount: Object.keys(buyers).length,
+        tokenExistente: !!token
+      }
+    });
+  }, [safeProducts.length, buyers, token]);
 
   if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
   if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
@@ -203,10 +222,21 @@ export default function MyProducts() {
             const buyerInfo = buyers[product.id];
             const priceLabel = freeTag ? 'Grátis' : getProductPriceLabel(product);
             const imageSource = isValidImageSource(mainImage) ? mainImage : null;
+            window.logOverlayError?.({
+              message: 'render trace',
+              meta: {
+                productId: product.id,
+                title: product.title,
+                mainImage,
+                hasBuyer: !!buyerInfo,
+                buyerId: buyerInfo?.id,
+                formattedPrice: priceLabel
+              }
+            });
 
             return (
               <article
-                key={product.id ?? `product-${index}`}
+                key={product.id ? `product-${product.id}` : `product-${index}`}
                 className="my-product-card border rounded bg-white shadow-sm overflow-hidden"
               >
                 <div className="relative">
