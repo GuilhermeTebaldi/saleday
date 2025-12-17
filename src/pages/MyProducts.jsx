@@ -23,7 +23,7 @@ export default function MyProducts() {
   const abortFetchRef = useRef(() => {});
   const fetchInFlightRef = useRef(false);
   const logPrefix = '[MyProducts]';
-  const MOBILE_DEBUG_MODE = false;
+  const MOBILE_DEBUG_MODE = true;
 
   const shouldRenderImages = !MOBILE_DEBUG_MODE;
   const shouldRenderBuyerInfo = !MOBILE_DEBUG_MODE;
@@ -192,6 +192,15 @@ export default function MyProducts() {
           .filter(Boolean)
           .join(', ');
         const buyerInfo = buyers[product.id];
+        const formattedPrice = MOBILE_DEBUG_MODE
+          ? 'Preço desativado em debug'
+          : formatProductPrice(product.price, product.country);
+        console.groupCollapsed(`${logPrefix} product ${product.id}`);
+        console.log('title', product.title);
+        console.log('mainImage', mainImage);
+        console.log('buyerInfo', buyerInfo);
+        console.log('formattedPrice', formattedPrice);
+        console.groupEnd();
         console.log(`${logPrefix} rendering product`, {
           id: product.id,
           title: product.title,
@@ -219,10 +228,10 @@ export default function MyProducts() {
                 </span>
               )}
             </div>
-            <div className="my-product-card__body p-3 space-y-1">
+              <div className="my-product-card__body p-3 space-y-1">
               <h3 className="font-semibold line-clamp-2">{product.title}</h3>
               <p className={`font-medium ${freeTag ? 'text-emerald-600' : 'text-green-600'}`}>
-                {freeTag ? 'Grátis' : formatProductPrice(product.price, product.country)}
+                {freeTag ? 'Grátis' : formattedPrice}
               </p>
               <div className="text-xs text-gray-500 space-y-1 mt-1">
                 <p>
@@ -250,9 +259,13 @@ export default function MyProducts() {
                 <p className="text-xs text-rose-600">
                   Esse produto foi comprado por{' '}
                   {buyerInfo?.id ? (
-                    <Link className="text-rose-500 underline" to={`/users/${buyerInfo.id}`}>
-                      {buyerInfo.name}
-                    </Link>
+                    MOBILE_DEBUG_MODE ? (
+                      <span className="text-rose-500 underline">{buyerInfo.name}</span>
+                    ) : (
+                      <Link className="text-rose-500 underline" to={`/users/${buyerInfo.id}`}>
+                        {buyerInfo.name}
+                      </Link>
+                    )
                   ) : (
                     buyerInfo?.name || 'um comprador'
                   )}
@@ -262,12 +275,18 @@ export default function MyProducts() {
               <div className="flex items-center gap-2 pt-2">
                 {!isSold ? (
                   <>
-                    <Link
-                      to={`/edit-product/${product.id}`}
-                      className="my-product-card__edit px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
-                    >
-                      Editar
-                    </Link>
+                    {!MOBILE_DEBUG_MODE ? (
+                      <Link
+                        to={`/edit-product/${product.id}`}
+                        className="my-product-card__edit px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+                      >
+                        Editar
+                      </Link>
+                    ) : (
+                      <span className="my-product-card__edit px-3 py-1.5 text-sm border rounded text-gray-500">
+                        Editar (debug)
+                      </span>
+                    )}
                     <button
                       onClick={() => markAsSold(product.id)}
                       className="px-3 py-1.5 text-sm rounded bg-gray-800 text-white hover:bg-gray-900"
