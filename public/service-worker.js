@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saleday-cache-v3';
+const CACHE_NAME = 'saleday-cache-v4';
 const FALLBACK_URL = '/index.html';
 const FILES_TO_CACHE = ['/', '/index.html'];
 
@@ -26,7 +26,11 @@ const shouldSkipCache = (request) => {
   try {
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return true;
-    return url.pathname.startsWith('/api');
+    if (url.pathname.startsWith('/api')) return true;
+    const dest = request.destination || '';
+    if (['script', 'style', 'image', 'font'].includes(dest)) return true;
+    if (/\.(?:js|css|map|json)$/.test(url.pathname)) return true;
+    return false;
   } catch {
     return true;
   }
