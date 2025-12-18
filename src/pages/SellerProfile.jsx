@@ -131,9 +131,28 @@ async function drawPremiumCatalog({
     doc.roundedRect(margin, cursorY, cardWidth, cardHeight, 16, 16, 'F');
 
     const imageWidth = 150;
-    const imageHeight = cardHeight - 70;
+    const priceLabel = translatePriceLabel(product, translate);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    const initialPriceLines = doc.splitTextToSize(
+      priceLabel,
+      cardWidth - imageWidth - 40
+    );
+    const multipleLines = initialPriceLines.length > 1;
+    const priceFontSize = multipleLines ? 14 : 16;
+    doc.setFontSize(priceFontSize);
+    const priceLines = doc.splitTextToSize(
+      priceLabel,
+      cardWidth - imageWidth - 40
+    ).slice(0, 2);
+    const priceLineSpacing = priceFontSize + 4;
+    const priceBlockHeight = priceLines.length * priceLineSpacing;
+    const baseHeaderHeight = 42;
+    const headerHeight = baseHeaderHeight + Math.max(0, priceBlockHeight - 18);
+    const headerDelta = headerHeight - baseHeaderHeight;
+    const imageHeight = Math.max(cardHeight - 70 - headerDelta, 60);
     const imageX = margin + cardWidth - imageWidth - 20;
-    const imageY = cursorY + 55;
+    const imageY = cursorY + 55 + headerDelta;
     const productImageUrl =
       (Array.isArray(product.image_urls) && product.image_urls[0]) ||
       product.image_url ||
@@ -174,7 +193,7 @@ async function drawPremiumCatalog({
     }
 
     doc.setFillColor(12, 97, 168);
-    doc.roundedRect(margin, cursorY, cardWidth, 42, 16, 16, 'F');
+    doc.roundedRect(margin, cursorY, cardWidth, headerHeight, 16, 16, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(255);
@@ -182,15 +201,22 @@ async function drawPremiumCatalog({
     doc.text(title, margin + 16, cursorY + 24, {
       maxWidth: cardWidth - imageWidth - 40
     });
-    const priceLabel = translatePriceLabel(product, translate);
-    doc.setFontSize(16);
+    doc.setFontSize(priceFontSize);
     doc.setTextColor(255, 214, 0);
-    doc.text(priceLabel, margin + cardWidth - imageWidth - 20, cursorY + 26, {
-      maxWidth: cardWidth - imageWidth - 30,
-      align: 'right'
+    const priceRightX = margin + cardWidth - imageWidth - 10;
+    const priceMaxWidth = Math.min(cardWidth - imageWidth - 30, 150);
+    let priceY = Math.max(
+      cursorY + 38,
+      cursorY + headerHeight - 12 - priceBlockHeight
+    );
+    priceLines.forEach((line) => {
+      doc.text(line, priceRightX, priceY, {
+        maxWidth: priceMaxWidth,
+        align: 'right'
+      });
+      priceY += priceLineSpacing;
     });
-
-    let textY = cursorY + 62;
+    let textY = cursorY + headerHeight + 20;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(55, 63, 104);
@@ -353,7 +379,20 @@ async function drawClassicCatalog({
     doc.rect(leftX, contentY, leftW, contentH, 'F');
 
     // price band (top)
-    const bandH = 112;
+    const priceLabel = translatePriceLabel(product, translate);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(28);
+    doc.setTextColor(255);
+    const initialPriceLines = doc.splitTextToSize(priceLabel, leftW - 32);
+    const refinedFontSize = initialPriceLines.length > 1 ? 24 : 28;
+    doc.setFontSize(refinedFontSize);
+    const priceLines = doc
+      .splitTextToSize(priceLabel, leftW - 32)
+      .slice(0, 2);
+    const priceLineHeight = refinedFontSize + 6;
+    const priceBlockHeight = priceLines.length * priceLineHeight;
+    const bandH = Math.max(112, priceBlockHeight + 32);
+
     doc.setFillColor(145, 139, 120);
     doc.rect(leftX, contentY, leftW, bandH, 'F');
 
@@ -380,13 +419,14 @@ async function drawClassicCatalog({
     );
 
     // price big
-    const priceLabel = translatePriceLabel(product, translate);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(28);
     doc.setTextColor(255);
-    const priceLines = doc.splitTextToSize(priceLabel, leftW - 32);
-    doc.text(priceLines[0] || priceLabel, leftX + 16, contentY + 88, {
-      maxWidth: leftW - 32
+    let priceY = contentY + bandH - 12 - priceBlockHeight;
+    priceLines.forEach((line) => {
+      doc.text(line, leftX + 16, priceY, {
+        maxWidth: leftW - 32
+      });
+      priceY += priceLineHeight;
     });
 
     // title + location
