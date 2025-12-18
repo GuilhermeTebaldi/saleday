@@ -7,8 +7,11 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
+import { resolveCurrencyFromCountry } from '../utils/currency.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
+import { getProductPriceLabel } from '../utils/product.js';
+import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
 
@@ -79,6 +82,7 @@ export default function EditProduct() {
     navigate('/my-products', { state: { refreshId: routeRefreshSignal.current } });
   };
   const [form, setForm] = useState(initialFormState);
+  const currencyCode = useMemo(() => resolveCurrencyFromCountry(form.country), [form.country]);
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const previewsRef = useRef(new Set());
@@ -127,15 +131,12 @@ export default function EditProduct() {
           return;
         }
         const images = collectExistingImages(data.image_url, data.image_urls);
-        const isFree = Boolean(data.is_free) || data.price === null || Number(data.price) === 0;
+        const isFree = Boolean(data.is_free);
         setExistingImages(images);
         setForm({
           title: data.title ?? '',
           description: data.description ?? '',
-          price:
-            isFree || data.price === null || data.price === undefined
-              ? ''
-              : String(data.price),
+          price: data.price !== null && data.price !== undefined ? String(data.price) : '',
           category: data.category ?? '',
           city: data.city ?? '',
           country: data.country ?? '',
@@ -178,10 +179,18 @@ export default function EditProduct() {
     };
   }, [id, token]);
 
-  const isValid = useMemo(
-    () => form.title && (form.isFree || form.price),
-    [form.title, form.isFree, form.price]
-  );
+  const isValid = useMemo(() => Boolean(form.title?.trim()), [form.title]);
+
+  const pricePreview = useMemo(() => {
+    if (form.isFree) return 'Grátis';
+    if (!form.price?.trim()) return 'Valor a negociar';
+    const parsed = parsePriceFlexible(form.price);
+    if (!Number.isFinite(parsed)) return 'Valor a negociar';
+    return getProductPriceLabel(
+      { price: parsed, country: form.country },
+      'Valor a negociar'
+    );
+  }, [form.price, form.country, form.isFree]);
 
   const categoryDetailFields = useMemo(
     () => getCategoryDetailFields(form.category),
@@ -196,10 +205,24 @@ export default function EditProduct() {
     });
   }, [form.isFree]);
 
+  useEffect(() => {
+    if (form.isFree) return;
+    setForm((prev) => {
+      const normalized = sanitizePriceInput(prev.price, currencyCode);
+      if (normalized === prev.price) return prev;
+      return { ...prev, price: normalized };
+    });
+  }, [currencyCode, form.isFree]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     if (name === 'year') {
       setForm((prev) => ({ ...prev, year: sanitizeYear(value) }));
+      return;
+    }
+    if (name === 'price') {
+      const normalized = sanitizePriceInput(value, currencyCode);
+      setForm((prev) => ({ ...prev, price: normalized }));
       return;
     }
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -325,8 +348,11 @@ export default function EditProduct() {
       pickup_only: form.pickupOnly ? 'true' : 'false'
     };
 
-    if (!form.isFree && form.price) {
-      payload.price = form.price;
+    if (!form.isFree) {
+      const parsedPrice = parsePriceFlexible(form.price);
+      if (Number.isFinite(parsedPrice)) {
+        payload.price = Number(parsedPrice).toFixed(2);
+      }
     }
 
     const normalizedLinks = buildLinkPayloadEntries(form.links);
@@ -380,7 +406,7 @@ export default function EditProduct() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isValid) {
-      toast.error('Informe um título e o valor ou marque como grátis.');
+      toast.error('Informe um título para atualizar o produto.');
       return;
     }
 
@@ -487,15 +513,18 @@ export default function EditProduct() {
             name="price"
             value={form.price}
             onChange={handleChange}
-            placeholder="Preço"
-            type="number"
-            min="0"
-            step="0.01"
+            placeholder="Valor a negociar"
+            type="text"
+            inputMode="decimal"
             disabled={form.isFree}
-            required={!form.isFree}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
           />
           <span className="text-xs text-gray-500">
-            {form.isFree ? 'Este anúncio será exibido como “Grátis”.' : 'Use ponto para separar os centavos (ex: 1999.99).'}
+            {form.isFree
+              ? 'Este anúncio será exibido como “Grátis”.'
+              : form.price?.trim()
+                ? `Será exibido como: ${pricePreview}`
+                : 'Deixe em branco para mostrar “Valor a negociar”.'}
           </span>
         </div>
 

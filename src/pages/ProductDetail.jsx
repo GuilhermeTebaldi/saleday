@@ -8,9 +8,9 @@ import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
-import formatProductPrice, { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
+import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
-import { isProductFree } from '../utils/product.js';
+import { isProductFree, getProductPriceLabel } from '../utils/product.js';
 import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
 
@@ -716,10 +716,10 @@ export default function ProductDetail() {
       params.set('productTitle', product.title);
     }
     const primaryImage = images?.[0] || product?.image_url || '';
-    const formattedPrice =
-      product?.price != null && product?.country
-        ? formatProductPrice(product.price, product.country)
-        : null;
+    const formattedPrice = getProductPriceLabel({
+      price: product?.price,
+      country: product?.country
+    });
     const locationLabel = [product?.city, product?.state, product?.country]
       .filter(Boolean)
       .join(', ');
@@ -852,16 +852,7 @@ export default function ProductDetail() {
   if (!product) return null;
 
   const isFreeProduct = isProductFree(product);
-  const hasPriceValue =
-    product &&
-    product.price !== null &&
-    product.price !== undefined &&
-    String(product.price).trim() !== '';
-  const priceFmt = isFreeProduct
-    ? 'Grátis'
-    : hasPriceValue
-      ? formatProductPrice(product.price, product.country)
-      : 'Valor a combinar';
+  const priceFmt = getProductPriceLabel(product);
   const propertySpecs = [
     { label: 'Tipo de imóvel', value: product.property_type },
     {

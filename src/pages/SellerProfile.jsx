@@ -7,8 +7,7 @@ import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import { asStars } from '../utils/rating.js';
-import { isProductFree } from '../utils/product.js';
-import formatProductPrice from '../utils/currency.js';
+import { getProductPriceLabel, isProductFree } from '../utils/product.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { localeFromCountry } from '../i18n/localeMap.js';
@@ -84,6 +83,15 @@ function translateSpecLine(translate, spec) {
   }
   return `• ${translatedLabel}`;
 }
+
+const translatePriceLabel = (product, translate) => {
+  if (typeof translate !== 'function') {
+    return getProductPriceLabel(product);
+  }
+  const fallback = translate('Valor a negociar', 'Price upon request');
+  const rawLabel = getProductPriceLabel(product, fallback);
+  return translate(rawLabel, rawLabel);
+};
 
 async function drawPremiumCatalog({
   doc,
@@ -174,10 +182,7 @@ async function drawPremiumCatalog({
     doc.text(title, margin + 16, cursorY + 24, {
       maxWidth: cardWidth - imageWidth - 40
     });
-    const priceLabel =
-      product.price != null
-        ? formatProductPrice(product.price, product.country || 'BR')
-        : translate('Preço a combinar', 'Price upon request');
+    const priceLabel = translatePriceLabel(product, translate);
     doc.setFontSize(16);
     doc.setTextColor(255, 214, 0);
     doc.text(priceLabel, margin + cardWidth - imageWidth - 20, cursorY + 26, {
@@ -375,10 +380,7 @@ async function drawClassicCatalog({
     );
 
     // price big
-    const priceLabel =
-      product.price != null
-        ? formatProductPrice(product.price, product.country || 'BR')
-        : translate('Preço a combinar', 'Price upon request');
+    const priceLabel = translatePriceLabel(product, translate);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
     doc.setTextColor(255);
@@ -801,10 +803,7 @@ async function drawVibrantCatalog({
     }
 
     // preço (pill clean)
-    const priceLabel =
-      product.price != null
-        ? formatProductPrice(product.price, product.country || 'BR')
-        : translate('Preço a combinar', 'Price upon request');
+    const priceLabel = translatePriceLabel(product, translate);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     const priceW = Math.min(safeTextWidth(priceLabel) + 18, titleMaxW);
@@ -1021,10 +1020,7 @@ async function drawModernCatalog({
 
     // ===== left column: title / badges / prices / cards
     const title = ((product.title || 'Produto SaleDay') + '').trim();
-    const priceLabel =
-      product.price != null
-        ? formatProductPrice(product.price, product.country || 'BR')
-        : translate('Preço a combinar', 'Price upon request');
+    const priceLabel = translatePriceLabel(product, translate);
 
     let y = contentTop + 14;
 
@@ -1743,10 +1739,10 @@ export default function SellerProfile() {
       (Array.isArray(product.image_urls) && product.image_urls[0]) ||
       product.image_url ||
       '';
-    const productPrice =
-      product.price != null && product.country
-        ? formatProductPrice(product.price, product.country)
-        : null;
+    const productPrice = getProductPriceLabel({
+      price: product.price,
+      country: product.country
+    });
     const locationLabel = [product.city, product.state, product.country]
       .filter(Boolean)
       .join(', ');

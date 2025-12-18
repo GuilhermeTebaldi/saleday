@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
-import formatProductPrice from '../utils/currency.js';
+import { getProductPriceLabel } from '../utils/product.js';
 import { parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
 import { getUnseenSellerOrderIds, markSellerOrdersSeen } from '../utils/orders.js';
 
@@ -146,8 +146,10 @@ export default function SalesRequests() {
       counterpartName: buyerNameForOrder(order),
       productTitle: order.product_title,
       productImage,
-      productPrice:
-        order.total != null ? formatProductPrice(order.total, order.product_country) : null,
+      productPrice: getProductPriceLabel({
+        price: order.total,
+        country: order.product_country
+      }),
       productLocation: locationLabel
     };
     window.sessionStorage.setItem('saleday:forced-chat', JSON.stringify(forced));
@@ -221,16 +223,18 @@ export default function SalesRequests() {
                 counterpartName: buyerName || '',
                 productTitle: order.product_title,
                 productImage,
-                productPrice:
-                  order.total != null ? formatProductPrice(order.total, order.product_country) : null,
+                productPrice: getProductPriceLabel({
+                  price: order.total,
+                  country: order.product_country
+                }),
                 productLocation: locationLabel
               };
               window.sessionStorage.setItem('saleday:forced-chat', JSON.stringify(forced));
             };
-            const priceDisplay =
-              order.total != null
-                ? formatProductPrice(order.total, order.product_country)
-                : 'Valor a combinar';
+            const priceDisplay = getProductPriceLabel({
+              price: order.total,
+              country: order.product_country
+            });
 
             return (
               <article

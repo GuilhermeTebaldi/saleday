@@ -11,10 +11,9 @@ import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
-import formatProductPrice from '../utils/currency.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { localeFromCountry } from '../i18n/localeMap.js';
-import { isProductFree } from '../utils/product.js';
+import { getProductPriceLabel, isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
 import usePreventDrag from '../hooks/usePreventDrag.js';
@@ -1525,16 +1524,7 @@ export default function Home() {
                 product.updated_at ||
                 '';
               const postedAtLabel = formatPostDate(postTimestamp, homeLocale);
-              const hasPriceValue =
-                product &&
-                product.price !== null &&
-                product.price !== undefined &&
-                String(product.price).trim() !== '';
-              const priceLabel = freeTag
-                ? 'Grátis'
-                : hasPriceValue
-                  ? formatProductPrice(product.price, product.country)
-                  : 'Valor a combinar';
+              const priceLabel = getProductPriceLabel(product);
               
 
               return (
@@ -1732,9 +1722,7 @@ export default function Home() {
                                   isProductFree(product) ? 'is-free' : ''
                                 }`}
                               >
-                                {isProductFree(product)
-                                  ? 'Grátis'
-                                  : formatProductPrice(product.price, product.country)}
+                                {getProductPriceLabel(product)}
                               </p>
                             </div>
                             <button

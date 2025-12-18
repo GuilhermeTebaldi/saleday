@@ -11,6 +11,7 @@ import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
+import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 
 // bounds simples por país
 const BOUNDS = {
@@ -168,77 +169,6 @@ function normalizeCityName(value) {
     })
     .join(' ');
 }
-
-/* ===== Parser de preço flexível (topo, antes do componente) ===== */
-// Trata variações comuns de formatação de preço (pt-BR, en-US e mistos) sem penalizar erros pequenos.
-const parsePriceFlexible = (v) => {
-  if (v == null) return '';
-  const s = String(v).trim();
-  if (!s) return '';
-
-  const normalized = s.replace(/[^\d.,]/g, '');
-  if (!normalized) return '';
-
-  const lastDot = normalized.lastIndexOf('.');
-  const lastComma = normalized.lastIndexOf(',');
-  const lastSepIndex = Math.max(lastDot, lastComma);
-  let decimalSep = null;
-
-  if (lastSepIndex !== -1) {
-    const sepChar = normalized[lastSepIndex];
-    const decimals = normalized.length - lastSepIndex - 1;
-    const digitsAfter = normalized.slice(lastSepIndex + 1);
-    const digitsOnlyAfter = /^\d+$/.test(digitsAfter);
-    const hasBoth = lastDot !== -1 && lastComma !== -1;
-
-    if (digitsOnlyAfter && decimals > 0) {
-      if (decimals <= 2) {
-        decimalSep = sepChar;
-      } else if (decimals === 3 && hasBoth) {
-        decimalSep = sepChar;
-      }
-    }
-
-    if (decimals === 3 && !hasBoth) {
-      decimalSep = null;
-    }
-  }
-
-  let cleaned = normalized;
-  const marker = '<<DECIMAL>>';
-
-  if (decimalSep) {
-    const decimalRegex = new RegExp(`\\${decimalSep}(?=[^\\${decimalSep}]*$)`);
-    cleaned = cleaned.replace(decimalRegex, marker);
-  }
-
-  cleaned = cleaned.replace(/[.,]/g, '');
-  if (decimalSep) cleaned = cleaned.replace(marker, '.');
-
-  if (!cleaned) return '';
-
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : '';
-};
-
-// Aplica máscara monetária ao digitar, inserindo automaticamente milhar/ponto e centavos.
-const sanitizePriceInput = (value, currency) => {
-  if (value == null) return '';
-  const digits = String(value).replace(/\D/g, '');
-  if (!digits) return '';
-  if (/^0+$/.test(digits)) return '';
-
-  const decimalSeparator = currency === 'USD' ? '.' : ',';
-  const thousandSeparator = currency === 'USD' ? ',' : '.';
-  const decimalPlaces = 2;
-  const padded = digits.padStart(decimalPlaces + 1, '0');
-  const integerDigits = padded.slice(0, -decimalPlaces);
-  const decimalDigits = padded.slice(-decimalPlaces);
-  const normalizedInteger = integerDigits.replace(/^0+(?=\d)/, '') || '0';
-  const withThousands = normalizedInteger.replace(/\B(?=(\d{3})+(?!\d))/g, thousandSeparator);
-
-  return `${withThousands}${decimalSeparator}${decimalDigits}`;
-};
 
 // ===== Util para limpar e limitar CEP/ZIP (antes do componente) =====
 const cleanZip = (z, country) => {

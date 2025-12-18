@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import ProductCard from '../components/ProductCard.jsx';
-import formatProductPrice from '../utils/currency.js';
+import { getProductPriceLabel } from '../utils/product.js';
 
 export default function MyProducts() {
   const { token } = useContext(AuthContext);
@@ -28,15 +28,6 @@ export default function MyProducts() {
     typeof url === 'string' &&
     url.trim().length > 0 &&
     /^(https?:\/\/|\/)/i.test(url.trim());
-
-  const getProductPriceLabel = (product) => {
-    try {
-      return formatProductPrice(product?.price, product?.country);
-    } catch (error) {
-      console.error(`${logPrefix} price render failure`, product?.id, error);
-      return 'Valor indisponível';
-    }
-  };
 
   const fetchProducts = useCallback(() => {
     if (!token) return;

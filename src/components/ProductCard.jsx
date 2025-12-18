@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SoldBadge from './SoldBadge.jsx';
-import { isProductFree } from '../utils/product.js';
+import {
+  isProductFree,
+  getProductPriceLabel as getDefaultProductPriceLabel
+} from '../utils/product.js';
 import { buildProductSpecEntries } from '../utils/productSpecs.js';
 
 export default function ProductCard({
@@ -23,7 +26,11 @@ export default function ProductCard({
     const specEntries = buildProductSpecEntries(product);
     const categoryLabel = product.category || 'Não informada';
     const locationLabel = [product.city, product.state, product.country].filter(Boolean).join(', ');
-    const priceLabel = freeTag ? 'Grátis' : getProductPriceLabel(product);
+    const priceFormatter =
+      typeof getProductPriceLabel === 'function'
+        ? getProductPriceLabel
+        : getDefaultProductPriceLabel;
+    const priceLabel = priceFormatter(product);
     const imageSource = isValidImageSource(mainImage) ? mainImage : null;
     const hasToken = !!token;
 
