@@ -852,7 +852,16 @@ export default function ProductDetail() {
   if (!product) return null;
 
   const isFreeProduct = isProductFree(product);
-  const priceFmt = isFreeProduct ? 'Grátis' : formatProductPrice(product.price, product.country);
+  const hasPriceValue =
+    product &&
+    product.price !== null &&
+    product.price !== undefined &&
+    String(product.price).trim() !== '';
+  const priceFmt = isFreeProduct
+    ? 'Grátis'
+    : hasPriceValue
+      ? formatProductPrice(product.price, product.country)
+      : 'Valor a combinar';
   const propertySpecs = [
     { label: 'Tipo de imóvel', value: product.property_type },
     {

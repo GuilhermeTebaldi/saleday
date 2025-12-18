@@ -3,11 +3,12 @@ export const isProductFree = (product) => {
   if (product.is_free) return true;
 
   const price = product.price;
-  if (price === null || price === undefined) return true;
+  if (price === null || price === undefined) return false;
 
   if (typeof price === 'string') {
-    if (price.trim() === '') return true;
-    const numeric = Number(price);
+    const trimmed = price.trim();
+    if (trimmed === '') return false;
+    const numeric = Number(trimmed);
     return Number.isFinite(numeric) && numeric === 0;
   }
 

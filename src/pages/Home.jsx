@@ -1525,6 +1525,16 @@ export default function Home() {
                 product.updated_at ||
                 '';
               const postedAtLabel = formatPostDate(postTimestamp, homeLocale);
+              const hasPriceValue =
+                product &&
+                product.price !== null &&
+                product.price !== undefined &&
+                String(product.price).trim() !== '';
+              const priceLabel = freeTag
+                ? 'Grátis'
+                : hasPriceValue
+                  ? formatProductPrice(product.price, product.country)
+                  : 'Valor a combinar';
               
 
               return (
@@ -1590,9 +1600,7 @@ export default function Home() {
                           freeTag ? 'text-green-600' : 'text-gray-900'
                         }`}
                       >
-                        {freeTag
-                          ? 'Grátis'
-                          : formatProductPrice(product.price, product.country)}
+                        {priceLabel}
                       </p>
                       {cardFacts.length > 0 && (
                       <div className="home-card__facts">

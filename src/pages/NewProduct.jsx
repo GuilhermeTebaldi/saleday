@@ -891,7 +891,8 @@ export default function NewProduct() {
       setServerStatus('queued');
     } catch (error) {
       console.error(error);
-      toast.error('Erro ao publicar produto.');
+      const serverMessage = error?.response?.data?.message;
+      toast.error(serverMessage || 'Erro ao publicar produto.');
       setSending(false);
       resetPublishState();
     }
