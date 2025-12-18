@@ -7,6 +7,8 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
+import LinkListEditor from '../components/LinkListEditor.jsx';
+import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
 
@@ -41,6 +43,7 @@ const initialFormState = {
   jobType: '',
   jobSalary: '',
   jobRequirements: '',
+  links: [],
   isFree: false,
   pickupOnly: false
 };
@@ -160,6 +163,7 @@ export default function EditProduct() {
           jobType: normalizeFieldValue(data.jobType ?? data.job_type),
           jobSalary: normalizeFieldValue(data.jobSalary ?? data.job_salary),
           jobRequirements: normalizeFieldValue(data.jobRequirements ?? data.job_requirements),
+          links: mapStoredLinksToForm(data.links),
           isFree,
           pickupOnly: isFree ? true : Boolean(data.pickup_only)
         });
@@ -324,6 +328,9 @@ export default function EditProduct() {
     if (!form.isFree && form.price) {
       payload.price = form.price;
     }
+
+    const normalizedLinks = buildLinkPayloadEntries(form.links);
+    payload.links = JSON.stringify(normalizedLinks);
 
     return payload;
   };
@@ -606,6 +613,11 @@ export default function EditProduct() {
             Prefira imagens nítidas, com boa iluminação. Você pode manter as fotos atuais, remover alguma ou enviar novas (até {MAX_PRODUCT_PHOTOS} arquivos de 5MB).
           </p>
         </div>
+
+        <LinkListEditor
+          links={form.links}
+          onChange={(links) => setForm((prev) => ({ ...prev, links }))}
+        />
 
         <p className="text-xs text-gray-500">
           Coordenadas: {form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'não definidas'}

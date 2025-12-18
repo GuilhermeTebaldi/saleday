@@ -65,6 +65,24 @@ const getMessageIdentifier = (message) => {
   return `${productField}-${senderField}-${receiverField}-${timestamp}`;
 };
 
+const normalizeProductLinks = (links) => {
+  if (!links) return [];
+  if (Array.isArray(links)) {
+    return links.filter((link) => link && link.url);
+  }
+  if (typeof links === 'string') {
+    try {
+      const parsed = JSON.parse(links);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((link) => link && link.url);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 const formatMessageTimestamp = (value) => {
   if (!value) return '';
   try {
@@ -320,6 +338,8 @@ export default function ProductDetail() {
     }
     return product?.image_url ? [product.image_url] : [];
   }, [product]);
+
+  const detailLinks = useMemo(() => normalizeProductLinks(product?.links), [product?.links]);
 
   useEffect(() => {
     if (activeImageIndex > 0 && activeImageIndex >= images.length) {
@@ -1253,6 +1273,28 @@ export default function ProductDetail() {
         <p className="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-line">
           {product.description || 'Sem descrição disponível.'}
         </p>
+
+        {detailLinks.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <p className="text-sm font-semibold text-gray-700">Links úteis</p>
+            <div className="space-y-2">
+              {detailLinks.map((link, index) => (
+                <a
+                  key={`${link.url ?? 'link'}-${index}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="flex flex-col gap-1 rounded-xl border border-gray-200 bg-white/80 px-3 py-2 text-sm text-gray-800 transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <span className="font-medium text-emerald-600">
+                    {link.label || `Link ${index + 1}`}
+                  </span>
+                  <span className="text-xs text-gray-500 break-all">{link.url}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {specEntries.length > 0 && (
           <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-y-1 md:gap-x-8 mt-2">

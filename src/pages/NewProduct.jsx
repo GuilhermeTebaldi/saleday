@@ -9,6 +9,8 @@ import { formatProductPrice, getCurrencySettings, resolveCurrencyFromCountry } f
 import { COUNTRY_OPTIONS, normalizeCountryCode } from '../data/countries.js';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
+import LinkListEditor from '../components/LinkListEditor.jsx';
+import { buildLinkPayloadEntries } from '../utils/links.js';
 
 // bounds simples por país
 const BOUNDS = {
@@ -91,6 +93,7 @@ const initialFormState = {
   jobType: '',
   jobSalary: '',
   jobRequirements: '',
+  links: [],
   isFree: false,
   pickupOnly: false
 };
@@ -384,7 +387,7 @@ export default function NewProduct() {
       form.country?.trim() &&
       form.city?.trim() &&
       form.zip?.trim() &&
-      (form.isFree || form.price),
+      true,
     [form.title, form.category, form.price, form.isFree, form.country, form.city, form.zip]
   );
   const currencyCode = useMemo(
@@ -497,6 +500,7 @@ export default function NewProduct() {
   const processingActiveIndex = processingStepIndex === -1 ? 0 : processingStepIndex;
   const pricePreview = useMemo(() => {
     if (form.isFree) return 'Grátis';
+    if (!form.price?.trim()) return 'Valor a negociar';
     const parsed = parsePriceFlexible(form.price);
     if (parsed === '' || parsed === null) return null;
     return formatProductPrice(parsed, form.country, { respectPreference: false });
@@ -512,7 +516,6 @@ export default function NewProduct() {
     const missing = [];
     if (!form.title?.trim()) missing.push({ name: 'title', label: 'Título' });
     if (!form.category?.trim()) missing.push({ name: 'category', label: 'Categoria' });
-    if (!form.isFree && !form.price?.trim()) missing.push({ name: 'price', label: 'Preço' });
     if (!form.country?.trim()) missing.push({ name: 'country', label: 'País' });
     if (!form.city?.trim()) missing.push({ name: 'city', label: 'Cidade' });
     if (!form.zip?.trim()) missing.push({ name: 'zip', label: 'CEP/ZIP' });
@@ -807,6 +810,9 @@ export default function NewProduct() {
       }
     }
 
+    const normalizedLinks = buildLinkPayloadEntries(form.links);
+    payload.links = JSON.stringify(normalizedLinks);
+
     return payload;
   }
 
@@ -982,9 +988,8 @@ export default function NewProduct() {
                   setForm((prev) => ({ ...prev, price: sanitized }));
                 }}
                 disabled={form.isFree}
-                required={!form.isFree}
                 inputMode="decimal"
-                className={`${FIELD_BASE_CLASS} ${hasFieldError('price') ? 'ring-2 ring-red-400' : ''}`}
+                className={FIELD_BASE_CLASS}
                 data-new-product-field="price"
                 id={FIELD_SCROLL_IDS.price}
               />
@@ -1000,9 +1005,6 @@ export default function NewProduct() {
                   </>
                 )}
               </span>
-              {hasFieldError('price') && !form.isFree && (
-                <span className="text-xs text-red-600">Informe o preço do produto.</span>
-              )}
             </label>
 
             <label className={FIELD_LABEL_CLASS}>
@@ -1190,6 +1192,10 @@ export default function NewProduct() {
               Use fotos reais, bem iluminadas e mostre detalhes importantes. Aceitamos até {MAX_PRODUCT_PHOTOS} imagens (5MB cada).
             </p>
           </div>
+          <LinkListEditor
+            links={form.links}
+            onChange={(links) => setForm((prev) => ({ ...prev, links }))}
+          />
 
           <label className={FIELD_LABEL_CLASS}>
             <span>Descrição</span>
