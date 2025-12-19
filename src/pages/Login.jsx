@@ -58,58 +58,91 @@ export default function Login() {
     }
   };
 
+  const hasError = Boolean(error);
+
   return (
     <section className="auth-page">
-      <h1 className="page-title">Login</h1>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label htmlFor="email">E-mail</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="seu@email.com"
-          required
-        />
-
-        <label htmlFor="password">Senha</label>
-        <div className="password-field">
-          <input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Digite sua senha"
-            required
-          />
-          <button
-            type="button"
-            className="auth-form__toggle-password"
-            onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
-          >
-            {showPassword ? 'Ocultar' : 'Ver'}
-          </button>
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <h1 className="page-title">Login</h1>
+          <p className="auth-card__subtitle">Acesse sua conta e acompanhe suas negociações em segundos.</p>
         </div>
 
-        <label className="auth-form__remember">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-          />
-          Lembrar meus dados neste dispositivo
-        </label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-form__group">
+            <label htmlFor="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="seu@email.com"
+              required
+              className={`form-control ${hasError ? 'form-control--error' : ''}`}
+            />
+          </div>
 
-        {error && <p className="form-error">{error}</p>}
+          <div className="auth-form__group">
+            <label htmlFor="password">Senha</label>
+            <div className="input-with-action">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Digite sua senha"
+                required
+                className={`form-control ${hasError ? 'form-control--error' : ''} form-control--with-action`}
+              />
+              <button
+                type="button"
+                className="input-action"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
+              >
+                {showPassword ? 'Ocultar' : 'Ver'}
+              </button>
+            </div>
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-       <p className="auth-extra">
-        Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
-      </p>
+          <label className="auth-form__remember">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+            />
+            <span>Lembrar meus dados neste dispositivo</span>
+          </label>
+
+          {error && (
+            <p className="form-error" role="alert" aria-live="polite">
+              {error}
+            </p>
+          )}
+
+          <div className="auth-actions">
+            <button
+              type="submit"
+              className="btn-primary auth-submit"
+              disabled={loading}
+              data-loading={loading ? 'true' : 'false'}
+              aria-busy={loading}
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </div>
+        </form>
+
+        {AUTH0_ENABLED && (
+          <div className="auth0-placeholder" aria-hidden="true">
+            <Auth0LoginActions onLoginSuccess={handleLoginSuccess} onLoginError={setError} />
+          </div>
+        )}
+
+        <p className="auth-card__footer">
+          Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
+        </p>
+      </div>
     </section>
   );
 }

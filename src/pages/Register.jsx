@@ -80,16 +80,22 @@ export default function Register() {
       setLoading(false);
     }
   };
-  
+
+  const hasError = Boolean(error);
 
   return (
     <section className="auth-page">
-      <h1 className="page-title">Cadastre-se</h1>
+      <div className="auth-card">
+        <div className="auth-card__header">
+          <h1 className="page-title">Cadastre-se</h1>
+          <p className="auth-card__subtitle">
+            Crie sua conta para negociar com segurança e acompanhar suas operações em um só lugar.
+          </p>
+        </div>
 
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label htmlFor="username" className="block">
-          Nome
-          <div className="input-with-action">
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-form__group">
+            <label htmlFor="username">Nome</label>
             <input
               id="username"
               type="text"
@@ -97,13 +103,12 @@ export default function Register() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Digite seu nome"
               required
+              className={`form-control ${hasError ? 'form-control--error' : ''}`}
             />
           </div>
-        </label>
 
-        <label htmlFor="email" className="block">
-          E-mail
-          <div className="input-with-action">
+          <div className="auth-form__group">
+            <label htmlFor="email">E-mail</label>
             <input
               id="email"
               type="email"
@@ -112,45 +117,50 @@ export default function Register() {
               placeholder="seu@email.com"
               autoComplete="email"
               required
+              className={`form-control ${hasError ? 'form-control--error' : ''}`}
             />
           </div>
-        </label>
 
-        <label htmlFor="password" className="block">
-          Senha
-          <div className="input-with-action">
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Crie uma senha"
-              minLength={6}
-              autoComplete="new-password"
-              required
-            />
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-            >
-              {showPassword ? 'Ocultar' : 'Mostrar'}
-            </button>
+          <div className="auth-form__group">
+            <label htmlFor="password">Senha</label>
+            <div className="input-with-action">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Crie uma senha"
+                minLength={6}
+                autoComplete="new-password"
+                required
+                className={`form-control ${hasError ? 'form-control--error' : ''} form-control--with-action`}
+              />
+              <button
+                type="button"
+                className="input-action"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </div>
-        </label>
 
-        <label htmlFor="country" className="block font-medium text-[15px] text-gray-900">
-          País de origem
-          <div className="select-wrapper" style={{ position: 'relative' }}>
+          <div className="auth-form__group">
+            <label htmlFor="country">
+              País de origem
+              <small id="country-help" className="field-help">
+                Selecione um país da lista.
+              </small>
+            </label>
             <select
               id="country"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               aria-describedby="country-help"
               autoComplete="country-name"
-              className="block w-full min-h-[44px] px-3 py-2 rounded-md border border-gray-500 bg-white text-gray-900 text-[15px] font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 hover:border-gray-600"
               required
+              className={`form-control ${hasError ? 'form-control--error' : ''}`}
             >
               {COUNTRY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -159,54 +169,58 @@ export default function Register() {
               ))}
             </select>
           </div>
-          <small id="country-help" className="field-help block mt-1 text-[12px] text-gray-700">
-            Selecione um país da lista.
-          </small>
-        </label>
 
-        {error && <p className="form-error">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert" aria-live="polite">
+              {error}
+            </p>
+          )}
 
-        <label className="legal-consent block text-sm text-gray-800 border border-gray-300 rounded-md p-3 bg-gray-50">
-          <div className="flex gap-3">
+          <label className="legal-consent">
             <input
               type="checkbox"
               checked={acceptLegal}
               onChange={(e) => setAcceptLegal(e.target.checked)}
               required
-              className="mt-1 h-4 w-4"
             />
-            <span>
-              Li e aceito a{' '}
-              <Link to="/politica-de-privacidade" target="_blank" rel="noreferrer">
-                Política de Privacidade
-              </Link>
-              , os{' '}
-              <Link to="/politica-de-privacidade#termos" target="_blank" rel="noreferrer">
-                Termos de Uso
-              </Link>{' '}
-              e as{' '}
-              <Link to="/politica-de-privacidade#diretrizes" target="_blank" rel="noreferrer">
-                Diretrizes da Comunidade
-              </Link>
-              . Compreendo que o SaleDay não participa das negociações nem responde por golpes ou prejuízos causados
-              por terceiros.
-            </span>
+            <div className="legal-consent__content">
+              <span>
+                Li e aceito a{' '}
+                <Link to="/politica-de-privacidade" target="_blank" rel="noreferrer">
+                  Política de Privacidade
+                </Link>
+                , os{' '}
+                <Link to="/politica-de-privacidade#termos" target="_blank" rel="noreferrer">
+                  Termos de Uso
+                </Link>{' '}
+                e as{' '}
+                <Link to="/politica-de-privacidade#diretrizes" target="_blank" rel="noreferrer">
+                  Diretrizes da Comunidade
+                </Link>
+                . Compreendo que o SaleDay não participa das negociações nem responde por golpes ou prejuízos causados
+                por terceiros.
+              </span>
+              <small>Vigência imediata · Última atualização: 27/10/2025</small>
+            </div>
+          </label>
+
+          <div className="auth-actions">
+            <button
+              type="submit"
+              className="btn-primary auth-submit"
+              disabled={loading}
+              data-loading={loading ? 'true' : 'false'}
+              aria-busy={loading}
+            >
+              {loading ? 'Enviando...' : 'Criar conta'}
+            </button>
           </div>
-          <small className="mt-2 block text-xs text-gray-600">
-            Vigência imediata · Última atualização: 27/10/2025
-          </small>
-        </label>
+        </form>
 
-        <div className="auth-actions">
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Enviando...' : 'Criar conta'}
-          </button>
-        </div>
-      </form>
-
-      <p className="auth-extra">
-        Já tem conta? <Link to="/login">Faça login</Link>
-      </p>
+        <p className="auth-card__footer">
+          Já tem conta? <Link to="/login">Faça login</Link>
+        </p>
+      </div>
     </section>
   );
 }

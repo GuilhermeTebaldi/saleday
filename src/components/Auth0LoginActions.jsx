@@ -64,7 +64,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError }) {
   };
 
   return (
-    <div className="auth0-actions" style={{ marginTop: '1.5rem' }}>
+    <div className="auth0-actions">
       <button
         type="button"
         className="btn-secondary"
