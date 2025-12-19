@@ -51,7 +51,7 @@ async function createWatermarkedFile(file) {
   ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
   ctx.shadowBlur = Math.max(3, Math.round(fontSize * 0.1));
   ctx.fillStyle = WATERMARK_TEXT_COLOR;
-  ctx.globalAlpha = 0.45;
+  ctx.globalAlpha = 0.32;
   ctx.fillText(WATERMARK_TEXT, x, y);
   ctx.shadowColor = 'transparent';
 
