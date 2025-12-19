@@ -41,19 +41,16 @@ async function createWatermarkedFile(file) {
 
   const minSide = Math.min(canvas.width, canvas.height);
   const padding = Math.max(10, Math.round(minSide * 0.03));
-  const fontSize = Math.max(24, Math.round(minSide * 0.05));
+  const fontSize = Math.max(20, Math.round(minSide * 0.045));
   ctx.font = `600 ${fontSize}px 'Inter', 'Helvetica Neue', sans-serif`;
   ctx.textBaseline = 'alphabetic';
-  ctx.textAlign = 'left';
+  ctx.textAlign = 'center';
   const textMetrics = ctx.measureText(WATERMARK_TEXT);
-  const x = Math.max(padding, Math.round((canvas.width - textMetrics.width) / 2));
-  const y = canvas.height * 0.45;
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
-  ctx.shadowBlur = Math.max(3, Math.round(fontSize * 0.1));
-  ctx.fillStyle = WATERMARK_TEXT_COLOR;
-  ctx.globalAlpha = 0.22;
+  const x = Math.max(padding, Math.round(canvas.width / 2));
+  const y = canvas.height * 0.38;
+  ctx.fillStyle = '#111';
+  ctx.globalAlpha = 0.18;
   ctx.fillText(WATERMARK_TEXT, x, y);
-  ctx.shadowColor = 'transparent';
 
   ctx.globalAlpha = 1;
   const blob = await new Promise((resolve) => {
