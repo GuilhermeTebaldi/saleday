@@ -24,6 +24,50 @@ const MAX_PRODUCT_PHOTOS = 10;
 const FIELD_BASE_CLASS =
   'w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500';
 const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
+const WATERMARK_TEXT = 'saleday.com.br';
+const WATERMARK_TEXT_COLOR = '#0c0c0c';
+
+async function createWatermarkedFile(file) {
+  if (!file || typeof document === 'undefined') return file;
+  if (typeof createImageBitmap !== 'function') return file;
+
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+
+  const minSide = Math.min(canvas.width, canvas.height);
+  const padding = Math.max(10, Math.round(minSide * 0.03));
+  const fontSize = Math.max(24, Math.round(minSide * 0.05));
+  ctx.font = `600 ${fontSize}px 'Inter', 'Helvetica Neue', sans-serif`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  const textMetrics = ctx.measureText(WATERMARK_TEXT);
+  const x = Math.max(padding, Math.round((canvas.width - textMetrics.width) / 2));
+  const y = canvas.height * 0.45;
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+  ctx.shadowBlur = Math.max(3, Math.round(fontSize * 0.1));
+  ctx.fillStyle = WATERMARK_TEXT_COLOR;
+  ctx.globalAlpha = 0.45;
+  ctx.fillText(WATERMARK_TEXT, x, y);
+  ctx.shadowColor = 'transparent';
+
+  ctx.globalAlpha = 1;
+  const blob = await new Promise((resolve) => {
+    canvas.toBlob(
+      (output) => resolve(output),
+      file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+      0.9
+    );
+  });
+  if (!blob) return file;
+  return new File([blob], file.name, {
+    type: blob.type || file.type || 'image/jpeg'
+  });
+}
 
 const PUBLISH_STAGE_META = {
   uploading: {
@@ -464,6 +508,21 @@ export default function NewProduct() {
   }, [form.isFree]);
   const categoryDetails = useMemo(() => getCategoryDetailFields(form.category), [form.category]);
 
+  const prepareImagesForUpload = useCallback(async (entries) => {
+    if (!entries?.length) return [];
+
+    const processed = [];
+    for (const entry of entries) {
+      try {
+        processed.push(await createWatermarkedFile(entry.file));
+      } catch (err) {
+        console.error('Erro ao aplicar marca d’água', err);
+        processed.push(entry.file);
+      }
+    }
+    return processed;
+  }, []);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -781,8 +840,9 @@ export default function NewProduct() {
         formData.append(key, String(value));
       });
 
-      images.forEach((image) => {
-        formData.append('images', image.file);
+      const uploadFiles = await prepareImagesForUpload(images);
+      uploadFiles.forEach((file) => {
+        formData.append('images', file);
       });
 
       const { data } = await api.post('/products', formData, {
