@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
+  const [rememberAttempted, setRememberAttempted] = useState(false);
 
   const persistRememberToken = useCallback((value) => {
     if (typeof window === 'undefined') return;
@@ -56,6 +57,7 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(() => {
+    api.post('/auth/logout').catch(() => {});
     setUser(null);
     setToken(null);
     setLoading(false);
@@ -63,13 +65,16 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
     localStorage.removeItem('saleday.locale');
     persistRememberToken(null);
+    setRememberAttempted(false);
   }, [persistRememberToken]);
 
   useEffect(() => {
-    if (user) return undefined;
-    if (typeof window === 'undefined') return undefined;
+    if (user || typeof window === 'undefined') return undefined;
     const rememberToken = localStorage.getItem(REMEMBER_TOKEN_KEY);
-    if (!rememberToken) return undefined;
+    if (!rememberToken) {
+      setRememberAttempted(true);
+      return undefined;
+    }
     let isActive = true;
     setLoading(true);
     api
@@ -86,11 +91,35 @@ export function AuthProvider({ children }) {
       .finally(() => {
         if (!isActive) return;
         setLoading(false);
+        setRememberAttempted(true);
       });
     return () => {
       isActive = false;
     };
   }, [user, login, persistRememberToken]);
+
+  useEffect(() => {
+    if (user || !rememberAttempted || typeof window === 'undefined') return undefined;
+    let isActive = true;
+    setLoading(true);
+    api
+      .get('/auth/session')
+      .then((response) => {
+        if (!isActive) return;
+        login(response.data?.data);
+      })
+      .catch((err) => {
+        if (!isActive) return;
+        console.error('session refresh failed:', err);
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [user, login, rememberAttempted]);
 
   const value = useMemo(
     () => ({

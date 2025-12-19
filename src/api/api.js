@@ -19,7 +19,7 @@ const resolveBaseURL = () => {
   return 'http://localhost:5000/api';
 };
 
-const api = axios.create({ baseURL: resolveBaseURL() });
+const api = axios.create({ baseURL: resolveBaseURL(), withCredentials: true });
 
 let sessionExpiredNotice = false;
 
