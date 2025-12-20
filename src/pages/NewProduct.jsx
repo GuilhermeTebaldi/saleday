@@ -1001,8 +1001,8 @@ export default function NewProduct() {
             </label>
 
             <div className="md:col-span-2 mt-2">
-              <div className="relative flex w-full flex-col gap-2" ref={freeHelpRef}>
-                <div className="relative flex items-center gap-2">
+              <div className="flex w-full flex-col gap-2" ref={freeHelpRef}>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleFreeToggle(!form.isFree)}
@@ -1027,7 +1027,7 @@ export default function NewProduct() {
                   <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
                 </div>
                 {freeHelpVisible && (
-                  <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
+                  <div className="mt-1 w-full max-w-sm rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
                     <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
                     <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
                       {FREE_HELP_LINES.map((line) => (
