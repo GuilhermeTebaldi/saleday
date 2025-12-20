@@ -27,6 +27,13 @@ const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
 const WATERMARK_TEXT = 'saleday.com.br';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 
+const FREE_HELP_LINES = [
+  'Produtos grátis aparecem com destaque em verde na Home e ficam disponíveis para retirada rápida.',
+  'Modo grátis exige retirada em mãos e reforça a segurança local.',
+  'Retirada em mãos protege quem anuncia e quem recebe.'
+];
+const FREE_HELP_TITLE = 'Como funciona a Zona Free?';
+
 async function createWatermarkedFile(file) {
   if (!file || typeof document === 'undefined') return file;
   if (typeof createImageBitmap !== 'function') return file;
@@ -345,11 +352,31 @@ export default function NewProduct() {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingZip, setLoadingZip] = useState(false);
   const [showFieldErrors, setShowFieldErrors] = useState(false);
+  const [freeHelpVisible, setFreeHelpVisible] = useState(false);
+  const freeHelpRef = useRef(null);
 
   useEffect(() => {
     setForm(baseForm);
     setShowFieldErrors(false);
   }, [baseForm]);
+
+  useEffect(() => {
+    if (!form.isFree) {
+      setFreeHelpVisible(false);
+    }
+  }, [form.isFree]);
+
+  useEffect(() => {
+    if (!freeHelpVisible) return undefined;
+    const handleClickOutside = (event) => {
+      if (freeHelpRef.current?.contains(event.target)) return;
+      setFreeHelpVisible(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [freeHelpVisible]);
 
   const isValid = useMemo(
     () =>
@@ -555,8 +582,11 @@ export default function NewProduct() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFreeToggle = (event) => {
-    const checked = event?.target?.checked ?? false;
+  const handleFreeToggle = (eventOrValue) => {
+    const checked =
+      typeof eventOrValue === 'boolean'
+        ? eventOrValue
+        : eventOrValue?.target?.checked ?? false;
     setForm((prev) => ({
       ...prev,
       isFree: checked,
@@ -922,31 +952,6 @@ export default function NewProduct() {
               </ul>
             </div>
           )}
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 mb-4 space-y-2">
-            <label className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-emerald-600"
-                checked={form.isFree}
-                onChange={handleFreeToggle}
-              />
-              Ativar modo grátis (Zona Free)
-            </label>
-            <p className="text-xs text-emerald-700">
-              Produtos grátis aparecem com destaque em verde na Home e ficam disponíveis para retirada rápida.
-            </p>
-            <label className="flex items-center gap-2 text-xs text-emerald-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-emerald-600"
-                checked={form.pickupOnly}
-                onChange={handlePickupToggle}
-                disabled={form.isFree}
-              />
-              Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
-            </label>
-          </div>
-
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <label className={FIELD_LABEL_CLASS}>
               <span>Título*</span>
@@ -994,6 +999,55 @@ export default function NewProduct() {
                 )}
               </span>
             </label>
+
+            <div className="md:col-span-2 mt-2">
+              <div className="relative flex w-full flex-col gap-2" ref={freeHelpRef}>
+                <div className="relative flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleFreeToggle(!form.isFree)}
+                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-emerald-300 ${
+                      form.isFree
+                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                        : 'bg-white border-emerald-200 text-emerald-700'
+                    }`}
+                    aria-pressed={form.isFree}
+                  >
+                    Zona Free
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFreeHelpVisible((prev) => !prev)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 text-emerald-700"
+                    aria-label={FREE_HELP_TITLE}
+                    aria-expanded={freeHelpVisible}
+                  >
+                    ?
+                  </button>
+                  <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
+                </div>
+                {freeHelpVisible && (
+                  <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
+                    <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
+                      {FREE_HELP_LINES.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <label className="flex items-center gap-2 text-xs text-emerald-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-emerald-600"
+                    checked={form.pickupOnly}
+                    onChange={handlePickupToggle}
+                    disabled={form.isFree}
+                  />
+                  Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
+                </label>
+              </div>
+            </div>
 
             <label className={FIELD_LABEL_CLASS}>
               <span>Categoria</span>
