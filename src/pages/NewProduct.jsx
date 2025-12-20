@@ -12,6 +12,7 @@ import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
+import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 
 // bounds simples por país
 const BOUNDS = {
@@ -26,13 +27,6 @@ const FIELD_BASE_CLASS =
 const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
 const WATERMARK_TEXT = 'saleday.com.br';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
-
-const FREE_HELP_LINES = [
-  'Produtos grátis aparecem com destaque em verde na Home e ficam disponíveis para retirada rápida.',
-  'Modo grátis exige retirada em mãos e reforça a segurança local.',
-  'Retirada em mãos protege quem anuncia e quem recebe.'
-];
-const FREE_HELP_TITLE = 'Como funciona a Zona Free?';
 
 async function createWatermarkedFile(file) {
   if (!file || typeof document === 'undefined') return file;

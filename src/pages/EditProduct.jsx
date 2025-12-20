@@ -12,6 +12,7 @@ import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
 import { getProductPriceLabel } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
+import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
 
@@ -91,6 +92,8 @@ export default function EditProduct() {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [freeHelpVisible, setFreeHelpVisible] = useState(false);
+  const freeHelpRef = useRef(null);
 
   const totalImages = existingImages.length + newImages.length;
   const isActionLoading = isSubmitting || isDeleting;
@@ -214,6 +217,24 @@ export default function EditProduct() {
     });
   }, [currencyCode, form.isFree]);
 
+  useEffect(() => {
+    if (!form.isFree) {
+      setFreeHelpVisible(false);
+    }
+  }, [form.isFree]);
+
+  useEffect(() => {
+    if (!freeHelpVisible || typeof document === 'undefined') return undefined;
+    const handleClickOutside = (event) => {
+      if (freeHelpRef.current?.contains(event.target)) return;
+      setFreeHelpVisible(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [freeHelpVisible]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     if (name === 'year') {
@@ -228,8 +249,11 @@ export default function EditProduct() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFreeToggle = (event) => {
-    const { checked } = event.target;
+  const handleFreeToggle = (eventOrValue) => {
+    const checked =
+      typeof eventOrValue === 'boolean'
+        ? eventOrValue
+        : eventOrValue?.target?.checked ?? false;
     setForm((prev) => ({
       ...prev,
       isFree: checked,
@@ -482,28 +506,55 @@ export default function EditProduct() {
       <h2>Editar Produto</h2>
       <form onSubmit={handleSubmit} className="edit-product-form space-y-3">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-emerald-600"
-              checked={form.isFree}
-              onChange={handleFreeToggle}
-            />
-            Modo grátis (Zona Free)
-          </label>
-          <p className="text-xs text-emerald-700">
-            Ative para destacar o anúncio como gratuito. O preço não será exibido e o produto ficará disponível apenas para retirada.
-          </p>
-          <label className="flex items-center gap-2 text-xs text-emerald-700">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-emerald-600"
-              checked={form.pickupOnly}
-              onChange={handlePickupToggle}
-              disabled={form.isFree}
-            />
-            Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
-          </label>
+          <div className="flex w-full flex-col gap-2" ref={freeHelpRef}>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleFreeToggle(!form.isFree)}
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-emerald-300 ${
+                  form.isFree
+                    ? 'bg-emerald-600 border-emerald-600 text-white'
+                    : 'bg-white border-emerald-200 text-emerald-700'
+                }`}
+                aria-pressed={form.isFree}
+              >
+                Zona Free
+              </button>
+              <button
+                type="button"
+                onClick={() => setFreeHelpVisible((prev) => !prev)}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 text-emerald-700"
+                aria-label={FREE_HELP_TITLE}
+                aria-expanded={freeHelpVisible}
+              >
+                ?
+              </button>
+              <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
+            </div>
+            {freeHelpVisible && (
+              <div className="mt-1 w-full max-w-sm rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
+                <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
+                  {FREE_HELP_LINES.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="text-xs text-emerald-700">
+              Ative para destacar o anúncio como gratuito. O preço não será exibido e o produto ficará disponível apenas para retirada.
+            </p>
+            <label className="flex items-center gap-2 text-xs text-emerald-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-emerald-600"
+                checked={form.pickupOnly}
+                onChange={handlePickupToggle}
+                disabled={form.isFree}
+              />
+              Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
+            </label>
+          </div>
         </div>
 
         <input name="title" value={form.title} onChange={handleChange} placeholder="Título" required />
