@@ -350,6 +350,11 @@ export default function NewProduct() {
   const freeHelpRef = useRef(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, left: 0 });
+  }, []);
+
+  useEffect(() => {
     setForm(baseForm);
     setShowFieldErrors(false);
   }, [baseForm]);
