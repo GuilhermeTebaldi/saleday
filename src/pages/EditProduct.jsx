@@ -563,7 +563,7 @@ export default function EditProduct() {
         )}
         <input name="city" value={form.city} onChange={handleChange} placeholder="Cidade" />
 
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full" translate="no">
           <span className="text-sm text-gray-600">Atualizar endereço automaticamente:</span>
           <button
             type="button"

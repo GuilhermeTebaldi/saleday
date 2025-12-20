@@ -45,6 +45,8 @@ const originalTextMap = typeof WeakMap === 'function' ? new WeakMap() : null;
 
 const DATASET_PREFIX = 'saledayI18nOriginal';
 const TRACKED_ATTRS = ['placeholder', 'aria-label', 'title'];
+const TRANSLATE_ATTR = 'translate';
+const TRANSLATE_NO_VALUE = 'no';
 
 const buildDatasetKey = (attr) => {
   const normalized = attr
@@ -56,6 +58,20 @@ const buildDatasetKey = (attr) => {
 
 const buildDataAttrName = (attr) => `data-saleday-i18n-original-${attr.toLowerCase()}`;
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
+
+function hasTranslateNo(el) {
+  let current = el;
+  while (current) {
+    if (current.getAttribute) {
+      const value = current.getAttribute(TRANSLATE_ATTR);
+      if (value && value.toLowerCase() === TRANSLATE_NO_VALUE) {
+        return true;
+      }
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
 
 function rememberTextNode(node) {
   if (!originalTextMap || !node) return null;
@@ -127,7 +143,9 @@ function replaceTextNodes(root, dict) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
   let node;
   while ((node = walker.nextNode())) {
-    const parentTag = node.parentElement?.tagName;
+    const parentEl = node.parentElement;
+    const parentTag = parentEl?.tagName;
+    if (parentEl && hasTranslateNo(parentEl)) continue;
     if (parentTag && SKIP_TEXT_PARENTS.has(parentTag)) continue;
     const record = rememberTextNode(node);
     const source = record?.original ?? node.nodeValue ?? '';
@@ -141,6 +159,7 @@ function replaceTextNodes(root, dict) {
   }
   const all = root.querySelectorAll('input[placeholder],textarea[placeholder],button,select,option,[aria-label]');
   for (const el of all) {
+    if (hasTranslateNo(el)) continue;
     const ph = rememberAttrValue(el, 'placeholder');
     if (ph != null) {
       const translated = translateString(ph, helpers);
