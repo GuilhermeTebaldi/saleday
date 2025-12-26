@@ -41,7 +41,22 @@ const COUNTRY_THEMES = {
 const QUICK_CATEGORY_SHORTCUTS = [
   { id: 'imoveis', label: 'Imóveis', icon: 'home' },
   { id: 'veiculos', label: 'Veículos', icon: 'car' },
-  { id: 'eletronicos', label: 'Eletrônicos e Celulares', icon: 'device' }
+  { id: 'eletronicos', label: 'Eletrônicos e Celulares', icon: 'device' },
+  { id: 'informatica', label: 'Informática e Games', icon: 'game' },
+  { id: 'casa', label: 'Casa, Móveis e Decoração', icon: 'sofa' },
+  { id: 'eletro', label: 'Eletrodomésticos', icon: 'fridge' },
+  { id: 'moda', label: 'Moda e Acessórios', icon: 'hanger' },
+  { id: 'beleza', label: 'Beleza e Saúde', icon: 'sparkle' },
+  { id: 'bebes', label: 'Bebês e Crianças', icon: 'baby' },
+  { id: 'esportes', label: 'Esportes e Lazer', icon: 'ball' },
+  { id: 'hobbies', label: 'Hobbies e Colecionáveis', icon: 'star' },
+  { id: 'livros', label: 'Livros, Papelaria e Cursos', icon: 'book' },
+  { id: 'instrumentos', label: 'Instrumentos Musicais', icon: 'music' },
+  { id: 'ferramentas', label: 'Ferramentas e Construção', icon: 'tools' },
+  { id: 'jardim', label: 'Jardim e Pet', icon: 'leaf' },
+  { id: 'servicos', label: 'Serviços', icon: 'briefcase' },
+  { id: 'empregos', label: 'Empregos', icon: 'id' },
+  { id: 'outros', label: 'Outros', icon: 'dots' }
 ];
 
 const getCountryTheme = (code) => {
@@ -136,6 +151,278 @@ const renderQuickCategoryIcon = (icon) => {
             strokeWidth="1.6"
           />
           <circle cx="12" cy="18.2" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'game':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M6.5 7h11a4 4 0 0 1 4 4v2.5a3.5 3.5 0 0 1-3.5 3.5H6a3.5 3.5 0 0 1-3.5-3.5V11a4 4 0 0 1 4-4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7.5 12.5h3M9 11v3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <circle cx="16.2" cy="11.7" r="0.9" fill="currentColor" />
+          <circle cx="18.3" cy="13.5" r="0.9" fill="currentColor" />
+        </svg>
+      );
+    case 'sofa':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M4 12.5v3.5h16v-3.5a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 16v3M18 16v3M4 12.5V10a2 2 0 0 1 2-2h1M20 12.5V10a2 2 0 0 0-2-2h-1"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'fridge':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="6"
+            y="2.5"
+            width="12"
+            height="19"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M6 10.5h12M9.5 6.5v2M9.5 13v2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'hanger':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 5a2.2 2.2 0 0 1 2.2 2.2c0 1-.6 1.7-1.4 2.2l-.8.5v1"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M3.5 16l8.5-4.5L20.5 16a1.5 1.5 0 0 1-.7 2.8H4.2A1.5 1.5 0 0 1 3.5 16z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'sparkle':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 3l1.6 3.8L17 8.4l-3.4 1.6L12 14l-1.6-4L7 8.4l3.4-1.6L12 3z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M18.5 15l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7.7-1.6z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'baby':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle
+            cx="12"
+            cy="12"
+            r="7"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="9.2" cy="11.5" r="0.8" fill="currentColor" />
+          <circle cx="14.8" cy="11.5" r="0.8" fill="currentColor" />
+          <path
+            d="M9.5 14.5c1.2.9 3.8.9 5 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'ball':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M4 12h16M12 4a8 8 0 0 1 0 16M12 4a8 8 0 0 0 0 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.3"
+          />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 4l2.2 4.4 4.8.7-3.5 3.4.8 4.8L12 15.8 7.7 17.3l.8-4.8L5 9.1l4.8-.7L12 4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'book':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M5 5.5h8a3 3 0 0 1 3 3v10H8a3 3 0 0 0-3 3v-16z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 18.5h3V7.5a2 2 0 0 0-2-2h-1"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'music':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M16 4v10.5a2.5 2.5 0 1 1-1.5-2.3V7l6-1.5v5.8a2.5 2.5 0 1 1-1.5-2.3V4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'tools':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M14.5 5a4 4 0 0 0-5.3 5.3l-5.7 5.7a2 2 0 0 0 2.8 2.8l5.7-5.7A4 4 0 0 0 19 9.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="16.2" cy="7.8" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'leaf':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M5 19c7 0 12-5 14-12-6 2-11 7-12 14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 17c3-1 6-4 7-7"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'briefcase':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="3"
+            y="7"
+            width="18"
+            height="12"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M9 7V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1M3 12h18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'id':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="3"
+            y="5"
+            width="18"
+            height="14"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="9" cy="11" r="2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M6.8 16c.6-1.4 2-2.2 3.6-2.2s3 .8 3.6 2.2M14.5 9.2h4M14.5 12h4M14.5 14.8h3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'dots':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="7" cy="12" r="1.6" fill="currentColor" />
+          <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+          <circle cx="17" cy="12" r="1.6" fill="currentColor" />
         </svg>
       );
     default:
