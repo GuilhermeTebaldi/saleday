@@ -218,6 +218,13 @@ const cleanZip = (z, country) => {
   return country === 'US' ? digits.slice(0, 9) : digits.slice(0, 8);
 };
 
+const toFiniteNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const ADDRESS_FIELDS = new Set(['city', 'state', 'neighborhood', 'street', 'zip']);
+
 const FIELD_SCROLL_IDS = {
   title: 'new-product-field-title',
   price: 'new-product-field-price',
@@ -346,12 +353,24 @@ export default function NewProduct() {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [loadingZip, setLoadingZip] = useState(false);
   const [showFieldErrors, setShowFieldErrors] = useState(false);
+  const [showMissingSummary, setShowMissingSummary] = useState(false);
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
+  const geocodeTimeoutRef = useRef(null);
+  const geocodeInFlightRef = useRef(false);
+  const lastGeoQueryRef = useRef('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.scrollTo({ top: 0, left: 0 });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -364,6 +383,10 @@ export default function NewProduct() {
       setFreeHelpVisible(false);
     }
   }, [form.isFree]);
+
+  useEffect(() => {
+    setShowMissingSummary(false);
+  }, []);
 
   useEffect(() => {
     if (!freeHelpVisible) return undefined;
@@ -380,12 +403,13 @@ export default function NewProduct() {
   const isValid = useMemo(
     () =>
       form.title?.trim() &&
+      form.description?.trim() &&
       form.category?.trim() &&
       form.country?.trim() &&
       form.city?.trim() &&
       form.zip?.trim() &&
       true,
-    [form.title, form.category, form.price, form.isFree, form.country, form.city, form.zip]
+    [form.title, form.description, form.category, form.price, form.isFree, form.country, form.city, form.zip]
   );
   const currencyCode = useMemo(
     () => resolveCurrencyFromCountry(form.country),
@@ -512,12 +536,13 @@ export default function NewProduct() {
   const missingFields = useMemo(() => {
     const missing = [];
     if (!form.title?.trim()) missing.push({ name: 'title', label: 'Título' });
+    if (!form.description?.trim()) missing.push({ name: 'description', label: 'Descrição' });
     if (!form.category?.trim()) missing.push({ name: 'category', label: 'Categoria' });
     if (!form.country?.trim()) missing.push({ name: 'country', label: 'País' });
     if (!form.city?.trim()) missing.push({ name: 'city', label: 'Cidade' });
     if (!form.zip?.trim()) missing.push({ name: 'zip', label: 'CEP/ZIP' });
     return missing;
-  }, [form.title, form.category, form.price, form.isFree, form.country, form.city, form.zip]);
+  }, [form.title, form.description, form.category, form.price, form.isFree, form.country, form.city, form.zip]);
 
   const hasFieldError = (field) =>
     showFieldErrors && missingFields.some((item) => item.name === field);
@@ -574,7 +599,12 @@ export default function NewProduct() {
 
     if (name === 'city') {
       const normalizedCity = normalizeCityName(value);
-      setForm((prev) => ({ ...prev, city: normalizedCity }));
+      setForm((prev) => ({ ...prev, city: normalizedCity, lat: '', lng: '' }));
+      return;
+    }
+
+    if (ADDRESS_FIELDS.has(name)) {
+      setForm((prev) => ({ ...prev, [name]: value, lat: '', lng: '' }));
       return;
     }
 
@@ -764,19 +794,99 @@ export default function NewProduct() {
     }
   }
 
+  const buildForwardGeoQuery = (countryCode, stateCode, address) => {
+    const parts = [
+      address.street,
+      address.neighborhood,
+      address.city,
+      stateCode,
+      countryCode,
+      address.zip
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const canAttemptGeocode = (address, countryCode) => {
+    if (!countryCode) return false;
+    if (address.city?.trim()) return true;
+    if (address.zip?.trim()) return true;
+    if (address.street?.trim() && address.state?.trim()) return true;
+    return false;
+  };
+
+  const resolveCoordinatesFromAddress = useCallback(
+    async ({ force = false, notifyOnFail = false } = {}) => {
+      const latExisting = toFiniteNumber(form.lat);
+      const lngExisting = toFiniteNumber(form.lng);
+      if (!force && latExisting !== null && lngExisting !== null) {
+        return { lat: latExisting, lng: lngExisting, attempted: false, success: true };
+      }
+
+      const countryCode = normalizeCountryCode(form.country) || initialFormState.country;
+      const stateCode = normalizeState(form.state, countryCode);
+      const query = buildForwardGeoQuery(countryCode, stateCode, form);
+      if (!query || !canAttemptGeocode(form, countryCode)) {
+        return { lat: null, lng: null, attempted: false, success: false };
+      }
+
+      try {
+        const response = await api.get('/geo/forward', { params: { q: query } });
+        const latValue = response?.data?.data?.lat;
+        const lngValue = response?.data?.data?.lng;
+        const latNum = toFiniteNumber(latValue);
+        const lngNum = toFiniteNumber(lngValue);
+        if (latNum !== null && lngNum !== null && inBounds(countryCode, latNum, lngNum)) {
+          setForm((prev) => ({ ...prev, lat: latNum, lng: lngNum }));
+          return { lat: latNum, lng: lngNum, attempted: true, success: true };
+        }
+      } catch {
+        // segue sem bloquear publicacao
+      }
+
+      if (notifyOnFail) {
+        toast('Não foi possível localizar as coordenadas agora. Você pode publicar mesmo assim.');
+      }
+      return { lat: null, lng: null, attempted: true, success: false };
+    },
+    [form]
+  );
+
+  const scheduleAutoGeocode = useCallback(() => {
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
+    }
+    geocodeTimeoutRef.current = setTimeout(async () => {
+      const countryCode = normalizeCountryCode(form.country) || initialFormState.country;
+      const stateCode = normalizeState(form.state, countryCode);
+      const query = buildForwardGeoQuery(countryCode, stateCode, form);
+      if (!query || !canAttemptGeocode(form, countryCode)) return;
+      if (lastGeoQueryRef.current === query) return;
+      if (geocodeInFlightRef.current) return;
+
+      geocodeInFlightRef.current = true;
+      lastGeoQueryRef.current = query;
+      await resolveCoordinatesFromAddress({ force: true, notifyOnFail: false });
+      geocodeInFlightRef.current = false;
+    }, 400);
+  }, [form, resolveCoordinatesFromAddress]);
+
   // normalização final antes de enviar
-  function buildPayload() {
+  function buildPayload(overrides = {}) {
     const countryCode = normalizeCountryCode(form.country) || initialFormState.country;
 
     const stateCode = normalizeState(form.state, countryCode);
     const latNum =
-      form.lat === '' || form.lat === null || form.lat === undefined
-        ? null
-        : Number(form.lat);
+      overrides.lat === undefined || overrides.lat === null || overrides.lat === ''
+        ? form.lat === '' || form.lat === null || form.lat === undefined
+          ? null
+          : Number(form.lat)
+        : Number(overrides.lat);
     const lngNum =
-      form.lng === '' || form.lng === null || form.lng === undefined
-        ? null
-        : Number(form.lng);
+      overrides.lng === undefined || overrides.lng === null || overrides.lng === ''
+        ? form.lng === '' || form.lng === null || form.lng === undefined
+          ? null
+          : Number(form.lng)
+        : Number(overrides.lng);
     const latOk =
       Number.isFinite(latNum) &&
       Number.isFinite(lngNum) &&
@@ -854,7 +964,8 @@ export default function NewProduct() {
     setSending(true);
 
     try {
-      const payload = buildPayload();
+      const resolvedCoords = await resolveCoordinatesFromAddress({ notifyOnFail: true });
+      const payload = buildPayload(resolvedCoords);
       const formData = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
         if (value === null || value === undefined) return;
@@ -932,7 +1043,7 @@ export default function NewProduct() {
             event.preventDefault();
           }}
         >
-          {showFieldErrors && missingFields.length > 0 && (
+          {showMissingSummary && showFieldErrors && missingFields.length > 0 && (
             <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
               <p className="font-semibold">Complete os campos obrigatórios:</p>
               <p className="text-xs text-red-600">Clique no campo para ir direto ao local destacado.</p>
@@ -1109,8 +1220,10 @@ export default function NewProduct() {
                 value={form.zip}
                 onChange={(e) => {
                   const cleaned = cleanZip(e.target.value, (form.country || 'BR').toUpperCase());
-                  setForm((prev) => ({ ...prev, zip: cleaned }));
+                  setForm((prev) => ({ ...prev, zip: cleaned, lat: '', lng: '' }));
                 }}
+                onBlur={scheduleAutoGeocode}
+                required
               />
               <button
                 type="button"
@@ -1145,6 +1258,7 @@ export default function NewProduct() {
                 name="city"
                 value={form.city}
                 onChange={handleChange}
+                onBlur={scheduleAutoGeocode}
               />
             </label>
 
@@ -1156,6 +1270,7 @@ export default function NewProduct() {
                 name="state"
                 value={form.state}
                 onChange={handleChange}
+                onBlur={scheduleAutoGeocode}
               />
             </label>
 
@@ -1165,6 +1280,7 @@ export default function NewProduct() {
               name="neighborhood"
               value={form.neighborhood}
               onChange={handleChange}
+              onBlur={scheduleAutoGeocode}
             />
             <input
               className={FIELD_BASE_CLASS}
@@ -1172,6 +1288,7 @@ export default function NewProduct() {
               name="street"
               value={form.street}
               onChange={handleChange}
+              onBlur={scheduleAutoGeocode}
             />
           </div>
 
@@ -1246,8 +1363,12 @@ export default function NewProduct() {
               value={form.description}
               onChange={handleChange}
               rows={5}
-              className={`${FIELD_BASE_CLASS} resize-none`}
+              required
+              className={`${FIELD_BASE_CLASS} resize-none ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
             />
+            {hasFieldError('description') && (
+              <span className="text-xs text-red-600">Informe uma descrição.</span>
+            )}
           </label>
 
           <footer className="flex justify-end gap-4 mt-6">

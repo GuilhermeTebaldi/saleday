@@ -38,6 +38,12 @@ const COUNTRY_THEMES = {
   IT: { border: 'border-rose-500', bg: 'bg-rose-50', text: 'text-rose-900' }
 };
 
+const QUICK_CATEGORY_SHORTCUTS = [
+  { id: 'imoveis', label: 'Imóveis', icon: 'home' },
+  { id: 'veiculos', label: 'Veículos', icon: 'car' },
+  { id: 'eletronicos', label: 'Eletrônicos e Celulares', icon: 'device' }
+];
+
 const getCountryTheme = (code) => {
   const normalized = String(code || '').trim().toUpperCase();
   return COUNTRY_THEMES[normalized] ?? {
@@ -68,6 +74,73 @@ const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
 const normalizeId = (value) => {
   const num = Number(value);
   return Number.isNaN(num) ? String(value) : num;
+};
+
+const renderQuickCategoryIcon = (icon) => {
+  switch (icon) {
+    case 'home':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M3 11.5L12 4l9 7.5M5 10.5V20h14v-9.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'car':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M5 12.2l1.6-3.7c.3-.7 1-1.2 1.8-1.2h7.2c.8 0 1.5.5 1.8 1.2L19 12.2c.2.5.7.8 1.2.8h.3c.8 0 1.5.7 1.5 1.5V17c0 .8-.7 1.5-1.5 1.5H19"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M5 18H3.5C2.7 18 2 17.3 2 16.5V14.5c0-.8.7-1.5 1.5-1.5h.3c.5 0 1-.3 1.2-.8"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 12.2h10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="7.5" cy="18" r="1.5" fill="currentColor" />
+          <circle cx="16.5" cy="18" r="1.5" fill="currentColor" />
+        </svg>
+      );
+    case 'device':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="7"
+            y="2.5"
+            width="10"
+            height="19"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="12" cy="18.2" r="1" fill="currentColor" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 };
 
 
@@ -583,6 +656,20 @@ const updateLikesInCollection = (collection, productId, delta) => {
   );
 };
 
+const buildQuickCategoryCounts = (list = [], activeCountry) => {
+  const counts = new Map();
+  list.forEach((item) => {
+    const itemCountry = normalizeCountryCode(item?.country);
+    if (activeCountry && itemCountry && itemCountry !== activeCountry) {
+      return;
+    }
+    const label = item?.category ? String(item.category).trim() : '';
+    if (!label) return;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  return counts;
+};
+
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
@@ -674,6 +761,7 @@ export default function Home() {
   const [countryShortcuts, setCountryShortcuts] = useState([]);
   const [countryShortcutsLoading, setCountryShortcutsLoading] = useState(false);
   const [countryShortcutApplying, setCountryShortcutApplying] = useState(false);
+  const [quickCategoryCache, setQuickCategoryCache] = useState({});
 
   // controle de interseção de view
   const observedRef = useRef(new Set());
@@ -1097,6 +1185,54 @@ export default function Home() {
 
   const freeProducts = products.filter((p) => isProductFree(p));
   const displayedProducts = viewMode === 'free' ? freeProducts : products;
+  useEffect(() => {
+    const activeCountry =
+      normalizeCountryCode(
+        (geoScope?.type === 'country' ? geoScope.country : null) || preferredCountry
+      );
+    if (!activeCountry) return;
+    const shouldUpdate =
+      geoScope?.type === 'country' &&
+      !searchSummary &&
+      !categoryFilter &&
+      viewMode === 'all';
+    if (!shouldUpdate || !products.length) return;
+    const counts = buildQuickCategoryCounts(products, activeCountry);
+    if (!counts.size) return;
+    setQuickCategoryCache((prev) => ({
+      ...prev,
+      [activeCountry]: Object.fromEntries(counts)
+    }));
+  }, [
+    products,
+    geoScope?.type,
+    geoScope?.country,
+    preferredCountry,
+    searchSummary,
+    categoryFilter,
+    viewMode
+  ]);
+  const activeCountryForShortcuts = useMemo(() => {
+    const activeCountry =
+      locationCountry ||
+      (geoScope?.type === 'country' ? geoScope.country : null) ||
+      preferredCountry;
+    return normalizeCountryCode(activeCountry);
+  }, [locationCountry, geoScope?.type, geoScope?.country, preferredCountry]);
+  const quickCategoryShortcuts = useMemo(() => {
+    const cached = quickCategoryCache[activeCountryForShortcuts];
+    const counts = cached
+      ? new Map(
+        Object.entries(cached).map(([label, total]) => [label, Number(total) || 0])
+      )
+      : buildQuickCategoryCounts(products, activeCountryForShortcuts);
+    return QUICK_CATEGORY_SHORTCUTS
+      .map((item) => ({
+        ...item,
+        total: counts.get(item.label) || 0
+      }))
+      .filter((item) => item.total > 0);
+  }, [quickCategoryCache, products, activeCountryForShortcuts]);
   const activeFilters = [];
   if (searchSummary) {
     activeFilters.push({ id: 'search', label: `Busca: ${searchSummary}` });
@@ -1412,83 +1548,32 @@ export default function Home() {
         onLocateUser={handlePersistMapCenter}
       />
 
-      {(activeFilters.length > 0 || countryShortcuts.length > 0) && (
-        <section className="home-active-filters mb-0">
-
-          
-          {activeFilters.length > 0 && (
-            <div className="home-active-filters__chips">
-              {activeFilters.map((filter) => (
-                <span
-                  key={filter.id}
-                  className={`home-active-filters__chip ${
-                    filter.theme ? `${filter.theme.border} ${filter.theme.bg} ${filter.theme.text}` : ''
-                  }`}
+      {quickCategoryShortcuts.length > 0 && (
+        <section className="home-quick-categories">
+          <div className="home-quick-categories__scroll">
+            {quickCategoryShortcuts.map((item) => {
+              const isActiveCategory = categoryFilter === item.label;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleCategoryFilter(item.label)}
+                  disabled={categoryLoading}
+                  aria-pressed={isActiveCategory}
+                  className={`home-quick-categories__chip ${
+                    isActiveCategory ? 'is-active' : ''
+                  } ${categoryLoading ? 'is-disabled' : ''}`}
+                  title={`${item.label} (${item.total})`}
                 >
-                  {filter.flag && (
-                    <img
-                      src={filter.flag}
-                      alt={filter.label}
-                      className="w-5 h-5 rounded-sm object-cover mr-1.5 border border-white/50"
-                      loading="lazy"
-                    />
-                  )}
-                  {filter.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/*
-          {countryShortcuts.length > 0 && (
-            <div className="home-country-shortcuts">
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-                Países com anúncios
-              </p>
-              <div className="home-country-shortcuts__scroll gap-1">
-                {countryShortcuts.map((item) => {
-                  const flag = getFlagUrl(item.country);
-                  const label = resolveCountryName(item.country);
-                  const theme = getCountryTheme(item.country);
-                  const isActive = locationCountry === item.country;
-                  return (
-                    <button
-                      key={item.country}
-                      type="button"
-                      onClick={() => handleCountryShortcut(item.country)}
-                      disabled={countryShortcutApplying}
-                      className={`home-country-shortcuts__chip px-1.5 py-[3px] rounded-md gap-1 ${
-                        isActive
-                          ? `${theme.border} ${theme.bg} ${theme.text}`
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                      } transition-colors duration-150 ease-in-out ${
-                        countryShortcutApplying ? 'opacity-70' : ''
-                      }`}
-                      title={`${label} (${item.total} anúncios)`}
-                    >
-                      {flag ? (
-                        <img
-                          src={flag}
-                          alt={label}
-                          className="home-country-shortcuts__flag w-2 h-2"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="home-country-shortcuts__flag home-country-shortcuts__flag--fallback">
-                          {item.country}
-                        </span>
-                      )}
-                      <span className="home-country-shortcuts__label text-[6px] leading-none">
-                        {label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          */}
-</section>
+                  <span className="home-quick-categories__icon">
+                    {renderQuickCategoryIcon(item.icon)}
+                  </span>
+                  <span className="home-quick-categories__label">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* grade de produtos pública */}

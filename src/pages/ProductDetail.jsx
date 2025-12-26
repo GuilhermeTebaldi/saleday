@@ -97,6 +97,31 @@ const formatMessageTimestamp = (value) => {
   }
 };
 
+const toFiniteNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const buildOpenStreetMapEmbedUrl = (lat, lng) => {
+  const delta = 0.01;
+  const minLat = lat - delta;
+  const maxLat = lat + delta;
+  const minLng = lng - delta;
+  const maxLng = lng + delta;
+  const bbox = `${minLng},${minLat},${maxLng},${maxLat}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(
+    bbox
+  )}&layer=mapnik&marker=${encodeURIComponent(`${lat},${lng}`)}`;
+};
+
+const buildOpenStreetMapLink = (lat, lng) =>
+  `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(
+    lng
+  )}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
+
+const buildLocationQuery = (city, state, country) =>
+  [city, state, country].filter(Boolean).join(', ');
+
 const QUESTION_PAGE_SIZE = 4;
 
 export default function ProductDetail() {
@@ -138,6 +163,8 @@ export default function ProductDetail() {
   const [sendingOffer, setSendingOffer] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [buyerInfo, setBuyerInfo] = useState(null);
+  const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
+  const [mapLoading, setMapLoading] = useState(false);
   const { user, token } = useContext(AuthContext);
   const viewIncrementPending = useRef(false);
   const questionRefs = useRef(new Map());
@@ -148,6 +175,15 @@ export default function ProductDetail() {
   const { full: fullStars, half: halfStar, empty: emptyStars } = useMemo(
     () => asStars(sellerRating),
     [sellerRating]
+  );
+  const locCity = product?.city || product?.seller_city || '';
+  const locState = product?.state || product?.seller_state || '';
+  const locCountry = product?.country || product?.seller_country || '';
+  const latValue = toFiniteNumber(
+    product?.lat ?? product?.latitude ?? product?.location_lat ?? product?.location?.lat
+  );
+  const lngValue = toFiniteNumber(
+    product?.lng ?? product?.longitude ?? product?.location_lng ?? product?.location?.lng
   );
 
   const broadcastQuestionToStorage = useCallback((payload) => {
@@ -230,6 +266,50 @@ export default function ProductDetail() {
     },
     [product?.title, product?.user_id, broadcastQuestionToStorage]
   );
+
+  useEffect(() => {
+    if (!product) return;
+    if (latValue !== null && lngValue !== null) {
+      setMapCoords((prev) => {
+        if (prev.lat === latValue && prev.lng === lngValue && prev.source === 'product') return prev;
+        return { lat: latValue, lng: lngValue, source: 'product' };
+      });
+      setMapLoading(false);
+      return;
+    }
+
+    const query = buildLocationQuery(locCity, locState, locCountry);
+    if (!query) {
+      setMapCoords({ lat: null, lng: null, source: null });
+      return;
+    }
+
+    let active = true;
+    setMapLoading(true);
+    api
+      .get('/geo/forward', { params: { q: query } })
+      .then((response) => {
+        const latNum = toFiniteNumber(response?.data?.data?.lat);
+        const lngNum = toFiniteNumber(response?.data?.data?.lng);
+        if (!active) return;
+        if (latNum !== null && lngNum !== null) {
+          setMapCoords({ lat: latNum, lng: lngNum, source: 'city' });
+          return;
+        }
+        setMapCoords({ lat: null, lng: null, source: null });
+      })
+      .catch(() => {
+        if (!active) return;
+        setMapCoords({ lat: null, lng: null, source: null });
+      })
+      .finally(() => {
+        if (active) setMapLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product, latValue, lngValue, locCity, locState, locCountry]);
 
   const fetchProductQuestions = useCallback(async () => {
     if (!product?.id) return;
@@ -887,9 +967,8 @@ export default function ProductDetail() {
     { label: 'Ano', value: product.year }
   ].filter((entry) => entry.value);
 
-  const locCity = product.city || product.seller_city || '';
-  const locState = product.state || product.seller_state || '';
-  const locCountry = product.country || product.seller_country || '';
+  const hasMapLocation =
+    mapCoords.lat !== null && mapCoords.lng !== null;
   const isSold = product.status === 'sold';
   const isOwner = user && user.id === product.user_id;
   const isSeller = Boolean(isOwner);
@@ -1312,6 +1391,46 @@ export default function ProductDetail() {
           <p>Rua: <span className="text-gray-800">{product.street || 'Não informada'}</span></p>
           <p>Bairro: <span className="text-gray-800">{product.neighborhood || 'Não informado'}</span></p>
         </div>
+
+        {(hasMapLocation || mapLoading) && (
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white/80 p-3 md:p-4 shadow-sm">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Mapa do local</p>
+                <p className="text-xs text-gray-500">
+                  {mapCoords.source === 'city'
+                    ? 'Aproximação baseada na cidade informada no anúncio.'
+                    : 'Aproximação baseada nas coordenadas informadas no anúncio.'}
+                </p>
+              </div>
+              {hasMapLocation && (
+                <a
+                  href={buildOpenStreetMapLink(mapCoords.lat, mapCoords.lng)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+                >
+                  Abrir mapa
+                </a>
+              )}
+            </div>
+            <div className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+              {hasMapLocation ? (
+                <iframe
+                  title="Mapa do local do produto"
+                  src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
+                  className="h-64 w-full md:h-80"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div className="h-64 md:h-80 w-full flex items-center justify-center text-xs text-gray-500">
+                  Buscando mapa pela cidade...
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Perguntas e respostas da publicação */}

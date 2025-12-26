@@ -1326,6 +1326,94 @@ button {
   line-height: 1.1;
 }
 
+.home-quick-categories {
+  width: 100%;
+  padding: 0.35rem 0.9rem 0.15rem;
+}
+
+.home-quick-categories__scroll {
+  display: flex;
+  gap: 0.8rem;
+  overflow-x: auto;
+  padding-bottom: 0.45rem;
+}
+
+.home-quick-categories__scroll::-webkit-scrollbar {
+  height: 3px;
+}
+
+.home-quick-categories__scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2);
+  border-radius: 999px;
+}
+
+.home-quick-categories__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 78px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+.home-quick-categories__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.home-quick-categories__icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.home-quick-categories__chip:hover:not(.is-disabled) .home-quick-categories__icon {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 28px -18px rgba(15, 23, 42, 0.6);
+}
+
+.home-quick-categories__chip.is-active .home-quick-categories__icon {
+  border-color: rgba(37, 99, 235, 0.6);
+  color: #1d4ed8;
+  box-shadow: 0 18px 32px -20px rgba(37, 99, 235, 0.55);
+}
+
+.home-quick-categories__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 88px;
+  white-space: normal;
+}
+
+.home-quick-categories__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: rgba(148, 163, 184, 0.2);
+  padding: 0.06rem 0.4rem;
+  border-radius: 999px;
+}
+
+.home-quick-categories__chip.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 
 @media (max-width: 640px) {
   .home-country-shortcuts__scroll {
@@ -1345,6 +1433,19 @@ button {
     text-align: center;
     white-space: nowrap;
     line-height: 1.1;
+  }
+
+  .home-quick-categories__scroll {
+    gap: 0.6rem;
+  }
+
+  .home-quick-categories__icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .home-quick-categories__label {
+    font-size: 0.68rem;
   }
 }
 

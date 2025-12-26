@@ -18,6 +18,7 @@ import EditProfile from './pages/EditProfile.jsx';
 import NewProduct from './pages/NewProduct.jsx';
 import MyProducts from './pages/MyProducts.jsx';
 import Messages from './pages/Messages.jsx';
+import SellerCatalog from './pages/SellerCatalog.jsx';
 import DashboardBoost, { DashboardBoostPlan } from './pages/DashboardBoost.jsx';
 import SellerProfile from './pages/SellerProfile.jsx';
 import SellerSearch from './pages/SellerSearch.jsx';
@@ -159,6 +160,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <Messages />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/catalogo"
+                  element={
+                    <ProtectedRoute>
+                      <SellerCatalog />
                     </ProtectedRoute>
                   }
                 />
