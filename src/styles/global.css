@@ -944,8 +944,9 @@ button {
 /* Mobile: força os filtros a virarem carrossel lateral */
 @media (max-width: 480px) {
   .home-hero__row-scroll {
-    max-width: 90vw;            /* não deixa usar 100% + sobrar nada */
-    width: 90vw;
+    max-width: 100%;
+    width: 100%;
+    
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;        /* nunca quebrar linha */
@@ -1655,9 +1656,10 @@ button {
 }
 
 .home-grid-section {
-  margin-top: clamp(2.5rem, 4vw, 3.5rem);
+  margin-top: clamp(0.15rem, 2vw, 0.3rem);
   padding: 0 !important;
 }
+
 
 .home-empty-state {
   display: grid;
@@ -2554,6 +2556,7 @@ button {
 
   .home-page {
     padding: 1.5rem 1.25rem 4.5rem;
+    gap: 0.75rem;
   }
 
   .home-hero {
@@ -2572,6 +2575,41 @@ button {
 
   .home-scroll-top {
     bottom: 20px;
+  }
+
+  .home-hero {
+    padding-bottom: 0.5rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .home-hero__tools {
+    margin-bottom: 0 !important;
+  }
+
+  .home-hero + .flex.items-center {
+    display: contents;
+  }
+
+  .map-search,
+  .map-search-wrapper,
+  .map-search-container {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .home-quick-categories {
+    margin-top: 0.5rem !important;
+    padding-top: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-page {
+    padding: 0.75rem; /* ~12px */
+  }
+
+  .home-hero {
+    padding: 1rem;
   }
 }
 

@@ -1809,9 +1809,7 @@ export default function Home() {
               )}
             </div>
           </div>
-          <div className="home-hero__toolbar">
- 
-</div>
+
 
   </div>
       </section>
