@@ -981,6 +981,7 @@ export default function NewProduct() {
 
     const normalizedLinks = buildLinkPayloadEntries(form.links);
     payload.links = JSON.stringify(normalizedLinks);
+    payload.image_kinds = JSON.stringify(images.map((image) => image.kind));
 
     return payload;
   }

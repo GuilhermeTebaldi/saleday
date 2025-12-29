@@ -13,6 +13,7 @@ import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js
 import { getProductPriceLabel } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
+import { buildProductImageEntries } from '../utils/images.js';
 import {
   IMAGE_KIND,
   IMAGE_KIND_BADGE_LABEL,
@@ -65,21 +66,6 @@ const sanitizeYear = (value) => value.replace(/\D/g, '').slice(0, 4);
 const normalizeFieldValue = (value) =>
   value === undefined || value === null ? '' : String(value);
 
-const collectExistingImages = (primary, list) => {
-  const images = [];
-  const append = (value) => {
-    if (typeof value !== 'string') return;
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    if (!images.includes(trimmed)) images.push(trimmed);
-  };
-  append(primary);
-  if (Array.isArray(list)) {
-    list.forEach(append);
-  }
-  return images;
-};
-
 export default function EditProduct() {
   const { id } = useParams();
   const { token } = useContext(AuthContext);
@@ -93,6 +79,7 @@ export default function EditProduct() {
   const [form, setForm] = useState(initialFormState);
   const currencyCode = useMemo(() => resolveCurrencyFromCountry(form.country), [form.country]);
   const [existingImages, setExistingImages] = useState([]);
+  const [existingImageKinds, setExistingImageKinds] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const previewsRef = useRef(new Set());
   const isMountedRef = useRef(true);
@@ -142,9 +129,12 @@ export default function EditProduct() {
           goToMyProducts();
           return;
         }
-        const images = collectExistingImages(data.image_url, data.image_urls);
+        const imageEntries = buildProductImageEntries(data);
+        const images = imageEntries.map((entry) => entry.url);
+        const kinds = imageEntries.map((entry) => entry.kind ?? null);
         const isFree = Boolean(data.is_free);
         setExistingImages(images);
+        setExistingImageKinds(kinds.length ? kinds : images.map(() => null));
         setForm({
           title: data.title ?? '',
           description: data.description ?? '',
@@ -351,7 +341,12 @@ export default function EditProduct() {
   };
 
   const removeExistingImage = (url) => {
-    setExistingImages((prev) => prev.filter((imageUrl) => imageUrl !== url));
+    setExistingImages((prev) => {
+      const index = prev.indexOf(url);
+      if (index === -1) return prev;
+      setExistingImageKinds((kinds) => kinds.filter((_, idx) => idx !== index));
+      return prev.filter((imageUrl) => imageUrl !== url);
+    });
   };
 
   const removeNewImage = (id) => {
@@ -485,9 +480,14 @@ export default function EditProduct() {
         formData.append(key, String(value));
       });
       formData.append('existing_images', JSON.stringify(existingImages));
+      formData.append('existing_image_kinds', JSON.stringify(existingImageKinds));
       newImages.forEach((image) => {
         formData.append('images', image.file);
       });
+      formData.append(
+        'new_image_kinds',
+        JSON.stringify(newImages.map((image) => image.kind))
+      );
 
       await api.put(`/products/${id}`, formData);
       toast.success('Produto atualizado.');
