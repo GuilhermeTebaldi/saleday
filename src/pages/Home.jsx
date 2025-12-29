@@ -1988,8 +1988,6 @@ export default function Home() {
         )}
       </section>
 
-      
-
       <AnimatePresence>
         {activeDrawer && (
           <>

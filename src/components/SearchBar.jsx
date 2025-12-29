@@ -651,7 +651,7 @@ export default function SearchBar({
             <div
               role="dialog"
               aria-label="Lista de países disponíveis"
-              className="absolute left-0 top-full z-40 mt-2 w-80 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
+              className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
             >
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <div>
