@@ -13,6 +13,14 @@ import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js
 import { getProductPriceLabel } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
+import {
+  IMAGE_KIND,
+  IMAGE_KIND_BADGE_LABEL,
+  IMAGE_KIND_HELP_TEXT,
+  IMAGE_KIND_LABELS,
+  IMAGE_KIND_PROMPT,
+  IMAGE_KIND_REQUIRED_MESSAGE
+} from '../utils/imageKinds.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
 
@@ -94,6 +102,7 @@ export default function EditProduct() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
+  const [activeImageKindId, setActiveImageKindId] = useState(null);
 
   const totalImages = existingImages.length + newImages.length;
   const isActionLoading = isSubmitting || isDeleting;
@@ -200,6 +209,29 @@ export default function EditProduct() {
     [form.category]
   );
 
+  const pendingImage = useMemo(
+    () => newImages.find((image) => !image.kind),
+    [newImages]
+  );
+  const activeImage = useMemo(
+    () => newImages.find((image) => image.id === activeImageKindId) ?? null,
+    [newImages, activeImageKindId]
+  );
+
+  useEffect(() => {
+    if (!pendingImage) {
+      setActiveImageKindId(null);
+      return;
+    }
+    setActiveImageKindId((current) => (current === pendingImage.id ? current : pendingImage.id));
+  }, [pendingImage]);
+
+  const setImageKind = (id, kind) => {
+    setNewImages((prev) =>
+      prev.map((image) => (image.id === id ? { ...image, kind } : image))
+    );
+  };
+
   useEffect(() => {
     setForm((prev) => {
       if (!prev.isFree) return prev;
@@ -300,7 +332,8 @@ export default function EditProduct() {
         return {
           id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           file,
-          preview: previewUrl
+          preview: previewUrl,
+          kind: null
         };
       });
 
@@ -431,6 +464,10 @@ export default function EditProduct() {
     event.preventDefault();
     if (!isValid) {
       toast.error('Informe um título para atualizar o produto.');
+      return;
+    }
+    if (newImages.some((image) => !image.kind)) {
+      toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
       return;
     }
 
@@ -663,6 +700,11 @@ export default function EditProduct() {
             {newImages.map((image) => (
               <div key={image.id} className="relative group aspect-square rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                 <img src={image.preview} alt="Nova imagem selecionada" className="h-full w-full object-cover" />
+                {image.kind === IMAGE_KIND.ILLUSTRATIVE && (
+                  <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                    {IMAGE_KIND_BADGE_LABEL}
+                  </span>
+                )}
                 <span className="absolute bottom-1 left-1 rounded bg-emerald-600/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white">
                   nova
                 </span>
@@ -692,6 +734,7 @@ export default function EditProduct() {
           <p className="text-xs text-gray-500">
             Prefira imagens nítidas, com boa iluminação. Você pode manter as fotos atuais, remover alguma ou enviar novas (até {MAX_PRODUCT_PHOTOS} arquivos de 5MB).
           </p>
+          <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
         </div>
 
         <LinkListEditor
@@ -723,6 +766,41 @@ export default function EditProduct() {
           )}
         </div>
       </form>
+      {activeImage && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <p className="text-sm font-semibold text-gray-800">{IMAGE_KIND_PROMPT}</p>
+            <div className="mt-4 flex items-center gap-4">
+              <div className="h-20 w-20 overflow-hidden rounded-xl border border-gray-200">
+                <img
+                  src={activeImage.preview}
+                  alt="Pré-visualização da foto"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageKind(activeImage.id, IMAGE_KIND.REAL)}
+                  className="w-full rounded-lg border border-emerald-200 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+                >
+                  {IMAGE_KIND_LABELS[IMAGE_KIND.REAL]}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageKind(activeImage.id, IMAGE_KIND.ILLUSTRATIVE)}
+                  className="w-full rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-400"
+                >
+                  {IMAGE_KIND_LABELS[IMAGE_KIND.ILLUSTRATIVE]}
+                </button>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-gray-500">
+              {IMAGE_KIND_HELP_TEXT}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

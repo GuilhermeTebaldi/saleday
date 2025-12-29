@@ -13,6 +13,8 @@ import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/pro
 import { isProductFree, getProductPriceLabel } from '../utils/product.js';
 import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
+import { buildProductImageEntries } from '../utils/images.js';
+import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -411,13 +413,12 @@ export default function ProductDetail() {
     };
   }, [id]);
 
-  const images = useMemo(() => {
-    if (!product) return [];
-    if (Array.isArray(product.image_urls) && product.image_urls.length > 0) {
-      return product.image_urls.filter(Boolean);
-    }
-    return product?.image_url ? [product.image_url] : [];
-  }, [product]);
+  const imageEntries = useMemo(() => buildProductImageEntries(product), [product]);
+  const images = useMemo(
+    () => imageEntries.map((entry) => entry.url).filter(Boolean),
+    [imageEntries]
+  );
+  const activeImageKind = imageEntries[activeImageIndex]?.kind ?? null;
 
   const detailLinks = useMemo(() => normalizeProductLinks(product?.links), [product?.links]);
 
@@ -1059,6 +1060,11 @@ export default function ProductDetail() {
                 draggable="false"
                 className="z-10 max-w-full max-h-full object-contain"
               />
+              {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
+                <span className="absolute left-4 top-4 z-20 rounded-full bg-amber-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                  {IMAGE_KIND_BADGE_LABEL}
+                </span>
+              )}
 
               {images.length > 1 && (
                 <button
@@ -1184,6 +1190,11 @@ export default function ProductDetail() {
         {isFreeProduct && !isSold && (
           <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
             Grátis
+          </span>
+        )}
+        {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
+          <span className="absolute top-3 right-3 rounded-full bg-amber-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+            {IMAGE_KIND_BADGE_LABEL}
           </span>
         )}
 

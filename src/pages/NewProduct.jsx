@@ -13,6 +13,14 @@ import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
+import {
+  IMAGE_KIND,
+  IMAGE_KIND_BADGE_LABEL,
+  IMAGE_KIND_HELP_TEXT,
+  IMAGE_KIND_LABELS,
+  IMAGE_KIND_PROMPT,
+  IMAGE_KIND_REQUIRED_MESSAGE
+} from '../utils/imageKinds.js';
 
 // bounds simples por país
 const BOUNDS = {
@@ -359,6 +367,7 @@ export default function NewProduct() {
   const geocodeTimeoutRef = useRef(null);
   const geocodeInFlightRef = useRef(false);
   const lastGeoQueryRef = useRef('');
+  const [activeImageKindId, setActiveImageKindId] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -547,6 +556,29 @@ export default function NewProduct() {
   const hasFieldError = (field) =>
     showFieldErrors && missingFields.some((item) => item.name === field);
 
+  const pendingImage = useMemo(
+    () => images.find((image) => !image.kind),
+    [images]
+  );
+  const activeImage = useMemo(
+    () => images.find((image) => image.id === activeImageKindId) ?? null,
+    [images, activeImageKindId]
+  );
+
+  useEffect(() => {
+    if (!pendingImage) {
+      setActiveImageKindId(null);
+      return;
+    }
+    setActiveImageKindId((current) => (current === pendingImage.id ? current : pendingImage.id));
+  }, [pendingImage]);
+
+  const setImageKind = useCallback((id, kind) => {
+    setImages((prev) =>
+      prev.map((image) => (image.id === id ? { ...image, kind } : image))
+    );
+  }, []);
+
   useEffect(() => {
     setForm((prev) => {
       if (!prev.isFree) return prev;
@@ -662,7 +694,8 @@ export default function NewProduct() {
         return {
           id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           file,
-          preview: previewUrl
+          preview: previewUrl,
+          kind: null
         };
       });
 
@@ -693,6 +726,17 @@ export default function NewProduct() {
       return;
     }
     toast.success(message);
+  };
+
+  const handleRemoveImage = (id) => {
+    setImages((prev) => {
+      const target = prev.find((image) => image.id === id);
+      if (target?.preview) {
+        URL.revokeObjectURL(target.preview);
+        previewsRef.current.delete(target.preview);
+      }
+      return prev.filter((image) => image.id !== id);
+    });
   };
 
   // GPS -> normaliza país para sigla e UF
@@ -953,6 +997,14 @@ export default function NewProduct() {
       return;
     }
     if (!token) return toast.error('Você precisa estar logado para publicar.');
+    if (images.length === 0) {
+      toast.error('Adicione ao menos uma foto antes de publicar.');
+      return;
+    }
+    if (images.some((image) => !image.kind)) {
+      toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
+      return;
+    }
 
     setPublishStage(images.length > 0 ? 'uploading' : 'processing');
     setUploadProgress(0);
@@ -1323,6 +1375,11 @@ export default function NewProduct() {
                   className="relative group aspect-square rounded-lg overflow-hidden border border-gray-300 shadow-md"
                 >
                   <img src={image.preview} alt="Pré-visualização da foto" className="h-full w-full object-cover" />
+                  {image.kind === IMAGE_KIND.ILLUSTRATIVE && (
+                    <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                      {IMAGE_KIND_BADGE_LABEL}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(image.id)}
@@ -1349,6 +1406,7 @@ export default function NewProduct() {
             <p className="text-xs text-gray-500">
               Use fotos reais, bem iluminadas e mostre detalhes importantes. Aceitamos até {MAX_PRODUCT_PHOTOS} imagens (5MB cada).
             </p>
+            <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
           </div>
           <LinkListEditor
             links={form.links}
@@ -1443,6 +1501,41 @@ export default function NewProduct() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {activeImage && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <p className="text-sm font-semibold text-gray-800">{IMAGE_KIND_PROMPT}</p>
+            <div className="mt-4 flex items-center gap-4">
+              <div className="h-20 w-20 overflow-hidden rounded-xl border border-gray-200">
+                <img
+                  src={activeImage.preview}
+                  alt="Pré-visualização da foto"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageKind(activeImage.id, IMAGE_KIND.REAL)}
+                  className="w-full rounded-lg border border-emerald-200 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+                >
+                  {IMAGE_KIND_LABELS[IMAGE_KIND.REAL]}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageKind(activeImage.id, IMAGE_KIND.ILLUSTRATIVE)}
+                  className="w-full rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-400"
+                >
+                  {IMAGE_KIND_LABELS[IMAGE_KIND.ILLUSTRATIVE]}
+                </button>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] text-gray-500">
+              {IMAGE_KIND_HELP_TEXT}
+            </p>
           </div>
         </div>
       )}

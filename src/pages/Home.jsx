@@ -5,7 +5,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchBar from '../components/SearchBar.jsx';
 import MapSearch from '../components/MapSearch.jsx';
-import { parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
+import { buildProductImageEntries, getPrimaryImageEntry } from '../utils/images.js';
+import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
@@ -565,26 +566,9 @@ const writeStoredMapCenter = (center) => {
 };
 
 const buildProductImageSources = (product) => {
-  const normalized = [];
-  const seen = new Set();
-  const pushImage = (value) => {
-    const resolved = toAbsoluteImageUrl(value);
-    if (resolved && !seen.has(resolved)) {
-      seen.add(resolved);
-      normalized.push(resolved);
-    }
-  };
-
-  if (product?.image_url) {
-    pushImage(product.image_url);
-  }
-
-  const parsed = parseImageList(product?.image_urls);
-  for (const entry of parsed) {
-    pushImage(entry);
-  }
-
-  return normalized.length ? normalized : [IMG_PLACEHOLDER];
+  const entries = buildProductImageEntries(product);
+  if (!entries.length) return [IMG_PLACEHOLDER];
+  return entries.map((entry) => entry.url);
 };
 
 const formatNumberLabel = (value) => {
@@ -708,7 +692,7 @@ const pickProductFacts = (product) => {
   return factPool.slice(0, maxFacts);
 };
 
-const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) => {
+const ProductImageGallery = ({ images = [], imageKinds = [], alt = '', productId, galleryKey }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const pointerStartX = useRef(null);
   const clickBlocked = useRef(false);
@@ -716,6 +700,7 @@ const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) =
   const imageSources = images.length ? images : [IMG_PLACEHOLDER];
   const totalImages = imageSources.length;
   const currentImage = imageSources[currentIndex] ?? IMG_PLACEHOLDER;
+  const currentKind = imageKinds[currentIndex] ?? null;
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -832,6 +817,11 @@ const ProductImageGallery = ({ images = [], alt = '', productId, galleryKey }) =
           backgroundImage: `url(${JSON.stringify(currentImage)})`
         }}
       />
+      {currentKind === IMAGE_KIND.ILLUSTRATIVE && (
+        <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+          {IMAGE_KIND_BADGE_LABEL}
+        </span>
+      )}
 
       {totalImages > 1 && (
         <>
@@ -1878,7 +1868,13 @@ export default function Home() {
         ) : (
           <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px sm:gap-1 w-full">
             {displayedProducts.map((product) => {
-              const productImages = buildProductImageSources(product);
+              const productImageEntries = buildProductImageEntries(product);
+              const productImages = productImageEntries.length
+                ? productImageEntries.map((entry) => entry.url)
+                : [IMG_PLACEHOLDER];
+              const productImageKinds = productImageEntries.length
+                ? productImageEntries.map((entry) => entry.kind)
+                : [null];
               const galleryKey = productImages.join('|');
               const freeTag = isProductFree(product);
               const productId = normalizeId(product.id);
@@ -1912,6 +1908,7 @@ export default function Home() {
                     <div className="home-card__media w-full aspect-square relative overflow-hidden">
                       <ProductImageGallery
                         images={productImages}
+                        imageKinds={productImageKinds}
                         alt={product.title}
                         productId={product.id}
                         galleryKey={galleryKey}
@@ -2069,23 +2066,32 @@ export default function Home() {
                               setActiveDrawer(false);
                             }}
                           >
-                            <div className="home-fav-card__image-wrapper">
-                            <img
-  src={
-    product.image_urls?.[0] ||
-    product.image_url ||
-    IMG_PLACEHOLDER
-  }
-  alt={product.title}
-  className="home-fav-card__image"
-  loading="eager"
-  decoding="async"
-  onError={(e) => {
-    e.currentTarget.src = IMG_PLACEHOLDER;
-    e.currentTarget.onerror = null;
-  }}
-/>
-
+                            <div className="home-fav-card__image-wrapper relative">
+                              {(() => {
+                                const entry = getPrimaryImageEntry(product);
+                                const imageSrc = entry?.url || IMG_PLACEHOLDER;
+                                const isIllustrative = entry?.kind === IMAGE_KIND.ILLUSTRATIVE;
+                                return (
+                                  <>
+                                    <img
+                                      src={imageSrc}
+                                      alt={product.title}
+                                      className="home-fav-card__image"
+                                      loading="eager"
+                                      decoding="async"
+                                      onError={(e) => {
+                                        e.currentTarget.src = IMG_PLACEHOLDER;
+                                        e.currentTarget.onerror = null;
+                                      }}
+                                    />
+                                    {isIllustrative && (
+                                      <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                                        {IMAGE_KIND_BADGE_LABEL}
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                             <div className="home-fav-card__details">
                               <p className="home-fav-card__title">{product.title}</p>
