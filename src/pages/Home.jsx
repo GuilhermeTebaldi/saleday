@@ -1702,8 +1702,7 @@ export default function Home() {
     gap: '0.75rem'
   };
   const searchWrapperStyle = {
-    position: 'relative',
-    paddingRight: hasProfile ? '72px' : 0
+    position: 'relative'
   };
 
   let content;
@@ -1724,6 +1723,7 @@ export default function Home() {
                 onOpenMap={() => mapOpenRef.current?.()}
                 geoScope={geoScope}
                 originCountry={preferredCountry}
+                hasProfile={hasProfile}
                 categoryOptions={categoryOptions}
                 categoryFilter={categoryFilter}
                 categoryLoading={categoryLoading}

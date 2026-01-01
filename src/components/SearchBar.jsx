@@ -166,7 +166,7 @@ const getCountryTheme = (code) => {
 };
 
 const TOOLBAR_ICON_BTN =
-  'p-2 rounded-full border border-transparent bg-white/90 hover:border-gray-200 hover:bg-white/95 shadow-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring focus-visible:ring-emerald-200';
+  'home-search-toolbtn focus-visible:outline-none focus-visible:ring focus-visible:ring-amber-200';
 
 export default function SearchBar({
   onProductsLoaded,
@@ -175,6 +175,7 @@ export default function SearchBar({
   onOpenMap,
   geoScope,
   originCountry,
+  hasProfile,
   categoryOptions = [],
   categoryFilter,
   categoryLoading,
@@ -538,10 +539,12 @@ export default function SearchBar({
     setPanel(null);
   }
 
+  const searchBarStyle = hasProfile ? { paddingRight: '72px' } : undefined;
+
   return (
     <div className="relative" ref={popRef}>
       {/* Barra de busca fixa */}
-      <div className="mb-2 home-search-bar">
+      <div className="mb-2 home-search-bar" style={searchBarStyle}>
         <div className="home-search-bar__inner flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
           <Search size={18} className="text-gray-500 ml-1" />
           <input
@@ -562,7 +565,7 @@ export default function SearchBar({
       </div>
 
       {/* Barra de ícones */}
-      <div className="flex items-center gap-5 p-2 bg-white rounded-md shadow-sm">
+      <div className="home-search-toolbar">
         {hasCategoryOptions && (
           <div className="relative">
             <button

@@ -5974,6 +5974,98 @@ button {
   white-space: nowrap;
 }
 
+/* toolbar (desktop: coluna à direita; mobile: vira carrossel) */
+.home-search-toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.45rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 34px -28px rgba(15, 23, 42, 0.35);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  z-index: 30;
+}
+
+.home-search-toolbtn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 12px 20px -18px rgba(15, 23, 42, 0.55);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-search-toolbtn svg {
+  width: 18px;
+  height: 18px;
+  color: rgba(15, 23, 42, 0.72);
+}
+
+.home-search-toolbtn:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 16px 26px -20px rgba(15, 23, 42, 0.6);
+}
+
+.home-search-toolbtn:active {
+  transform: translateY(0);
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .home-search-toolbar {
+    width: 100%;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(44px, 1fr);
+    gap: 0.55rem;
+    overflow: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .home-search-toolbar > * {
+    display: flex;
+    justify-content: center;
+  }
+
+  .home-search-toolbar .home-search-toolbtn {
+    width: 100%;
+  }
+
+  .home-search-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-search-bar__input {
+    font-size: 16px; /* evita zoom do iOS */
+  }
+
+  .home-search-bar__submit {
+    min-width: 78px;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .home-search-toolbtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+}
+
 .home-search-country-dropdown {
   position: absolute;
   z-index: 50;
@@ -6170,6 +6262,14 @@ button {
   right: 12px;
   transform: translateY(-110%);
   z-index: 8;
+}
+
+@media (max-width: 640px) {
+  .home-profile--inline {
+    top: 14px;
+    right: 12px;
+    transform: none;
+  }
 }
 
 /* botão do avatar que aparece na barra */
