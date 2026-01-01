@@ -543,29 +543,30 @@ export default function SearchBar({
 
   return (
     <div className="relative" ref={popRef}>
-      {/* Barra de busca fixa */}
-      <div className="mb-2 home-search-bar" style={searchBarStyle}>
-        <div className="home-search-bar__inner flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
-          <Search size={18} className="text-gray-500 ml-1" />
-          <input
-            ref={searchInputRef}
-            className="flex-1 p-2 outline-none bg-transparent"
-            placeholder="Buscar por título, marca, modelo ou serviço"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && searchText()}
-          />
-          <button
-            onClick={searchText}
-            className="px-2 py-2 rounded-full bg-gray-900 text-white text-sm"
-          >
-            Buscar
-          </button>
+      <div className="home-search-top">
+        {/* Barra de busca fixa */}
+        <div className="mb-2 home-search-bar" style={searchBarStyle}>
+          <div className="home-search-bar__inner flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
+            <Search size={18} className="text-gray-500 ml-1" />
+            <input
+              ref={searchInputRef}
+              className="flex-1 p-2 outline-none bg-transparent"
+              placeholder="Buscar por título, marca, modelo ou serviço"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchText()}
+            />
+            <button
+              onClick={searchText}
+              className="px-2 py-2 rounded-full bg-gray-900 text-white text-sm"
+            >
+              Buscar
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Barra de ícones */}
-      <div className="home-search-toolbar">
+        {/* Barra de ícones */}
+        <div className="home-search-toolbar">
         {hasCategoryOptions && (
           <div className="relative">
             <button
@@ -784,6 +785,7 @@ export default function SearchBar({
         >
           <User size={18} />
         </button>
+        </div>
       </div>
 
       {/* Painéis */}

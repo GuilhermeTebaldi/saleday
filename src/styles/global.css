@@ -5941,13 +5941,16 @@ button {
   flex-wrap: nowrap;
   gap: 0.75rem;
   position: relative;
+  z-index: 2000;
+  overflow: visible;
 }
 
 .home-hero__search {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
-  z-index: 12;
+  z-index: 2000;
+  overflow: visible;
 }
 
 /* garante que o botão da busca fique preso dentro da cápsula */
@@ -5990,7 +5993,7 @@ button {
   max-width: 100%;
   box-sizing: border-box;
   overflow: visible;
-  z-index: 30;
+  z-index: 20;
 }
 
 .home-search-toolbtn {
@@ -6022,6 +6025,13 @@ button {
 
 .home-search-toolbtn:active {
   transform: translateY(0);
+}
+
+@media (min-width: 641px) {
+  .home-search-toolbar {
+    justify-content: flex-start;
+    gap: 0.35rem;
+  }
 }
 
 /* Mobile */
@@ -6254,6 +6264,7 @@ button {
   align-items: flex-start;
   justify-content: center;
   isolation: isolate;
+  z-index: 3000;
 }
 
 .home-profile--inline {
@@ -6261,7 +6272,7 @@ button {
   top: 50%;
   right: 12px;
   transform: translateY(-110%);
-  z-index: 8;
+  z-index: 6000;
 }
 
 @media (max-width: 640px) {
@@ -6334,7 +6345,7 @@ button {
   display: flex;
   flex-direction: column;
   padding: 0.75rem 0;
-  z-index: 70;
+  z-index: 5000;
   animation: fadeSlideInProfile 0.18s ease-out forwards;
 }
 
