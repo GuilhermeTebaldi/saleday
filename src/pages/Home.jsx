@@ -588,6 +588,396 @@ const formatNumberLabel = (value) => {
   return num;
 };
 
+const normalizeLabel = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const ESTATE_KEYWORDS = [
+  'apto',
+  'apartamento',
+  'imovel',
+  'imoveis',
+  'casas',
+  'casa',
+  'aluguel',
+  'flat',
+  'kitnet',
+  'terreno',
+  'quarto',
+  'quartos',
+  'temporada',
+  'ape'
+];
+
+const FASHION_KEYWORDS = [
+  'moda',
+  'roupa',
+  'vestuario',
+  'vestidos',
+  'fashion',
+  'camisa',
+  'jeans',
+  'saia',
+  'terno',
+  'acessorio',
+  'acessorios'
+];
+
+const isEstateCategory = (category) =>
+  ESTATE_KEYWORDS.some((keyword) => normalizeLabel(category).includes(keyword));
+
+const isFashionCategory = (category) =>
+  FASHION_KEYWORDS.some((keyword) => normalizeLabel(category).includes(keyword));
+
+const isEstateProduct = (product) =>
+  isEstateCategory(product?.category || '') ||
+  Boolean(
+    product?.property_type ||
+      product?.surface_area ||
+      product?.bedrooms ||
+      product?.bathrooms ||
+      product?.parking ||
+      product?.rent_type
+  );
+
+const isImovelLabel = (label) => ['imovel', 'imoveis'].includes(normalizeLabel(label));
+
+const startsWithLabel = (label, prefix) => normalizeLabel(label).startsWith(prefix);
+const includesLabel = (label, needle) => normalizeLabel(label).includes(needle);
+
+const getFactIcon = (label, product) => {
+  const normalized = normalizeLabel(label);
+  const categoryLabel = normalizeLabel(product?.category || '');
+
+  if (label.endsWith('m²')) return 'tape';
+  if (isImovelLabel(label) && normalized === categoryLabel) return 'home';
+  if (includesLabel(label, 'quarto')) return 'bed';
+  if (includesLabel(label, 'banheiro')) return 'bath';
+  if (includesLabel(label, 'vaga')) return 'car';
+  if (startsWithLabel(label, 'marca:')) return 'tag';
+  if (startsWithLabel(label, 'modelo:')) return 'box';
+  if (startsWithLabel(label, 'ano:')) return 'calendar';
+  if (startsWithLabel(label, 'cor:')) return 'palette';
+  if (startsWithLabel(label, 'servico:')) return 'briefcase';
+  if (startsWithLabel(label, 'duracao:')) return 'clock';
+  if (startsWithLabel(label, 'valor/h:')) return 'money';
+  if (startsWithLabel(label, 'local:')) return 'map';
+  if (startsWithLabel(label, 'cargo:')) return 'briefcase';
+  if (startsWithLabel(label, 'vaga:')) return 'briefcase';
+  if (startsWithLabel(label, 'salario:')) return 'money';
+  if (startsWithLabel(label, 'requisitos:')) return 'list';
+  if (normalized === categoryLabel) return 'grid';
+  return 'info';
+};
+
+// Map fact strings to visual metadata without changing existing fact selection logic.
+const getFactPresentation = (fact, product) => {
+  const label = String(fact || '').trim();
+  if (!label) return { icon: 'info', label: '', ariaLabel: '' };
+
+  return { icon: getFactIcon(label, product), label, ariaLabel: label };
+};
+
+const renderFactIcon = (type) => {
+  switch (type) {
+    case 'home':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M3 11.5L12 4l9 7.5M5 10.5V20h14v-9.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M9 20v-5h6v5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'tag':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M7 4h6l5 5-7.8 7.8a2 2 0 0 1-2.8 0L4.2 13a2 2 0 0 1 0-2.8L7 4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="11" cy="8" r="1.2" fill="currentColor" />
+        </svg>
+      );
+    case 'tape':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M6.5 7.5h7a4 4 0 0 1 4 4v6H6.5a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M11 7.5v3m-2 0v-2m4 2v-2m4 9H9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'bed':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M4 11.5h16a3 3 0 0 1 3 3V19H1v-4.5a3 3 0 0 1 3-3z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 11.5V7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v4.5M14 11.5V8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'bath':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M5 12h14a2 2 0 0 1 2 2v1a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-1a2 2 0 0 1 2-2z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 12V7a2.5 2.5 0 0 1 5 0v2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'car':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M5 12.2l1.6-3.7c.3-.7 1-1.2 1.8-1.2h7.2c.8 0 1.5.5 1.8 1.2L19 12.2c.2.5.7.8 1.2.8h.3c.8 0 1.5.7 1.5 1.5V17c0 .8-.7 1.5-1.5 1.5H19"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M5 18H3.5C2.7 18 2 17.3 2 16.5V14.5c0-.8.7-1.5 1.5-1.5h.3c.5 0 1-.3 1.2-.8"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 12.2h10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="7.5" cy="18" r="1.5" fill="currentColor" />
+          <circle cx="16.5" cy="18" r="1.5" fill="currentColor" />
+        </svg>
+      );
+    case 'briefcase':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M4 8h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M3 13h18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="3"
+            y="5"
+            width="18"
+            height="16"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M8 3v4M16 3v4M3 10h18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'palette':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 3a9 9 0 1 0 0 18c1.7 0 2.5-.8 2.5-2 0-1.3-1.2-1.8-2.4-1.8h-1.2a2.3 2.3 0 0 1-2.3-2.3 2.3 2.3 0 0 1 2.3-2.3h6a4 4 0 0 0 0-8h-1.2A8.9 8.9 0 0 0 12 3z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="8.5" cy="9" r="1" fill="currentColor" />
+          <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+          <circle cx="15.5" cy="9.5" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'box':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M4 7.5L12 4l8 3.5v9L12 20l-8-3.5v-9z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 7.5l8 3.5 8-3.5M12 11v9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'clock':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M12 7v5l3 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'money':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="3"
+            y="6.5"
+            width="18"
+            height="11"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M6 9.5h2M16 14.5h2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case 'map':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <circle cx="12" cy="11" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      );
+    case 'list':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M6 7h13M6 12h13M6 17h13"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <circle cx="3" cy="7" r="1" fill="currentColor" />
+          <circle cx="3" cy="12" r="1" fill="currentColor" />
+          <circle cx="3" cy="17" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'grid':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="4" y="4" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="14" y="4" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="4" y="14" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="14" y="14" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      );
+    case 'info':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path
+            d="M12 10.5v6M12 7.5h.01"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
 const pickProductFacts = (product) => {
   if (!product) return [];
   const factPool = [];
@@ -627,43 +1017,8 @@ const pickProductFacts = (product) => {
   if (jobSalary) addFact(`Salário: ${jobSalary}`);
   if (jobRequirements) addFact(`Requisitos: ${jobRequirements}`);
 
-  const estateKeywords = [
-    'apto',
-    'apartamento',
-    'imóvel',
-    'imóveis',
-    'imoveis',
-    'casas',
-    'casa',
-    'aluguel',
-    'flat',
-    'kitnet',
-    'terreno',
-    'quarto',
-    'quartos',
-    'temporada',
-    'ape',
-    'apê'
-  ];
-  const fashionKeywords = [
-    'moda',
-    'roupa',
-    'vestuário',
-    'vestidos',
-    'fashion',
-    'camisa',
-    'jeans',
-    'saia',
-    'terno',
-    'acessório',
-    'acessorio',
-    'acessórios',
-    'acessorios'
-  ];
-  const isEstate =
-    estateKeywords.some((keyword) => category.includes(keyword)) ||
-    Boolean(product.property_type || product.surface_area || product.bedrooms || product.bathrooms || product.parking || product.rent_type);
-  const isFashion = fashionKeywords.some((keyword) => category.includes(keyword));
+  const isEstate = isEstateProduct(product);
+  const isFashion = isFashionCategory(category);
 
   const parking = formatNumberLabel(product.parking);
   const parkingLabel = parking !== null ? `${parking} vaga${parking > 1 ? 's' : ''}` : null;
@@ -1962,14 +2317,26 @@ export default function Home() {
                         {priceLabel}
                       </p>
                       {cardFacts.length > 0 && (
-                      <div className="home-card__facts">
-                        {cardFacts.map((fact, index) => (
-                          <span key={`${fact}-${index}`} className="home-card__fact-pill">
-                            {fact}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                        <div className="home-card__facts">
+                          {cardFacts.map((fact, index) => {
+                            const presentation = getFactPresentation(fact, product);
+                            return (
+                              <span
+                                key={`${fact}-${index}`}
+                                className="home-card__fact-pill"
+                                title={presentation.ariaLabel || undefined}
+                              >
+                                {presentation.icon && (
+                                  <span className="home-card__fact-icon" aria-hidden="true">
+                                    {renderFactIcon(presentation.icon)}
+                                  </span>
+                                )}
+                                <span className="home-card__fact-text">{presentation.label}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
                     <div className="home-card__meta-row">
                       <p className="home-card__location text-xs text-gray-500">
                         {locationParts.join(' • ')}
