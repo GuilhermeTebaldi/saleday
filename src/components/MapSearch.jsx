@@ -1,7 +1,7 @@
 // frontend/src/components/MapSearch.jsx
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Map as MapIcon, X } from 'lucide-react';
@@ -28,6 +28,17 @@ const buildLocationLabel = (geo) => {
     parts.push(countryName);
   }
   return parts.filter(Boolean).join(', ');
+};
+
+const hasSameView = (mapInstance, center, zoom) => {
+  if (!mapInstance || !Array.isArray(center)) return false;
+  const current = mapInstance.getCenter?.();
+  const currentZoom = mapInstance.getZoom?.();
+  if (!current || !Number.isFinite(current.lat) || !Number.isFinite(current.lng)) return false;
+  const sameCenter =
+    Math.abs(current.lat - center[0]) < 1e-6 && Math.abs(current.lng - center[1]) < 1e-6;
+  const sameZoom = Number.isFinite(currentZoom) ? currentZoom === zoom : false;
+  return sameCenter && sameZoom;
 };
 
 const hasValidCoords = (product) => {
@@ -87,6 +98,17 @@ function MapEvents({ onBoundsChange, onViewportChange }) {
   return null;
 }
 
+function MapViewportSync({ center, zoom, applyView }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!Array.isArray(center)) return;
+    applyView(center, zoom, { animate: false }, map);
+  }, [center, zoom, map, applyView]);
+
+  return null;
+}
+
 export default function MapSearch({
   onProductsLoaded,
   onRegionApplied,
@@ -110,6 +132,32 @@ export default function MapSearch({
   const [locationQuery, setLocationQuery] = useState('');
   const [searchingLocation, setSearchingLocation] = useState(false);
   const pendingCenterRef = useRef(null);
+  const setMapViewIfNeeded = useCallback(
+    (center, zoom, { animate = false } = {}, mapInstance = mapRef.current) => {
+      if (!mapInstance) return false;
+      const zoomTarget = Number.isFinite(zoom)
+        ? zoom
+        : Number.isFinite(mapZoom)
+          ? mapZoom
+          : DEFAULT_ZOOM;
+      if (hasSameView(mapInstance, center, zoomTarget)) return true;
+      if (typeof mapInstance.invalidateSize === 'function') {
+        mapInstance.invalidateSize({ animate: false });
+      }
+      const applyView = () => {
+        const useFly = animate && typeof mapInstance.flyTo === 'function';
+        const method = useFly ? mapInstance.flyTo : mapInstance.setView;
+        method.call(mapInstance, center, zoomTarget, { animate });
+      };
+      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(applyView);
+      } else {
+        applyView();
+      }
+      return true;
+    },
+    [mapZoom]
+  );
   const applyBoundsFromPoint = useCallback((lat, lng, delta = 0.05) => {
     setBbox({
       minLat: lat - delta,
@@ -186,17 +234,18 @@ export default function MapSearch({
   }, [initialCenter]);
 
   useEffect(() => {
-    if (!showMap || !mapRef.current) return;
-    mapRef.current.setView(mapCenter, mapZoom);
-  }, [showMap, mapCenter, mapZoom]);
+    if (!showMap || !mapReady) return;
+    setMapViewIfNeeded(mapCenter, mapZoom, { animate: false });
+  }, [showMap, mapReady, mapCenter, mapZoom, setMapViewIfNeeded]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
     const payload = pendingCenterRef.current;
     if (!payload) return;
-    pendingCenterRef.current = null;
-    mapRef.current.setView(payload.center, payload.zoom ?? mapZoom ?? DEFAULT_ZOOM);
-  }, [mapReady, mapZoom]);
+    if (setMapViewIfNeeded(payload.center, payload.zoom, { animate: payload.animate })) {
+      pendingCenterRef.current = null;
+    }
+  }, [mapReady, mapZoom, setMapViewIfNeeded]);
 
   const searchLocation = useCallback(
     async (rawQuery, { showSuccessToast = false, showErrors = true, updateInput = false } = {}) => {
@@ -219,13 +268,12 @@ export default function MapSearch({
           return false;
         }
         const center = [lat, lng];
-        setMapCenter(center);
         const zoomTarget = Number.isFinite(mapZoom) ? mapZoom : DEFAULT_ZOOM;
-        pendingCenterRef.current = { center, zoom: zoomTarget };
-        if (mapReady && mapRef.current) {
-          mapRef.current.setView(center, zoomTarget);
+        pendingCenterRef.current = { center, zoom: zoomTarget, animate: true };
+        if (setMapViewIfNeeded(center, zoomTarget, { animate: true })) {
           pendingCenterRef.current = null;
         }
+        setMapCenter(center);
         const delta = Math.max(0.02, zoomTarget * 0.003);
         const bounds = {
           minLat: lat - delta,
@@ -234,7 +282,10 @@ export default function MapSearch({
           maxLng: lng + delta
         };
         applyBoundsFromPoint(lat, lng, delta);
-        await fetchProductsByBbox(bounds, { keepExisting: false });
+        await fetchProductsByBbox(bounds, {
+          keepExisting: false,
+          centerOverride: { lat, lng, zoom: zoomTarget }
+        });
         const formattedLabel = buildLocationLabel(data.data);
         if (updateInput && formattedLabel) {
           setLocationQuery(formattedLabel);
@@ -251,7 +302,7 @@ export default function MapSearch({
         return false;
       }
     },
-    [mapZoom, applyBoundsFromPoint, mapReady, fetchProductsByBbox]
+    [mapZoom, applyBoundsFromPoint, fetchProductsByBbox, setMapViewIfNeeded]
   );
 
   const handleLocationSearch = useCallback(async () => {
@@ -301,7 +352,10 @@ export default function MapSearch({
     );
   }, [showMap, geoRequested, initialCenter, onLocateUser]);
 
-  async function fetchProductsByBbox(bounds, { keepExisting = true } = {}) {
+  async function fetchProductsByBbox(
+    bounds,
+    { keepExisting = true, centerOverride = null } = {}
+  ) {
     setLoading(true);
     const locationPromise = resolveBoundsLocation(bounds);
     try {
@@ -347,9 +401,10 @@ export default function MapSearch({
 
       onProductsLoaded?.(nextList, { keepExisting, priorityKeys });
       if (bounds?.minLat != null) toast.success('Produtos atualizados para a região selecionada.');
-      const mapInstance = mapRef.current;
-      const centerPoint = mapInstance?.getCenter?.();
-      const zoomLevel = mapInstance?.getZoom?.();
+      const centerPoint = centerOverride
+        ? { lat: centerOverride.lat, lng: centerOverride.lng }
+        : mapRef.current?.getCenter?.();
+      const zoomLevel = centerOverride?.zoom ?? mapRef.current?.getZoom?.();
       const applied = {
         bounds,
         label: locationInfo?.label || 'Região selecionada no mapa',
@@ -487,6 +542,11 @@ export default function MapSearch({
                       >
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <MapEvents onBoundsChange={setBbox} onViewportChange={handleViewportChange} />
+                        <MapViewportSync
+                          center={mapCenter}
+                          zoom={mapZoom}
+                          applyView={setMapViewIfNeeded}
+                        />
                       </MapContainer>
 
                       {/* sobreposição com círculo amarelo */}
