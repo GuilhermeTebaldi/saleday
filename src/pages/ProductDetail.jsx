@@ -1,9 +1,9 @@
 // frontend/src/pages/ProductDetail.jsx
 // Página com os detalhes completos de um produto e ações de contato.
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft } from 'lucide-react';
+import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft, PhoneCall } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -16,6 +16,8 @@ import { asStars } from '../utils/rating.js';
 import { buildProductImageEntries } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
+import { normalizeCountryCode } from '../data/countries.js';
+import { getPhoneActions } from '../utils/phone.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -168,6 +170,9 @@ export default function ProductDetail() {
   const [buyerInfo, setBuyerInfo] = useState(null);
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
+  const [phoneActionsOpen, setPhoneActionsOpen] = useState(false);
+  const [floatingBarHeight, setFloatingBarHeight] = useState(0);
+  const floatingBarRef = useRef(null);
   const { user, token } = useContext(AuthContext);
   const promptLogin = useLoginPrompt();
   const requireAuth = useCallback(
@@ -196,6 +201,20 @@ export default function ProductDetail() {
   const lngValue = toFiniteNumber(
     product?.lng ?? product?.longitude ?? product?.location_lng ?? product?.location?.lng
   );
+  const sellerPhoneRaw = product?.seller_phone ?? product?.sellerPhone ?? '';
+  const sellerCountry = normalizeCountryCode(
+    product?.seller_country || product?.sellerCountry || product?.country || ''
+  );
+  const phoneActions = useMemo(
+    () => getPhoneActions(sellerPhoneRaw, sellerCountry),
+    [sellerPhoneRaw, sellerCountry]
+  );
+
+  useEffect(() => {
+    if (!phoneActions) {
+      setPhoneActionsOpen(false);
+    }
+  }, [phoneActions]);
 
   const broadcastQuestionToStorage = useCallback((payload) => {
     if (typeof window === 'undefined' || !payload) return;
@@ -925,6 +944,26 @@ export default function ProductDetail() {
     });
   }, [activeReplyQuestionId]);
 
+  const isOwner = user && user.id === product?.user_id;
+  const isSeller = Boolean(isOwner);
+  const showChatAction = Boolean(user && !isSeller);
+  const showPhoneAction = Boolean(!isSeller && phoneActions);
+  const showFloatingContactBar = showChatAction || showPhoneAction;
+
+  useLayoutEffect(() => {
+    if (!showFloatingContactBar) {
+      setFloatingBarHeight(0);
+      return;
+    }
+    const measure = () => {
+      const height = floatingBarRef.current?.offsetHeight || 0;
+      setFloatingBarHeight(height);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [showFloatingContactBar, showChatAction, showPhoneAction]);
+
   if (loading) return <div className="p-6 text-center">Carregando produto...</div>;
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
   if (!product) return null;
@@ -968,8 +1007,6 @@ export default function ProductDetail() {
   const hasMapLocation =
     mapCoords.lat !== null && mapCoords.lng !== null;
   const isSold = product.status === 'sold';
-  const isOwner = user && user.id === product.user_id;
-  const isSeller = Boolean(isOwner);
   const productIsBoosted = Boolean(product?.manual_rank_plan);
   const boostLinkTarget = productIsBoosted
     ? '/dashboard/impulsiona'
@@ -1093,8 +1130,49 @@ export default function ProductDetail() {
         )
       : null;
 
+  const floatingBarPortal =
+    showFloatingContactBar && typeof document !== 'undefined'
+      ? createPortal(
+          <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]">
+            <div
+              ref={floatingBarRef}
+              className="mx-auto flex max-w-2xl items-center gap-2 rounded-2xl border border-emerald-100 bg-white/95 p-2 shadow-2xl backdrop-blur"
+            >
+              {showChatAction && (
+                <button
+                  type="button"
+                  onClick={handleOpenConversation}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
+                >
+                  <MessageCircle size={18} /> Bater papo
+                </button>
+              )}
+              {showPhoneAction && (
+                <button
+                  type="button"
+                  onClick={() => setPhoneActionsOpen(true)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-sky-700"
+                >
+                  <PhoneCall size={18} /> Chamar
+                </button>
+              )}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <section className="product-detail-page">
+    <section
+      className="product-detail-page"
+      style={
+        showFloatingContactBar
+          ? {
+              paddingBottom: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1rem)`
+            }
+          : undefined
+      }
+    >
       <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
         {/* Cabeçalho com vendedor */}
         <header className="product-detail__header flex flex-col gap-3 border-b pb-3 md:flex-row md:items-start md:justify-between">
@@ -1568,6 +1646,63 @@ export default function ProductDetail() {
             )}
           </div>
         </section>
+      )}
+
+      {floatingBarPortal}
+
+      {phoneActionsOpen && phoneActions && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
+          onClick={() => setPhoneActionsOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Contato do vendedor
+                </p>
+                <p className="text-base font-semibold text-gray-900">{phoneActions.display}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhoneActionsOpen(false)}
+                className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
+                aria-label="Fechar"
+              >
+                <CloseIcon size={18} />
+              </button>
+            </header>
+
+            <div className="mt-4 grid gap-2">
+              <a
+                href={phoneActions.telHref}
+                className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+              >
+                <PhoneCall size={18} /> Ligar agora
+              </a>
+              <a
+                href={phoneActions.whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              >
+                <MessageCircle size={18} /> WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFloatingContactBar && (
+        <div
+          aria-hidden="true"
+          style={{
+            height: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 0.5rem)`
+          }}
+        />
       )}
 
       {offerOpen && (

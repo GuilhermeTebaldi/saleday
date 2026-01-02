@@ -69,6 +69,11 @@ const ENTRIES = [
   { key: 'aceitou sua oferta!', en: 'accepted your offer!', es: 'aceptó tu oferta!', it: 'ha accettato la tua offerta!', ja: 'あなたのオファーが承認されました！' },
   { key: 'Valor acordado: ', en: 'Agreed amount: ', es: 'Monto acordado: ', it: 'Importo concordato: ', ja: '合意された金額: ' },
   { key: 'Abrir conversa', en: 'Open conversation', es: 'Abrir conversación', it: 'Apri conversazione', ja: '会話を開く' },
+  { key: 'Bater papo', en: 'Chat', es: 'Chatear', it: 'Chat', ja: 'チャット' },
+  { key: 'Chamar', en: 'Call', es: 'Llamar', it: 'Chiama', ja: '電話する' },
+  { key: 'Contato do vendedor', en: 'Seller contact', es: 'Contacto del vendedor', it: 'Contatto del venditore', ja: '出品者の連絡先' },
+  { key: 'Ligar agora', en: 'Call now', es: 'Llamar ahora', it: 'Chiama ora', ja: '今すぐ電話' },
+  { key: 'WhatsApp', en: 'WhatsApp', es: 'WhatsApp', it: 'WhatsApp', ja: 'WhatsApp' },
   { key: 'Perguntas e respostas', en: 'Questions & answers', es: 'Preguntas y respuestas', it: 'Domande e risposte', ja: '質問と回答' },
   { key: 'Pergunta', en: 'Question', es: 'Pregunta', it: 'Domanda', ja: '質問' },
   {
