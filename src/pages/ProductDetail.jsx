@@ -946,7 +946,7 @@ export default function ProductDetail() {
 
   const isOwner = user && user.id === product?.user_id;
   const isSeller = Boolean(isOwner);
-  const showChatAction = Boolean(user && !isSeller);
+  const showChatAction = Boolean(!isSeller);
   const showPhoneAction = Boolean(!isSeller && phoneActions);
   const showFloatingContactBar = showChatAction || showPhoneAction;
 
@@ -1700,7 +1700,7 @@ export default function ProductDetail() {
         <div
           aria-hidden="true"
           style={{
-            height: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 0.5rem)`
+            height: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1 rem)`
           }}
         />
       )}
