@@ -88,6 +88,20 @@ const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0
     }
   });
 
+const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
+const formatBrazilPhone = (value) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 export default function EditProfile() {
   const { token, user, login } = useContext(AuthContext);
   const initialFormState = useMemo(
@@ -132,7 +146,15 @@ export default function EditProfile() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const nextValue = name === 'country' ? normalizeCountryCode(value) : value;
+    let nextValue = name === 'country' ? normalizeCountryCode(value) : value;
+    if (name === 'phone') {
+      const normalizedCountry = normalizeCountryCode(form.country);
+      if (normalizedCountry === 'BR') {
+        nextValue = formatBrazilPhone(value);
+      } else {
+        nextValue = value;
+      }
+    }
     setForm({ ...form, [name]: nextValue });
   };
 
@@ -308,6 +330,8 @@ export default function EditProfile() {
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="(00) 00000-0000"
+                inputMode="tel"
+                autoComplete="tel"
               />
             </label>
             <label>

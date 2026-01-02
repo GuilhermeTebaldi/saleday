@@ -16,7 +16,6 @@ import { asStars } from '../utils/rating.js';
 import { buildProductImageEntries } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
-import { normalizeCountryCode } from '../data/countries.js';
 import { getPhoneActions } from '../utils/phone.js';
 
 const getInitial = (value) => {
@@ -202,12 +201,9 @@ export default function ProductDetail() {
     product?.lng ?? product?.longitude ?? product?.location_lng ?? product?.location?.lng
   );
   const sellerPhoneRaw = product?.seller_phone ?? product?.sellerPhone ?? '';
-  const sellerCountry = normalizeCountryCode(
-    product?.seller_country || product?.sellerCountry || product?.country || ''
-  );
   const phoneActions = useMemo(
-    () => getPhoneActions(sellerPhoneRaw, sellerCountry),
-    [sellerPhoneRaw, sellerCountry]
+    () => getPhoneActions(sellerPhoneRaw),
+    [sellerPhoneRaw]
   );
 
   useEffect(() => {
@@ -970,6 +966,11 @@ export default function ProductDetail() {
 
   const isFreeProduct = isProductFree(product);
   const priceFmt = getProductPriceLabel(product);
+  const whatsappContactLink = phoneActions
+    ? `${phoneActions.whatsappHref}?text=${encodeURIComponent(
+        `Olá! Tenho interesse no produto: ${product?.title || 'SaleDay'} - ${window.location.href}`
+      )}`
+    : '';
   const propertySpecs = [
     { label: 'Tipo de imóvel', value: product.property_type },
     {
@@ -1687,7 +1688,7 @@ export default function ProductDetail() {
                   <PhoneCall size={18} /> Ligar agora
                 </a>
                 <a
-                  href={phoneActions.whatsappHref}
+                  href={whatsappContactLink}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
