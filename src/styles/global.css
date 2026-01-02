@@ -2897,10 +2897,10 @@ button {
 
 .purchase-notification-banner {
   position: fixed;
-  top: 1rem;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
   display: flex;
   gap: 0.85rem;
   align-items: center;

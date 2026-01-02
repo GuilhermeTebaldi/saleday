@@ -11,15 +11,10 @@ const PurchaseNotificationBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const lastDisplayedId = useRef(null);
-  const handleDismiss = useCallback(
-    ({ markSeen = false } = {}) => {
-      if (markSeen) {
-        markOrdersSeen?.();
-      }
-      setIsVisible(false);
-    },
-    [markOrdersSeen]
-  );
+  const handleDismiss = useCallback(() => {
+    markOrdersSeen?.();
+    setIsVisible(false);
+  }, [markOrdersSeen]);
   useEffect(() => {
     if (!latestUnseenOrder) return;
     if (lastDisplayedId.current === latestUnseenOrder.id) return;
@@ -73,7 +68,7 @@ const PurchaseNotificationBanner = () => {
       <button
         type="button"
         className="purchase-notification-banner__close"
-        onClick={() => handleDismiss()}
+        onClick={handleDismiss}
         aria-label="Fechar notificação"
       >
         ×
@@ -82,7 +77,7 @@ const PurchaseNotificationBanner = () => {
           <Link
             to="/buyer-purchases"
             className="purchase-notification-banner__btn purchase-notification-banner__btn--primary"
-            onClick={() => handleDismiss({ markSeen: true })}
+            onClick={handleDismiss}
           >
           Ver compras
           </Link>
@@ -90,7 +85,7 @@ const PurchaseNotificationBanner = () => {
             <Link
               to={`/product/${activeOrder.product_id}`}
               className="purchase-notification-banner__btn purchase-notification-banner__btn--ghost"
-              onClick={() => handleDismiss({ markSeen: true })}
+              onClick={handleDismiss}
             >
               Ver produto
             </Link>
@@ -99,7 +94,7 @@ const PurchaseNotificationBanner = () => {
             <Link
               to={`/users/${activeOrder.seller_id}`}
               className="purchase-notification-banner__btn purchase-notification-banner__btn--ghost"
-              onClick={() => handleDismiss({ markSeen: true })}
+              onClick={handleDismiss}
             >
               Avaliar {sellerName}
             </Link>
