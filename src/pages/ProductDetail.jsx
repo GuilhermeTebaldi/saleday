@@ -1226,18 +1226,29 @@ export default function ProductDetail() {
           </div>
         </header>
 
-          <div className="flex flex-wrap gap-2 text-xs md:text-sm text-gray-600 mt-2">
-        <div className="flex items-center gap-1 rounded-full bg-white/70 backdrop-blur-sm border border-gray-200 px-3 py-1 shadow-sm">
-          <Eye size={16} className="text-gray-500" aria-hidden="true" />
-          <span className="font-semibold text-gray-900">{viewsCount}</span>
-          <span>Visualizações</span>
+        <div className="flex flex-wrap gap-2 text-xs md:text-sm text-gray-600 mt-2">
+          <div className="flex items-center gap-1 rounded-full bg-white/70 backdrop-blur-sm border border-gray-200 px-3 py-1 shadow-sm">
+            <Eye size={16} className="text-gray-500" aria-hidden="true" />
+            <span className="font-semibold text-gray-900">{viewsCount}</span>
+            <span>Visualizações</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleFavorite}
+            disabled={favoriteLoading}
+            aria-pressed={favorite}
+            title={favorite ? 'Remover curtida' : 'Curtir'}
+            className={`flex items-center gap-1 rounded-full border px-3 py-1 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
+              favorite
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-white/70 border-gray-200 text-gray-600'
+            }`}
+          >
+            <Heart size={16} className={favorite ? 'text-red-500' : 'text-gray-500'} aria-hidden="true" />
+            <span className="font-semibold text-gray-900">{likesCount}</span>
+            <span>Curtidas</span>
+          </button>
         </div>
-        <div className="flex items-center gap-1 rounded-full bg-white/70 backdrop-blur-sm border border-gray-200 px-3 py-1 shadow-sm">
-          <Heart size={16} className="text-gray-500" aria-hidden="true" />
-          <span className="font-semibold text-gray-900">{likesCount}</span>
-          <span>Curtidas</span>
-        </div>
-      </div>
 
       {/* Galeria de imagens */}
       <div
@@ -1312,17 +1323,6 @@ export default function ProductDetail() {
 
       {/* Botões de ação */}
       <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
-        <button
-          onClick={handleFavorite}
-          disabled={favoriteLoading}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm disabled:opacity-70 disabled:cursor-not-allowed ${
-            favorite ? 'bg-red-500 text-white' : 'bg-white text-gray-700'
-          }`}
-        >
-          <Heart size={18} className={favoriteLoading ? 'animate-pulse' : ''} />{' '}
-          {favoriteLoading ? 'Atualizando...' : favorite ? 'Favorito' : 'Favoritar'}
-        </button>
-
         <button
           onClick={openOfferModal}
           disabled={isSold || isOwner}
