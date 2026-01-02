@@ -409,7 +409,7 @@ export default function SellerProfile() {
       await navigator.clipboard.writeText(profileUrl);
       toast.success('Link copiado.');
     } catch {
-      toast.error('Falha ao copiar o link.');
+      toast.error('Falha ao copiar link.');
     }
   };
 
@@ -634,7 +634,7 @@ export default function SellerProfile() {
                         </div>
                         <img
                           src={shareLogoSrc}
-                          alt="SaleDay logo"
+                          alt="Logo SaleDay"
                           className="h-10 w-10 rounded-full border border-white/30 bg-white/10 object-contain p-1"
                         />
                       </div>

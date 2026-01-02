@@ -89,6 +89,7 @@ export default function Header() {
   const lastCountRef = useRef(0);
   const actualUnreadRef = useRef(0);
   const lastClearedCountRef = useRef(0);
+  const headerRef = useRef(null);
   const persistClearedCount = useCallback((count) => {
     lastClearedCountRef.current = count;
     if (typeof window === 'undefined') return;
@@ -633,8 +634,36 @@ export default function Header() {
     };
   }, [drawerOpen]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const headerEl = headerRef.current;
+    if (!headerEl) return;
+    const root = document.documentElement;
+    const updateHeaderHeight = () => {
+      const nextHeight = Math.ceil(headerEl.getBoundingClientRect().height);
+      if (nextHeight > 0) {
+        root.style.setProperty('--home-header-height', `${nextHeight}px`);
+      }
+    };
+    updateHeaderHeight();
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(updateHeaderHeight);
+      observer.observe(headerEl);
+    } else {
+      window.addEventListener('resize', updateHeaderHeight);
+    }
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      } else {
+        window.removeEventListener('resize', updateHeaderHeight);
+      }
+    };
+  }, []);
+
   return (
-    <header className="app-header">
+    <header className="app-header" ref={headerRef}>
       <div className="app-shell">
         <a
           href="/"

@@ -1093,7 +1093,9 @@
 
 
           <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-4 py-4 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
-            <aside className="hidden lg:flex lg:w-full lg:max-w-xs">{renderConversationList()}</aside>
+            <aside className="hidden lg:flex lg:w-full lg:max-w-xs lg:min-h-0">
+              {renderConversationList()}
+            </aside>
 
             <section className="flex flex-1 flex-col min-h-0 overflow-hidden overscroll-none fixed inset-0 pt-[calc(var(--home-header-height,64px)+4rem)] px-4 lg:static lg:inset-auto lg:pt-0 lg:px-0">
             <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
@@ -1380,6 +1382,7 @@
     );
   }
 
+  // Keep the sidebar header fixed while only the conversation list scrolls.
   function ConversationSidebar({
     conversations,
     userId,
@@ -1393,7 +1396,7 @@
     onCloseSidebar
   }) {
     return (
-      <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-xl shadow-slate-200/40 transition-all duration-200">
+      <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-xl shadow-slate-200/40 transition-all duration-200">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <p className="text-lg font-semibold text-slate-900">Conversas</p>
@@ -1407,7 +1410,7 @@
             Fechar
           </button>
         </div>
-        <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+        <div className="mt-3 flex-1 min-h-0 space-y-2 overflow-y-auto pr-1">
           {conversations.length === 0 ? (
             <p className="mt-10 text-center text-sm text-slate-400">Nenhuma conversa</p>
           ) : (
@@ -1506,7 +1509,7 @@
           <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
         )}
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 font-semibold text-blue-600 shadow-inner shadow-slate-200">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 font-semibold text-blue-600 shadow-inner shadow-slate-200">
             {counterpartAvatar ? (
               <img
                 src={counterpartAvatar}
@@ -1518,7 +1521,7 @@
               counterpartInitial
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-900">{conversationTitle}</p>
             <p className="truncate text-xs text-slate-500">{counterpartName || 'Usuário SaleDay'}</p>
             <p className="truncate text-xs text-slate-600">{previewText}</p>
