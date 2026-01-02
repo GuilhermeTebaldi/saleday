@@ -1,12 +1,13 @@
 // frontend/src/pages/Login.jsx
 // Página de autenticação de usuários.
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import api from '../api/api.js';
 import Auth0LoginActions from '../components/Auth0LoginActions.jsx';
 import { AUTH0_ENABLED } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { localeFromCountry } from '../i18n/localeMap.js';
+import { sanitizeNextPath } from '../utils/authRedirect.js';
 
 export default function Login() {
   const [email, setEmail] = useState(() => {
@@ -19,7 +20,12 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return sanitizeNextPath(params.get('next'));
+  }, [location.search]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -36,7 +42,7 @@ export default function Login() {
     if (userCountry) {
       localStorage.setItem('saleday.locale', localeFromCountry(userCountry));
     }
-    navigate('/');
+    navigate(nextPath, { replace: true });
   };
 
   const handleSubmit = async (event) => {

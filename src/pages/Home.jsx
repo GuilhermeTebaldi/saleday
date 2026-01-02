@@ -21,6 +21,7 @@ import usePreventDrag from '../hooks/usePreventDrag.js';
 import BuyerOrdersList from '../components/BuyerOrdersList.jsx';
 import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
+import useLoginPrompt from '../hooks/useLoginPrompt.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -950,6 +951,7 @@ const buildQuickCategoryCounts = (list = [], activeCountry) => {
 
 export default function Home() {
   const { token, user } = useContext(AuthContext);
+  const promptLogin = useLoginPrompt();
   const {
     country: detectedCountry,
     lat: detectedLat,
@@ -1545,27 +1547,7 @@ export default function Home() {
   function toggleFavorite(id) {
     if (!id) return;
     if (!token) {
-    setFavoriteIds((prev) => {
-      const targetId = normalizeId(id);
-      const exists = prev.includes(targetId);
-        const updated = exists
-          ? prev.filter((f) => f !== targetId)
-          : [...prev, targetId];
-    
-        if (typeof window !== 'undefined') {
-          try {
-            window.localStorage.setItem('favorites', JSON.stringify(updated));
-          } catch {
-            // ignora erro de storage
-          }
-        }
-    
-        setFavoriteItems(
-          products.filter((p) => updated.includes(normalizeId(p.id)))
-        );
-        return updated;
-      });
-      triggerFavoritePulse(normalizeId(id));
+      promptLogin('Faça login para favoritar produtos.');
       return;
     }
     

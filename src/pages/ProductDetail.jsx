@@ -15,6 +15,7 @@ import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
 import { buildProductImageEntries } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
+import useLoginPrompt from '../hooks/useLoginPrompt.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -168,6 +169,14 @@ export default function ProductDetail() {
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
   const { user, token } = useContext(AuthContext);
+  const promptLogin = useLoginPrompt();
+  const requireAuth = useCallback(
+    (message) => {
+      if (token) return true;
+      return promptLogin(message);
+    },
+    [promptLogin, token]
+  );
   const viewIncrementPending = useRef(false);
   const questionRefs = useRef(new Map());
   const replyInputRefs = useRef(new Map());
@@ -512,12 +521,12 @@ export default function ProductDetail() {
   }, [product?.id, product?.user_id, token, user]);
 
   const handleSendMessage = async () => {
+    if (!requireAuth('Faça login para enviar mensagens.')) return;
     if (!message.trim()) {
       toast.error('Digite uma mensagem antes de enviar.');
       return;
     }
-    if (!product?.id || !token) {
-      toast.error('Você precisa estar logado para enviar mensagens.');
+    if (!product?.id) {
       return;
     }
     setSending(true);
@@ -550,13 +559,13 @@ export default function ProductDetail() {
   };
 
   const submitAnswer = async (questionId) => {
+    if (!requireAuth('Faça login para responder perguntas.')) return;
     const content = (replyDrafts[questionId] || '').trim();
     if (!content) {
       toast.error('Digite uma resposta antes de enviar.');
       return;
     }
-    if (!product?.id || !token) {
-      toast.error('Você precisa estar logado.');
+    if (!product?.id) {
       return;
     }
     setAnswerLoadingId(questionId);
@@ -584,10 +593,7 @@ export default function ProductDetail() {
 
   const handleFavorite = async () => {
     if (!product?.id) return;
-    if (!token) {
-      toast.error('Você precisa estar logado para favoritar.');
-      return;
-    }
+    if (!requireAuth('Faça login para favoritar produtos.')) return;
     if (favoriteLoading) return;
     setFavoriteLoading(true);
     try {
@@ -680,10 +686,7 @@ export default function ProductDetail() {
 
   const openOfferModal = () => {
     if (product?.status === 'sold' || isOwner) return;
-    if (!token) {
-      toast.error('Você precisa estar logado para fazer uma oferta.');
-      return;
-    }
+    if (!requireAuth('Faça login para fazer uma oferta.')) return;
     if (isFreeProduct) {
       toast.info('Produto gratuito! Utilize o chat para combinar a retirada com o vendedor.');
       return;
@@ -698,7 +701,7 @@ export default function ProductDetail() {
   };
 
   const submitOffer = async () => {
-    if (!product?.id || !token) return;
+    if (!product?.id || !requireAuth('Faça login para enviar ofertas.')) return;
 
     const normalizedValue = offerValue.replace(',', '.').trim();
     const amountNumber = Number(normalizedValue);
@@ -780,10 +783,7 @@ export default function ProductDetail() {
 
   const handleOpenConversation = () => {
     if (!product?.id) return;
-    if (!user || !token) {
-      toast.error('Você precisa estar logado para conversar com o vendedor.');
-      return;
-    }
+    if (!requireAuth('Faça login para conversar com o vendedor.')) return;
     if (Number(user.id) === Number(product.user_id)) {
       toast.error('Você é o vendedor deste anúncio.');
       return;
@@ -818,10 +818,7 @@ export default function ProductDetail() {
 
   const handleRequestPurchase = async () => {
     if (!product?.id) return;
-    if (!token) {
-      toast.error('Você precisa estar logado.');
-      return;
-    }
+    if (!requireAuth('Faça login para solicitar a compra.')) return;
     setOrdering(true);
     try {
       const { data } = await api.post(
@@ -981,10 +978,7 @@ export default function ProductDetail() {
 
   const sendQuickAvailability = async () => {
     if (isSold) return;
-    if (!token) {
-      toast.error('Você precisa estar logado para enviar mensagem.');
-      return;
-    }
+    if (!requireAuth('Faça login para enviar mensagens.')) return;
     try {
       await api.post(
         '/messages',
@@ -1445,7 +1439,7 @@ export default function ProductDetail() {
       </section>
 
       {/* Perguntas e respostas da publicação */}
-      {!isSold && user && (
+      {!isSold && (
         <section className="border-t pt-4 space-y-4">
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <div>

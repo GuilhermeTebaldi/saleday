@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast';
 import { localeFromCountry } from '../i18n/localeMap.js';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import { makeAbsolute } from '../utils/urlHelpers.js';
+import useLoginPrompt from '../hooks/useLoginPrompt.js';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -25,6 +26,14 @@ export default function SellerProfile() {
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
   const geo = useContext(GeoContext);
+  const promptLogin = useLoginPrompt();
+  const requireAuth = useCallback(
+    (message) => {
+      if (token) return true;
+      return promptLogin(message);
+    },
+    [promptLogin, token]
+  );
 
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
@@ -234,10 +243,7 @@ export default function SellerProfile() {
   // enviar review (aqui continua chamando POST /users/:id/reviews
   // se seu backend também não tem isso ainda você pode remover todo esse bloco e o modal)
   const sendReview = async () => {
-    if (!token) {
-      toast.error('Faça login.');
-      return;
-    }
+    if (!requireAuth('Faça login para enviar avaliações.')) return;
     if (!stars || stars < 1 || stars > 5) {
       toast.error('Nota inválida.');
       return;
@@ -283,10 +289,7 @@ export default function SellerProfile() {
 
   const handleSaveReview = async (reviewId) => {
     if (!reviewId) return;
-    if (!token) {
-      toast.error('Faça login.');
-      return;
-    }
+    if (!requireAuth('Faça login para editar avaliações.')) return;
     setSavingReviewId(reviewId);
     try {
       const normalizedComment = editingReviewText.trim();
@@ -313,10 +316,7 @@ export default function SellerProfile() {
 
   const handleDeleteReview = async (reviewId) => {
     if (!reviewId) return;
-    if (!token) {
-      toast.error('Faça login.');
-      return;
-    }
+    if (!requireAuth('Faça login para excluir avaliações.')) return;
     setDeletingReviewId(reviewId);
     try {
       const res = await api.delete(`/users/${id}/reviews/${reviewId}`, {
@@ -419,6 +419,7 @@ export default function SellerProfile() {
   }
 
   const handleOpenSellerChat = () => {
+    if (!requireAuth('Faça login para conversar com vendedores.')) return;
     const params = new URLSearchParams();
     params.set('seller', String(seller.id));
     if (seller.username) {
@@ -428,6 +429,7 @@ export default function SellerProfile() {
   };
 
   const handleOpenProductChat = (product) => {
+    if (!requireAuth('Faça login para conversar com vendedores.')) return;
     if (isSelf) {
       toast.error('Você não pode iniciar uma conversa com você mesmo.');
       return;

@@ -97,14 +97,7 @@ export default function App() {
                   <Route path="support" element={<AdminSupport />} />
                   <Route path="history" element={<AdminHistory />} />
                 </Route>
-                <Route
-                  path="/product/:id"
-                  element={
-                    <ProtectedRoute>
-                      <ProductDetail />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/product/:id" element={<ProductDetail />} />
                 <Route
                   path="/dashboard"
                   element={
