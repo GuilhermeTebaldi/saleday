@@ -158,6 +158,18 @@ export default function MapSearch({
   }, [showMap, closeModal]);
 
   useEffect(() => {
+    if (!showMap || typeof document === 'undefined') return undefined;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [showMap]);
+
+  useEffect(() => {
     if (resetSignal === undefined) return;
     setBbox(null);
   }, [resetSignal]);
@@ -410,7 +422,8 @@ export default function MapSearch({
           <AnimatePresence>
             {showMap && (
               <motion.div
-                className="fixed inset-0 z-50"
+                className="fixed inset-0"
+                style={{ zIndex: 8000 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -418,103 +431,105 @@ export default function MapSearch({
                 <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
 
                 <motion.div
-                  className="relative mx-auto mt-[6vh] w-[92%] max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden"
-                  initial={{ scale: 0.95, y: 10 }}
+                  className="relative h-full w-full bg-white shadow-2xl overflow-hidden"
+                  initial={{ scale: 0.98, y: 8 }}
                   animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.95, y: 10 }}
+                  exit={{ scale: 0.98, y: 8 }}
                 >
-                  <div className="flex flex-col gap-3 px-3 py-2 border-b">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
-                        <MapIcon size={16} />
-                      </span>
-                      <h3 className="font-semibold text-sm">Selecione a região no mapa</h3>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
+                  <div className="flex h-full flex-col">
+                    <div className="flex flex-col gap-3 px-4 py-3 border-b bg-white/95 backdrop-blur">
                       <div className="flex items-center gap-2">
-                        <input
-                          value={locationQuery}
-                          onChange={(e) => setLocationQuery(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
-                          placeholder="Buscar cidade ou endereço"
-                          className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                        />
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white">
+                          <MapIcon size={16} />
+                        </span>
+                        <h3 className="font-semibold text-sm">Selecione a região no mapa</h3>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            value={locationQuery}
+                            onChange={(e) => setLocationQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleLocationSearch()}
+                            placeholder="Buscar cidade ou endereço"
+                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={handleLocationSearch}
+                            disabled={searchingLocation}
+                            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold disabled:opacity-60"
+                          >
+                            {searchingLocation ? 'Buscando...' : 'Ir'}
+                          </button>
+                        </div>
                         <button
-                          onClick={handleLocationSearch}
-                          disabled={searchingLocation}
-                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold disabled:opacity-60"
+                          onClick={closeModal}
+                          aria-label="Fechar"
+                          className="p-2 rounded hover:bg-gray-100"
                         >
-                          {searchingLocation ? 'Buscando...' : 'Ir'}
+                          <X size={16} />
                         </button>
                       </div>
-                      <button
-                        onClick={closeModal}
-                        aria-label="Fechar"
-                        className="p-2 rounded hover:bg-gray-100"
-                      >
-                        <X size={16} />
-                      </button>
                     </div>
-                  </div>
 
-                  <div className="relative h-[420px]">
-                    <MapContainer
-                      center={mapCenter}
-                      zoom={mapZoom}
-                      style={{ height: '100%', width: '100%', zIndex: 0 }}
-                      whenCreated={(map) => {
-                        mapRef.current = map;
-                        map.whenReady(() => {
-                          setMapReady(true);
-                          const initial = buildBoundsFromMap(map);
-                          if (initial) setBbox(initial);
-                        });
-                      }}
-                    >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <MapEvents onBoundsChange={setBbox} onViewportChange={handleViewportChange} />
-                    </MapContainer>
+                    <div className="relative flex-1 min-h-0">
+                      <MapContainer
+                        center={mapCenter}
+                        zoom={mapZoom}
+                        style={{ height: '100%', width: '100%', zIndex: 0 }}
+                        whenCreated={(map) => {
+                          mapRef.current = map;
+                          map.whenReady(() => {
+                            setMapReady(true);
+                            const initial = buildBoundsFromMap(map);
+                            if (initial) setBbox(initial);
+                          });
+                        }}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <MapEvents onBoundsChange={setBbox} onViewportChange={handleViewportChange} />
+                      </MapContainer>
 
-                    {/* sobreposição com círculo amarelo */}
-                    <div
-                      className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                      style={{ zIndex: 999 }}
-                    >
-                      <div className="relative flex items-center justify-center">
-                        <div
-                          className="rounded-full"
-                          style={{
-                            width: '200px',
-                            height: '200px',
-                            backgroundColor: 'rgba(255, 223, 0, 0.25)',
-                            border: '2px solid rgba(255, 215, 0, 0.7)',
-                            boxShadow: '0 0 15px rgba(255, 200, 0, 0.4)',
-                          }}
-                        />
-                        <div className="absolute">
-                          <div className="w-4 h-4 rounded-full border-2 border-blue-600 bg-white shadow" />
-                          <span className="absolute inset-0 rounded-full animate-ping border-2 border-blue-300" />
+                      {/* sobreposição com círculo amarelo */}
+                      <div
+                        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                        style={{ zIndex: 999 }}
+                      >
+                        <div className="relative flex items-center justify-center">
+                          <div
+                            className="rounded-full"
+                            style={{
+                              width: '240px',
+                              height: '240px',
+                              backgroundColor: 'rgba(255, 223, 0, 0.25)',
+                              border: '2px solid rgba(255, 215, 0, 0.7)',
+                              boxShadow: '0 0 15px rgba(255, 200, 0, 0.4)',
+                            }}
+                          />
+                          <div className="absolute">
+                            <div className="w-4 h-4 rounded-full border-2 border-blue-600 bg-white shadow" />
+                            <span className="absolute inset-0 rounded-full animate-ping border-2 border-blue-300" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="p-3 border-t flex justify-end gap-2">
-                    <button
-                      onClick={closeModal}
-                      className="px-3 py-1.5 rounded border hover:bg-gray-50"
-                      type="button"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleConfirmRegion}
-                      disabled={loading}
-                      className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                      type="button"
-                    >
-                      {loading ? 'Carregando...' : 'Confirmar região'}
-                    </button>
+                    <div className="p-3 border-t bg-white/95 backdrop-blur flex justify-end gap-2">
+                      <button
+                        onClick={closeModal}
+                        className="px-3 py-1.5 rounded border hover:bg-gray-50"
+                        type="button"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleConfirmRegion}
+                        disabled={loading}
+                        className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                        type="button"
+                      >
+                        {loading ? 'Carregando...' : 'Confirmar região'}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>

@@ -62,6 +62,9 @@ const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE',
 function hasTranslateNo(el) {
   let current = el;
   while (current) {
+    if (typeof document !== 'undefined' && current === document.documentElement) {
+      return false;
+    }
     if (current.getAttribute) {
       const value = current.getAttribute(TRANSLATE_ATTR);
       if (value && value.toLowerCase() === TRANSLATE_NO_VALUE) {
@@ -137,6 +140,7 @@ function resetTranslations(root) {
   restoreAttributes(root);
 }
 
+
 function replaceTextNodes(root, dict) {
   if (!dict) return;
   const helpers = buildHelpers(dict);
@@ -206,12 +210,6 @@ function matchSupportedLocale(value) {
   );
 }
 
-const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-const isMobileSafari =
-  /Safari/.test(userAgent) &&
-  !/Chrome|CriOS|FxiOS|EdgiOS|Edge|OPiOS/.test(userAgent) &&
-  /Mobile|iPhone|iPad|iPod/.test(userAgent);
-
 export default function AutoI18n() {
   const { user } = useContext(AuthContext);
   const { locale: geoLocale } = useContext(GeoContext);
@@ -232,18 +230,22 @@ export default function AutoI18n() {
         ? Intl.DateTimeFormat().resolvedOptions?.().timeZone
         : null;
     const timezoneCountry = detectCountryFromTimezone(timezone);
+    const supportedByUser = matchSupportedLocale(byUser);
+    const supportedByBrowser = matchSupportedLocale(byBrowser);
+    const supportedByGeo = matchSupportedLocale(geoLocale);
+    const supportedByStorage = matchSupportedLocale(byStorage);
+    const supportedByTimezone = matchSupportedLocale(localeFromCountry(timezoneCountry));
+    if (supportedByUser) return supportedByUser;
+    if (supportedByBrowser) return supportedByBrowser;
     return (
-      matchSupportedLocale(byUser) ||
-      matchSupportedLocale(geoLocale) ||
-      matchSupportedLocale(byBrowser) ||
-      matchSupportedLocale(byStorage) ||
-      matchSupportedLocale(localeFromCountry(timezoneCountry)) ||
+      supportedByGeo ||
+      supportedByStorage ||
+      supportedByTimezone ||
       'pt-BR'
     );
   }, [user, geoLocale]);
 
   useEffect(() => {
-    if (isMobileSafari) return undefined;
     if (!locale) return;
     if (typeof window !== 'undefined') {
       localStorage.setItem('saleday.locale', locale);
