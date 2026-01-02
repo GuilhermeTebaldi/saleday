@@ -1650,51 +1650,55 @@ export default function ProductDetail() {
 
       {floatingBarPortal}
 
-      {phoneActionsOpen && phoneActions && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
-          onClick={() => setPhoneActionsOpen(false)}
-        >
+      {phoneActionsOpen &&
+        phoneActions &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
+            onClick={() => setPhoneActionsOpen(false)}
           >
-            <header className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  Contato do vendedor
-                </p>
-                <p className="text-base font-semibold text-gray-900">{phoneActions.display}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPhoneActionsOpen(false)}
-                className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
-                aria-label="Fechar"
-              >
-                <CloseIcon size={18} />
-              </button>
-            </header>
+            <div
+              className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Contato do vendedor
+                  </p>
+                  <p className="text-base font-semibold text-gray-900">{phoneActions.display}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPhoneActionsOpen(false)}
+                  className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
+                  aria-label="Fechar"
+                >
+                  <CloseIcon size={18} />
+                </button>
+              </header>
 
-            <div className="mt-4 grid gap-2">
-              <a
-                href={phoneActions.telHref}
-                className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
-              >
-                <PhoneCall size={18} /> Ligar agora
-              </a>
-              <a
-                href={phoneActions.whatsappHref}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-              >
-                <MessageCircle size={18} /> WhatsApp
-              </a>
+              <div className="mt-4 grid gap-2">
+                <a
+                  href={phoneActions.telHref}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                >
+                  <PhoneCall size={18} /> Ligar agora
+                </a>
+                <a
+                  href={phoneActions.whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  <MessageCircle size={18} /> WhatsApp
+                </a>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {showFloatingContactBar && (
         <div
