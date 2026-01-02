@@ -244,6 +244,8 @@ export default function SellerCatalog() {
                 const meta = CATALOG_PREVIEW_META[option.key];
                 const thumbSrc = CATALOG_THUMBNAILS[option.key] || '/catalogo/catalogo.jpg';
                 const selected = catalogStyle === option.key;
+                const optionLabel = catalogTranslator(option.label, option.label);
+                const optionBadge = meta?.badge ? catalogTranslator(meta.badge, meta.badge) : '';
                 return (
                   <button
                     key={option.key}
@@ -256,12 +258,12 @@ export default function SellerCatalog() {
                     }`}
                   >
                     <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100">
-                      <img src={thumbSrc} alt={`${option.label} SaleDay`} className="h-full w-full object-cover" />
+                      <img src={thumbSrc} alt={`${optionLabel} SaleDay`} className="h-full w-full object-cover" />
                     </div>
                     <div className="mt-2 space-y-0.5">
-                      <p className="text-xs font-semibold text-slate-900">{option.label}</p>
+                      <p className="text-xs font-semibold text-slate-900">{optionLabel}</p>
                       {meta?.badge && (
-                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500">{meta.badge}</p>
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500">{optionBadge}</p>
                       )}
                     </div>
                   </button>
@@ -271,18 +273,24 @@ export default function SellerCatalog() {
             {selectedStyleMeta && (
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700 shadow-inner">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-500">{selectedStyleMeta.badge}</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-slate-500">
+                    {catalogTranslator(selectedStyleMeta.badge, selectedStyleMeta.badge)}
+                  </p>
                   <span
                     className="h-2 w-2 rounded-full"
                     style={{ background: selectedStyleMeta.accent }}
                   />
                 </div>
-                <h2 className="mt-1 text-base font-semibold text-slate-900">{selectedStyleMeta.title}</h2>
-                <p className="mt-2 text-sm text-slate-500">{selectedStyleMeta.description}</p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">
+                  {catalogTranslator(selectedStyleMeta.title, selectedStyleMeta.title)}
+                </h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  {catalogTranslator(selectedStyleMeta.description, selectedStyleMeta.description)}
+                </p>
                 <ul className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-600">
                   {selectedStyleMeta.bullets?.map((item) => (
                     <li key={item} className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                      {item}
+                      {catalogTranslator(item, item)}
                     </li>
                   ))}
                 </ul>
