@@ -716,11 +716,12 @@ export default function Dashboard() {
 
     setIsSecuritySaving(true);
     try {
-      const payload = new FormData();
-      payload.append('currentPassword', passwords.current);
-      payload.append('newPassword', passwords.next);
+      const payload = {
+        currentPassword: passwords.current,
+        newPassword: passwords.next
+      };
 
-      await api.put('/auth/update', payload, {
+      await api.put('/auth/password', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
