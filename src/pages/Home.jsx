@@ -479,6 +479,17 @@ const extractRegionFromLocale = (value) => {
   return match ? match[1] : '';
 };
 
+const readStoredPreferredCountry = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return normalizeCountryCode(
+      window.localStorage.getItem('saleday.preferredCountry')
+    );
+  } catch {
+    return null;
+  }
+};
+
 const detectPreferredCountry = (userCountry, geoCountry) => {
   const normalizedUser = normalizeCountryCode(userCountry);
   if (normalizedUser) return normalizedUser;
@@ -486,9 +497,7 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
   if (normalizedGeo) return normalizedGeo;
   if (typeof window !== 'undefined') {
     try {
-      const storedPref = normalizeCountryCode(
-        window.localStorage.getItem('saleday.preferredCountry')
-      );
+      const storedPref = readStoredPreferredCountry();
       if (storedPref) return storedPref;
 
       const candidates = [];
@@ -956,10 +965,12 @@ export default function Home() {
     country: detectedCountry,
     lat: detectedLat,
     lng: detectedLng,
-    locale: detectedLocale
+    locale: detectedLocale,
+    ready: geoReady
   } = useContext(GeoContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const storedPreferredCountry = useMemo(() => readStoredPreferredCountry(), []);
   const preferredCountry = useMemo(
     () => detectPreferredCountry(user?.country, detectedCountry),
     [user?.country, detectedCountry]
@@ -1152,6 +1163,15 @@ export default function Home() {
   }, []);
 
   const loadDefaultProducts = useCallback(async () => {
+    if (
+      !token &&
+      !geoReady &&
+      !storedPreferredCountry &&
+      !user?.country
+    ) {
+      // Aguarda detecção automática para evitar mostrar país errado a visitantes.
+      return;
+    }
     const scope = { type: 'country', country: preferredCountry };
     try {
       const { data } = await api.get('/products', {
@@ -1177,7 +1197,7 @@ export default function Home() {
     } catch {
       /* silencioso */
     }
-  }, [preferredCountry, handleProductsLoaded]);
+  }, [preferredCountry, handleProductsLoaded, geoReady, storedPreferredCountry, token, user?.country]);
 
   // carregar produtos iniciais
   useEffect(() => {
