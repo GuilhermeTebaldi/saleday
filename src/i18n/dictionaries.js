@@ -438,6 +438,7 @@ const ENTRIES = [
   { key: 'Limite de 10 fotos por anúncio. Algumas imagens ficaram de fora.', en: 'Limit of 10 photos per listing. Some images were skipped.', es: 'Límite de 10 fotos por anuncio. Algunas imágenes se omitieron.', it: 'Limite di 10 foto per annuncio. Alcune immagini sono state escluse.' , ja: '1つの出品につき写真は10枚までです。一部の画像はスキップされました。' },
   { key: 'Algumas imagens não foram adicionadas por exceder o limite de 10.', en: 'Some images were not added because the limit of 10 was exceeded.', es: 'Algunas imágenes no se agregaron porque se superó el límite de 10.', it: 'Alcune immagini non sono state aggiunte perché è stato superato il limite di 10.' , ja: '10枚の上限を超えたため追加できなかった画像があります。' },
   { key: 'Selecione apenas arquivos de imagem.', en: 'Select image files only.', es: 'Selecciona solo archivos de imagen.', it: 'Seleziona solo file immagine.' , ja: '画像ファイルのみ選択してください。' },
+  { key: 'Algumas imagens estão acima de 5MB. Reduza o tamanho antes de publicar.', en: 'Some images are above 5MB. Reduce the size before publishing.', es: 'Algunas imágenes superan los 5MB. Reduce el tamaño antes de publicar.', it: 'Alcune immagini superano i 5MB. Riduci la dimensione prima di pubblicare.', ja: '一部の画像が5MBを超えています。公開前にサイズを小さくしてください。' },
   { key: 'Título', en: 'Title', es: 'Título', it: 'Titolo' , ja: 'タイトル' },
   { key: 'Preço', en: 'Price', es: 'Precio', it: 'Prezzo' , ja: '価格' },
   { key: 'Marca', en: 'Brand', es: 'Marca', it: 'Marca' , ja: 'ブランド' },

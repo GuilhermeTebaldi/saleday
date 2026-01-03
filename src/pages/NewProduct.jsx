@@ -81,34 +81,34 @@ async function createWatermarkedFile(file) {
   ctx.globalAlpha = 1;
   const preferredType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
   let outputType = preferredType;
-  let blob = await canvasToBlob(canvas, outputType, 0.9);
+  let quality = 0.9;
+  let blob = await canvasToBlob(canvas, outputType, quality);
   if (!blob) return file;
+
+  let workingCanvas = canvas;
   if (blob.size > MAX_IMAGE_UPLOAD_BYTES) {
     outputType = 'image/jpeg';
-    let quality = 0.85;
-    let candidate = blob;
-    while (candidate && candidate.size > MAX_IMAGE_UPLOAD_BYTES && quality >= MIN_COMPRESS_QUALITY) {
-      candidate = await canvasToBlob(canvas, outputType, quality);
-      quality -= 0.1;
-    }
-    if (candidate && candidate.size <= MAX_IMAGE_UPLOAD_BYTES) {
-      blob = candidate;
-    }
+    quality = 0.85;
+    blob = await canvasToBlob(workingCanvas, outputType, quality);
   }
 
-  if (blob.size > MAX_IMAGE_UPLOAD_BYTES) {
-    // fallback: extra compression for oversized images
-    const extraScale = 0.85;
-    const nextCanvas = document.createElement('canvas');
-    nextCanvas.width = Math.max(1, Math.round(canvas.width * extraScale));
-    nextCanvas.height = Math.max(1, Math.round(canvas.height * extraScale));
-    const nextCtx = nextCanvas.getContext('2d');
-    nextCtx.drawImage(canvas, 0, 0, nextCanvas.width, nextCanvas.height);
-    const candidate = await canvasToBlob(nextCanvas, 'image/jpeg', MIN_COMPRESS_QUALITY);
-    if (candidate && candidate.size <= MAX_IMAGE_UPLOAD_BYTES) {
-      blob = candidate;
-      outputType = 'image/jpeg';
+  let attempts = 0;
+  while (blob && blob.size > MAX_IMAGE_UPLOAD_BYTES && attempts < 5) {
+    if (quality > MIN_COMPRESS_QUALITY) {
+      quality = Math.max(MIN_COMPRESS_QUALITY, Number((quality - 0.1).toFixed(2)));
+      blob = await canvasToBlob(workingCanvas, outputType, quality);
+      if (blob && blob.size <= MAX_IMAGE_UPLOAD_BYTES) break;
     }
+
+    const downscale = 0.85;
+    const nextCanvas = document.createElement('canvas');
+    nextCanvas.width = Math.max(1, Math.round(workingCanvas.width * downscale));
+    nextCanvas.height = Math.max(1, Math.round(workingCanvas.height * downscale));
+    const nextCtx = nextCanvas.getContext('2d');
+    nextCtx.drawImage(workingCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+    workingCanvas = nextCanvas;
+    blob = await canvasToBlob(workingCanvas, outputType, quality);
+    attempts += 1;
   }
 
   const finalType = blob.type || outputType || file.type || 'image/jpeg';
@@ -1075,9 +1075,7 @@ export default function NewProduct() {
       const uploadFiles = await prepareImagesForUpload(images);
       const oversizeCount = uploadFiles.filter((file) => file.size > MAX_IMAGE_UPLOAD_BYTES).length;
       if (oversizeCount > 0) {
-        toast.error(
-          `Há ${oversizeCount} imagem${oversizeCount === 1 ? '' : 's'} acima de 5MB. Reduza o tamanho antes de publicar.`
-        );
+        toast.error('Algumas imagens estão acima de 5MB. Reduza o tamanho antes de publicar.');
         setSending(false);
         resetPublishState();
         return;
