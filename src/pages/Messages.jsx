@@ -1,6 +1,6 @@
   // frontend/src/pages/Messages.jsx
   // Página de mensagens entre compradores e vendedores.
-  import { useEffect, useMemo, useRef, useState, useContext, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useContext, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
   import { toast } from 'react-hot-toast';
   import api from '../api/api.js';
@@ -160,7 +160,20 @@ import { Link, useSearchParams } from 'react-router-dom';
       [user?.username, user?.email, userDisplayName]
     );
     const [autoScroll, setAutoScroll] = useState(true);
+    const autoScrollRef = useRef(true);
+    const ignoreAutoScrollRef = useRef(false);
+    const forceScrollToBottomRef = useRef(false);
     const AUTO_SCROLL_THRESHOLD = 80;
+
+    const scrollToBottom = useCallback((behavior = 'auto') => {
+      const container = threadContainerRef.current;
+      if (!container) return;
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior });
+      } else {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, []);
 
     useEffect(() => {
       if (!receiveSoundRef.current) {
@@ -448,6 +461,9 @@ import { Link, useSearchParams } from 'react-router-dom';
         setSelectedProduct(hasProduct ? parsedProductId : null);
         lastMessageCountRef.current = null; // reset so initial load doesn't play sound
         setAutoScroll(true);
+        autoScrollRef.current = true;
+        ignoreAutoScrollRef.current = true;
+        forceScrollToBottomRef.current = true;
         await fetchMessages({
           counterpartId: resolvedCounterpart,
           productId: hasProduct ? parsedProductId : null,
@@ -719,6 +735,7 @@ import { Link, useSearchParams } from 'react-router-dom';
           }
           lastMessageCountRef.current = null; // avoid skipping play on new incoming
           setAutoScroll(true);
+          autoScrollRef.current = true;
           await fetchMessages({
             counterpartId: targetId,
             productId: isProductChat ? selectedProduct : null,
@@ -833,20 +850,41 @@ import { Link, useSearchParams } from 'react-router-dom';
       if (!threadContainerRef.current) return;
       const container = threadContainerRef.current;
       const handleScroll = () => {
+        if (ignoreAutoScrollRef.current) return;
         const distance = container.scrollHeight - (container.scrollTop + container.clientHeight);
-        setAutoScroll(distance <= AUTO_SCROLL_THRESHOLD);
+        const shouldAutoScroll = distance <= AUTO_SCROLL_THRESHOLD;
+        autoScrollRef.current = shouldAutoScroll;
+        setAutoScroll(shouldAutoScroll);
       };
       handleScroll();
       container.addEventListener('scroll', handleScroll, { passive: true });
       return () => {
         container.removeEventListener('scroll', handleScroll);
       };
-    }, []);
+    }, [counterpartId]);
 
-    useEffect(() => {
-      if (!messagesEndRef.current || !autoScroll) return;
-      messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
-    }, [messages, autoScroll]);
+    useLayoutEffect(() => {
+      if (!threadContainerRef.current) return;
+      if (forceScrollToBottomRef.current) {
+        if (messages.length > 0) {
+          scrollToBottom('auto');
+          forceScrollToBottomRef.current = false;
+        }
+        if (ignoreAutoScrollRef.current) {
+          requestAnimationFrame(() => {
+            ignoreAutoScrollRef.current = false;
+          });
+        }
+        return;
+      }
+      if (!autoScrollRef.current) return;
+      scrollToBottom('auto');
+      if (ignoreAutoScrollRef.current) {
+        requestAnimationFrame(() => {
+          ignoreAutoScrollRef.current = false;
+        });
+      }
+    }, [messages, scrollToBottom]);
 
     useEffect(() => {
       if (!selectedProductInfo) return;
