@@ -30,20 +30,37 @@ const BOUNDS = {
 };
 
 const MAX_PRODUCT_PHOTOS = 10;
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 2048;
+const MIN_COMPRESS_QUALITY = 0.6;
 const FIELD_BASE_CLASS =
   'w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500';
 const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
 const WATERMARK_TEXT = 'saleday.com.br';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 
+const buildSafeImageFilename = (name, extension) => {
+  const base = typeof name === 'string' && name.trim() ? name.trim() : 'imagem';
+  const stripped = base.replace(/\.[^.]+$/, '');
+  return `${stripped}${extension}`;
+};
+
+const canvasToBlob = (canvas, type, quality) =>
+  new Promise((resolve) => {
+    canvas.toBlob((output) => resolve(output), type, quality);
+  });
+
 async function createWatermarkedFile(file) {
+  // Keep mobile uploads under backend limits by downscaling/compressing when needed.
   if (!file || typeof document === 'undefined') return file;
   if (typeof createImageBitmap !== 'function') return file;
 
   const bitmap = await createImageBitmap(file);
   const canvas = document.createElement('canvas');
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
+  const maxSide = Math.max(bitmap.width, bitmap.height);
+  const scale = maxSide > MAX_IMAGE_DIMENSION ? MAX_IMAGE_DIMENSION / maxSide : 1;
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
   const ctx = canvas.getContext('2d');
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
@@ -62,17 +79,42 @@ async function createWatermarkedFile(file) {
   ctx.fillText(WATERMARK_TEXT, x, y);
 
   ctx.globalAlpha = 1;
-  const blob = await new Promise((resolve) => {
-    canvas.toBlob(
-      (output) => resolve(output),
-      file.type === 'image/png' ? 'image/png' : 'image/jpeg',
-      0.9
-    );
-  });
+  const preferredType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  let outputType = preferredType;
+  let blob = await canvasToBlob(canvas, outputType, 0.9);
   if (!blob) return file;
-  return new File([blob], file.name, {
-    type: blob.type || file.type || 'image/jpeg'
-  });
+  if (blob.size > MAX_IMAGE_UPLOAD_BYTES) {
+    outputType = 'image/jpeg';
+    let quality = 0.85;
+    let candidate = blob;
+    while (candidate && candidate.size > MAX_IMAGE_UPLOAD_BYTES && quality >= MIN_COMPRESS_QUALITY) {
+      candidate = await canvasToBlob(canvas, outputType, quality);
+      quality -= 0.1;
+    }
+    if (candidate && candidate.size <= MAX_IMAGE_UPLOAD_BYTES) {
+      blob = candidate;
+    }
+  }
+
+  if (blob.size > MAX_IMAGE_UPLOAD_BYTES) {
+    // fallback: extra compression for oversized images
+    const extraScale = 0.85;
+    const nextCanvas = document.createElement('canvas');
+    nextCanvas.width = Math.max(1, Math.round(canvas.width * extraScale));
+    nextCanvas.height = Math.max(1, Math.round(canvas.height * extraScale));
+    const nextCtx = nextCanvas.getContext('2d');
+    nextCtx.drawImage(canvas, 0, 0, nextCanvas.width, nextCanvas.height);
+    const candidate = await canvasToBlob(nextCanvas, 'image/jpeg', MIN_COMPRESS_QUALITY);
+    if (candidate && candidate.size <= MAX_IMAGE_UPLOAD_BYTES) {
+      blob = candidate;
+      outputType = 'image/jpeg';
+    }
+  }
+
+  const finalType = blob.type || outputType || file.type || 'image/jpeg';
+  const finalExtension = finalType === 'image/png' ? '.png' : '.jpg';
+  const finalName = buildSafeImageFilename(file.name, finalExtension);
+  return new File([blob], finalName, { type: finalType });
 }
 
 const PUBLISH_STAGE_META = {
@@ -1031,6 +1073,15 @@ export default function NewProduct() {
       });
 
       const uploadFiles = await prepareImagesForUpload(images);
+      const oversizeCount = uploadFiles.filter((file) => file.size > MAX_IMAGE_UPLOAD_BYTES).length;
+      if (oversizeCount > 0) {
+        toast.error(
+          `Há ${oversizeCount} imagem${oversizeCount === 1 ? '' : 's'} acima de 5MB. Reduza o tamanho antes de publicar.`
+        );
+        setSending(false);
+        resetPublishState();
+        return;
+      }
       uploadFiles.forEach((file) => {
         formData.append('images', file);
       });
