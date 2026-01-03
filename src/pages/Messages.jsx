@@ -1092,13 +1092,13 @@
     <div className="flex h-screen flex-col overflow-x-hidden overflow-y-hidden bg-slate-50 pt-[var(--home-header-height,64px)]">
 
 
-          <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-4 py-4 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
+          <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-0 py-0 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
             <aside className="hidden lg:flex lg:w-full lg:max-w-xs lg:min-h-0">
               {renderConversationList()}
             </aside>
 
-            <section className="flex flex-1 flex-col min-h-0 overflow-hidden overscroll-none fixed inset-0 pt-[calc(var(--home-header-height,64px)+4rem)] px-4 lg:static lg:inset-auto lg:pt-0 lg:px-0">
-            <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition-all duration-300">
+            <section className="flex flex-1 flex-col min-h-0 overflow-hidden overscroll-none fixed inset-0 pt-[calc(var(--home-header-height,64px)+0.75rem)] px-0 lg:static lg:inset-auto lg:pt-0 lg:px-0">
+            <div className="relative flex flex-1 flex-col min-h-0 overflow-hidden rounded-none border border-slate-200 bg-white shadow-none transition-all duration-300 lg:rounded-[32px] lg:shadow-[0_30px_60px_rgba(15,23,42,0.12)]">
             {hasActiveConversation ? (
                   <>
           <header className="z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5 shadow backdrop-blur-lg">
@@ -1151,7 +1151,7 @@
 
 
 
-                      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
+                    <div className="mx-0 flex w-full max-w-none flex-col gap-4 lg:mx-auto lg:max-w-[1200px]">
                         {mergedFeedItems.map((item) => {
                           if (item.type === 'context') {
                             const context = item.context;
@@ -1547,7 +1547,7 @@
 
   function ProductContextCard({ context }) {
     return (
-      <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-200/50 transition-all duration-200">
+      <div className="mx-0 flex flex-col gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-200/50 transition-all duration-200 lg:mx-4">
         <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
           Produto em foco
         </p>
@@ -1577,7 +1577,7 @@
 
   function ProductPreview({ context }) {
     return (
-      <div className="mx-4 rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm shadow-blue-500/10 transition-all duration-200">
+      <div className="mx-0 mb-[calc(env(safe-area-inset-bottom,0px)+88px)] rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm shadow-blue-500/10 transition-all duration-200 lg:mx-4 lg:mb-6">
         <div className="flex items-center justify-between gap-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-blue-600">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />

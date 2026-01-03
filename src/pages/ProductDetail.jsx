@@ -1146,10 +1146,10 @@ export default function ProductDetail() {
   const floatingBarPortal =
     showFloatingContactBar && typeof document !== 'undefined'
       ? createPortal(
-          <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]">
+          <div className="fixed inset-x-0 bottom-0 z-50 px-0 pb-[calc(env(safe-area-inset-bottom,0px)+0.0rem)]">
             <div
               ref={floatingBarRef}
-              className="mx-auto flex max-w-2xl items-center gap-2 rounded-2xl border border-emerald-100 bg-white/95 p-2 shadow-2xl backdrop-blur"
+              className="flex w-full max-w-none items-center gap-2 rounded-none border border-emerald-10 bg-white/95 p-3 shadow-2xl backdrop-blur"
             >
               {showChatAction && (
                 <button
