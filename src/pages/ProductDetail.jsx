@@ -691,6 +691,10 @@ export default function ProductDetail() {
     galleryTouchStartXRef.current = null;
   };
 
+  const closeViewer = useCallback(() => {
+    setViewerOpen(false);
+  }, []);
+
   const handleGalleryClick = () => {
     if (galleryTouchMovedRef.current) {
       galleryTouchMovedRef.current = false;
@@ -1065,8 +1069,9 @@ export default function ProductDetail() {
     viewerOpen && viewerPortalRoot
       ? createPortal(
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/95 backdrop-blur-sm"
-            onClick={() => setViewerOpen(false)}
+            className="fixed inset-0 flex items-center justify-center overflow-hidden bg-black/95 backdrop-blur-sm"
+            style={{ zIndex: 8000 }}
+            onClick={closeViewer}
           >
             <div
               className="relative w-full h-full flex items-center justify-center overflow-hidden"
@@ -1078,10 +1083,16 @@ export default function ProductDetail() {
               <button
                 type="button"
                 aria-label="Fechar"
-                className="absolute right-4 top-4 z-20 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70"
+                title="Fechar"
+                className="fixed z-[60] rounded-full border border-red-300 bg-red-600 p-3 text-white shadow-lg transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring focus-visible:ring-red-200"
+                style={{
+                  top: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+                  right: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+                  zIndex: 8010
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
-                  setViewerOpen(false);
+                  closeViewer();
                 }}
               >
                 <CloseIcon size={26} />
