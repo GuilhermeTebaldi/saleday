@@ -2,6 +2,7 @@
   // Página de mensagens entre compradores e vendedores.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useContext, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
   import { toast } from 'react-hot-toast';
   import api from '../api/api.js';
   import { AuthContext } from '../context/AuthContext.jsx';
@@ -1140,7 +1141,14 @@ import { Link, useSearchParams } from 'react-router-dom';
             {hasActiveConversation ? (
                   <>
           <header className="z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5 shadow backdrop-blur-lg">
-
+          <button
+                          type="button"
+                          className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/30 transition-all duration-200 hover:bg-blue-700 lg:hidden"
+                          onClick={() => setSidebarOpen(true)}
+                        >
+                          <MessageCircle size={16} aria-hidden="true" />
+                          Abrir conversas
+                        </button>
     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20">
                           {selectedMeta.avatar ? (
@@ -1168,14 +1176,7 @@ import { Link, useSearchParams } from 'react-router-dom';
                             Produto vendido
                           </span>
                         )}
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-600 transition-all duration-200 hover:border-blue-300 hover:bg-blue-50 lg:hidden"
-                          onClick={() => setSidebarOpen(true)}
-                        >
-                          <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          Conversas
-                        </button>
+                    
                       </div>
                     </header>
 
