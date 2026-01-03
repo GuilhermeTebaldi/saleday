@@ -478,6 +478,8 @@ const ENTRIES = [
   { key: 'Produto atualizado.', en: 'Product updated.', es: 'Producto actualizado.', it: 'Prodotto aggiornato.' , ja: '商品を更新しました。' },
   { key: 'Erro ao atualizar produto.', en: 'Error updating product.', es: 'Error al actualizar el producto.', it: 'Errore nell\'aggiornare il prodotto.' , ja: '商品の更新中にエラーが発生しました。' },
   { key: 'Deseja realmente excluir este produto?', en: 'Do you really want to delete this product?', es: '¿Realmente deseas eliminar este producto?', it: 'Vuoi davvero eliminare questo prodotto?' , ja: '本当にこの商品を削除しますか？' },
+  { key: 'Excluir produto', en: 'Delete product', es: 'Eliminar producto', it: 'Elimina prodotto', ja: '商品を削除' },
+  { key: 'Produto excluído!', en: 'Product deleted!', es: '¡Producto eliminado!', it: 'Prodotto eliminato!', ja: '商品は削除されました！' },
   { key: 'Produto excluído.', en: 'Product deleted.', es: 'Producto eliminado.', it: 'Prodotto eliminato.' , ja: '商品を削除しました。' },
   { key: 'Erro ao excluir produto.', en: 'Error deleting product.', es: 'Error al eliminar el producto.', it: 'Errore nell\'eliminare il prodotto.' , ja: '商品の削除中にエラーが発生しました。' },
   { key: 'Informe um título e o valor ou marque como grátis.', en: 'Provide a title and price or mark as free.', es: 'Proporciona un título y un valor o márcalo como gratis.', it: 'Fornisci un titolo e un prezzo oppure segna come gratis.' , ja: 'タイトルと価格を入力するか、無料に設定してください。' },

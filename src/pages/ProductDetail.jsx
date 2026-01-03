@@ -1008,6 +1008,7 @@ export default function ProductDetail() {
   const hasMapLocation =
     mapCoords.lat !== null && mapCoords.lng !== null;
   const isSold = product.status === 'sold';
+  const isDeleted = Boolean(product.hidden_by_seller);
   const productIsBoosted = Boolean(product?.manual_rank_plan);
   const boostLinkTarget = productIsBoosted
     ? '/dashboard/impulsiona'
@@ -1175,6 +1176,11 @@ export default function ProductDetail() {
       }
     >
       <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
+        {isDeleted && (
+          <div className="rounded-xl bg-red-600 text-white text-xs font-semibold tracking-wide text-center py-2">
+            Produto excluído!
+          </div>
+        )}
         {/* Cabeçalho com vendedor */}
         <header className="product-detail__header flex flex-col gap-3 border-b pb-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">

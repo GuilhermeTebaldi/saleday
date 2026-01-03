@@ -21,6 +21,7 @@ export default function ProductCard({
       throw new Error('Produto inválido');
     }
     const isSold = product.status === 'sold';
+    const isDeleted = Boolean(product.hidden_by_seller);
     const mainImage = product.image_urls?.[0] || product.image_url;
     const freeTag = isProductFree(product);
     const specEntries = buildProductSpecEntries(product);
@@ -55,6 +56,11 @@ export default function ProductCard({
     return (
       <article className="my-product-card border rounded bg-white shadow-sm overflow-hidden">
         <div className="relative">
+          {isDeleted && (
+            <span className="absolute top-0 left-0 right-0 bg-red-600 text-white text-[11px] font-semibold tracking-wide text-center py-1 z-10">
+              Produto excluído!
+            </span>
+          )}
           {imageSource ? (
             <img
               src={imageSource}
@@ -71,7 +77,7 @@ export default function ProductCard({
             </div>
           )}
           {!!isSold && <SoldBadge className="absolute -top-1 -left-1" />}
-          {!!freeTag && !isSold && (
+          {!!freeTag && !isSold && !isDeleted && (
             <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
               Grátis
             </span>
@@ -118,7 +124,11 @@ export default function ProductCard({
             </p>
           )}
           <div className="flex items-center gap-2 pt-2">
-            {!isSold ? (
+            {isDeleted ? (
+              <span className="px-3 py-1.5 text-sm rounded border border-rose-200 text-rose-600 bg-rose-50">
+                Produto excluído!
+              </span>
+            ) : !isSold ? (
               <>
                 {hasToken && product.id ? (
                   <Link
@@ -138,6 +148,13 @@ export default function ProductCard({
                   disabled={!hasToken}
                 >
                   Marcar como vendido
+                </button>
+                <button
+                  onClick={() => deleteProduct?.(product.id)}
+                  className="px-3 py-1.5 text-sm rounded bg-rose-500 text-white hover:bg-rose-600"
+                  disabled={!hasToken}
+                >
+                  Excluir produto
                 </button>
               </>
             ) : (

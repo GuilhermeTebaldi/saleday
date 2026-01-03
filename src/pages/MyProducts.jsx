@@ -94,7 +94,9 @@ export default function MyProducts() {
 
   useEffect(() => {
     if (!token) return undefined;
-    const soldProducts = products.filter((product) => product.status === 'sold');
+    const soldProducts = products.filter(
+      (product) => product.status === 'sold' && !product.hidden_by_seller
+    );
     if (!soldProducts.length) return undefined;
     let active = true;
     soldProducts.forEach((product) => {
@@ -141,7 +143,11 @@ export default function MyProducts() {
       await api.delete(`/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setProducts((prev) => prev.filter((product) => product.id !== id));
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === id ? { ...product, hidden_by_seller: true } : product
+        )
+      );
       setBuyers((prev) => {
         const next = { ...prev };
         delete next[id];
