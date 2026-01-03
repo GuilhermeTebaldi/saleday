@@ -1,7 +1,7 @@
   // frontend/src/pages/Messages.jsx
   // Página de mensagens entre compradores e vendedores.
   import { useEffect, useMemo, useRef, useState, useContext, useCallback } from 'react';
-  import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
   import { toast } from 'react-hot-toast';
   import api from '../api/api.js';
   import { AuthContext } from '../context/AuthContext.jsx';
@@ -1546,7 +1546,8 @@
   }
 
   function ProductContextCard({ context }) {
-    return (
+    const productId = context?.productId;
+    const card = (
       <div className="mx-0 flex flex-col gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-sm shadow-slate-200/50 transition-all duration-200 lg:mx-4">
         <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
           Produto em foco
@@ -1573,10 +1574,20 @@
         </div>
       </div>
     );
+    if (!productId) return card;
+    return (
+      <Link
+        to={`/product/${productId}`}
+        className="block cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        {card}
+      </Link>
+    );
   }
 
   function ProductPreview({ context }) {
-    return (
+    const productId = context?.productId;
+    const card = (
       <div className="mx-0 mb-[calc(env(safe-area-inset-bottom,0px)+88px)] rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50 p-4 shadow-sm shadow-blue-500/10 transition-all duration-200 lg:mx-4 lg:mb-6">
         <div className="flex items-center justify-between gap-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-blue-600">
@@ -1607,6 +1618,15 @@
           </div>
         </div>
       </div>
+    );
+    if (!productId) return card;
+    return (
+      <Link
+        to={`/product/${productId}`}
+        className="block cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        {card}
+      </Link>
     );
   }
 
