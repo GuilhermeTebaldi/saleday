@@ -2162,10 +2162,32 @@ body.templesale-header-search-open .home-search-bar {
   padding: 0.2rem 0.45rem;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.9);
+  border: none;
   font-size: 0.75rem;
   font-weight: 600;
   color: #1f2937;
   box-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.8);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.home-card__likes-badge:hover:not(.is-loading) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 34px -18px rgba(15, 23, 42, 0.9);
+}
+
+.home-card__likes-badge.is-active {
+  background: rgba(254, 226, 226, 0.95);
+  box-shadow: 0 12px 24px -16px rgba(248, 113, 113, 0.7);
+}
+
+.home-card__likes-badge.is-loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.home-card__likes-badge.is-pulsed {
+  animation: home-card-favorite-pulse 0.45s ease both;
 }
 
 .home-card__likes-icon {

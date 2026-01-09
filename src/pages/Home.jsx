@@ -2366,18 +2366,13 @@ export default function Home() {
                         e.stopPropagation();
                         toggleFavorite(product.id);
                       }}
-                      className={`home-card__favorite absolute top-2 right-2 bg-white/80 border border-gray-200 w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:shadow transition ${
+                      className={`home-card__likes-badge ${
                         pendingFavorite === product.id ? 'is-loading' : ''
                       } ${isFavorited ? 'is-active' : ''} ${isPulsed ? 'is-pulsed' : ''}`}
                     >
-                      <span className="home-card__favorite-icon" aria-hidden="true">
-                        ♥
-                      </span>
-                    </button>
-                    <div className="home-card__likes-badge">
                       <span className="home-card__likes-icon" aria-hidden="true">♥</span>
                       <span className="home-card__metric-value">{likeCount}</span>
-                    </div>
+                    </button>
                   </div>
 
                     <div className="home-card__content">

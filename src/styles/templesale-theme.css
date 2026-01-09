@@ -952,6 +952,16 @@ body.templesale-dropdown-open .home-search-seller-panel {
   border: 1px solid rgba(214, 182, 118, 0.25);
 }
 
+.home-card__likes-badge:hover:not(.is-loading) {
+  background: rgba(12, 10, 9, 0.85);
+  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.45);
+}
+
+.home-card__likes-badge.is-active {
+  background: rgba(214, 182, 118, 0.18);
+  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.6);
+}
+
 .home-card__likes-icon {
   color: var(--temple-gold);
 }
