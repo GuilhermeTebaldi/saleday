@@ -24,6 +24,35 @@ const parseMessageContextPreview = (content) => {
 import { getUnseenSellerOrderIds } from '../utils/orders.js';
 
 const NOTIF_CLEAR_KEY = 'templesale:last-cleared-unread';
+const PROFILE_ALERTS_KEY = 'templesale:profile-alerts';
+const PROFILE_ALERT_DELAY = 4000;
+const PROFILE_ALERT_CLICK_COOLDOWN = 3 * 24 * 60 * 60 * 1000;
+const PROFILE_ALERT_FORCE = false;
+
+const readProfileAlertState = () => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(PROFILE_ALERTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeProfileAlertState = (nextState) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PROFILE_ALERTS_KEY, JSON.stringify(nextState));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const updateProfileAlertState = (updates) => {
+  const current = readProfileAlertState();
+  writeProfileAlertState({ ...current, ...updates });
+};
 
 function BellIcon({ size = 20 }) {
   return (
@@ -94,16 +123,40 @@ export default function Header() {
   const [sellerAlerts, setSellerAlerts] = useState({ unseen: 0, pending: 0 });
   const [questionNotifications, setQuestionNotifications] = useState([]);
   const [hasNewQuestionAlerts, setHasNewQuestionAlerts] = useState(false);
+  const [profileAlert, setProfileAlert] = useState(null);
+  const [profileAlertVisible, setProfileAlertVisible] = useState(false);
   const drawerRef = useRef(null);
   const seenOffersRef = useRef(null);
   const notificationSoundRef = useRef(null);
   const lastCountRef = useRef(0);
   const actualUnreadRef = useRef(0);
   const lastClearedCountRef = useRef(0);
+  const profileAlertPendingRef = useRef(null);
+  const profileAlertTimerRef = useRef(null);
+  const profileAlertClearTimerRef = useRef(null);
   const headerRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
+  const showProfileAlert = useCallback((payload) => {
+    setProfileAlert(payload);
+    setProfileAlertVisible(false);
+    if (profileAlertTimerRef.current) window.clearTimeout(profileAlertTimerRef.current);
+    if (profileAlertClearTimerRef.current) window.clearTimeout(profileAlertClearTimerRef.current);
+
+    window.requestAnimationFrame(() => {
+      setProfileAlertVisible(true);
+    });
+
+    profileAlertTimerRef.current = window.setTimeout(() => {
+      setProfileAlertVisible(false);
+      profileAlertClearTimerRef.current = window.setTimeout(() => {
+        setProfileAlert(null);
+        profileAlertClearTimerRef.current = null;
+      }, 450);
+      profileAlertTimerRef.current = null;
+    }, 4200);
+  }, []);
   const persistClearedCount = useCallback((count) => {
     lastClearedCountRef.current = count;
     if (typeof window === 'undefined') return;
@@ -156,6 +209,111 @@ export default function Header() {
     document.body.classList.toggle('templesale-header-search-open', headerSearchOpen);
     return () => document.body.classList.remove('templesale-header-search-open');
   }, [headerSearchOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (profileAlertTimerRef.current) {
+        window.clearTimeout(profileAlertTimerRef.current);
+      }
+      if (profileAlertClearTimerRef.current) {
+        window.clearTimeout(profileAlertClearTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (!user?.id && !PROFILE_ALERT_FORCE) return undefined;
+    if (location.pathname === '/edit-profile') return undefined;
+
+    const hasPhoto = Boolean(user.profile_image_url || user.profile_image);
+    const hasCity = Boolean(String(user.city || '').trim());
+    const missing = [];
+
+    if (!hasPhoto) {
+      missing.push({
+        key: 'photo',
+        title: 'Atualize sua foto para ter mais credibilidade.',
+        description: 'Perfis com foto passam mais confianca para quem compra.',
+        cta: 'Atualizar foto'
+      });
+    }
+
+    if (!hasCity) {
+      missing.push({
+        key: 'city',
+        title: 'Adicione sua cidade para aparecer nas buscas proximas.',
+        description: 'Ajude compradores a encontrar voce na sua regiao.',
+        cta: 'Adicionar cidade'
+      });
+    }
+
+    if (missing.length === 0) return undefined;
+
+    const state = readProfileAlertState();
+    const now = Date.now();
+
+    if (state.nextEligibleAt && now < state.nextEligibleAt) {
+      return undefined;
+    }
+
+    const chosen = missing[0];
+    if (profileAlertPendingRef.current === chosen.key) return undefined;
+    profileAlertPendingRef.current = chosen.key;
+
+    const jitter = Math.floor(Math.random() * 1200);
+    const timer = window.setTimeout(() => {
+      updateProfileAlertState({ nextEligibleAt: now + PROFILE_ALERT_CLICK_COOLDOWN });
+
+      showProfileAlert(chosen);
+      profileAlertPendingRef.current = null;
+    }, PROFILE_ALERT_DELAY + jitter);
+
+    return () => {
+      window.clearTimeout(timer);
+      profileAlertPendingRef.current = null;
+    };
+  }, [
+    user?.id,
+    user?.profile_image_url,
+    user?.profile_image,
+    user?.city,
+    navigate,
+    showProfileAlert,
+    location.pathname
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const fallbackAlert = {
+      key: 'manual',
+      title: 'Atualize seu cadastro para mais credibilidade.',
+      description: 'Complete a foto e a cidade para melhorar a confianca.',
+      cta: 'Atualizar cadastro'
+    };
+    window.templesaleShowProfileAlert = (kind = 'auto') => {
+      const payload = {
+        photo: {
+          key: 'photo',
+          title: 'Atualize sua foto para ter mais credibilidade.',
+          description: 'Perfis com foto passam mais confianca para quem compra.',
+          cta: 'Atualizar foto'
+        },
+        city: {
+          key: 'city',
+          title: 'Adicione sua cidade para aparecer nas buscas proximas.',
+          description: 'Ajude compradores a encontrar voce na sua regiao.',
+          cta: 'Adicionar cidade'
+        },
+        auto: fallbackAlert
+      }[kind] || fallbackAlert;
+
+      showProfileAlert(payload);
+    };
+    return () => {
+      delete window.templesaleShowProfileAlert;
+    };
+  }, [showProfileAlert]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -778,7 +936,8 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="app-header" ref={headerRef}>
+    <>
+      <header className="app-header" ref={headerRef}>
       <button
         type="button"
         className="nav-icon-button nav-hamburger"
@@ -1143,6 +1302,41 @@ export default function Header() {
           </>
         )}
       </nav>
-    </header>
+      </header>
+      {profileAlert && (
+        <div className="profile-toast-wrapper" aria-live="polite">
+          <div
+            className={`profile-toast ${
+              profileAlertVisible ? 'profile-toast--visible' : 'profile-toast--hidden'
+            }`}
+          >
+            <div className="profile-toast__content">
+              <div className="profile-toast__icon" aria-hidden="true">
+                <span>!</span>
+              </div>
+              <div className="profile-toast__text">
+                <p className="profile-toast__title">{profileAlert.title}</p>
+                <button
+                  type="button"
+                  className="profile-toast__cta"
+                  onClick={() => {
+                    const now = Date.now();
+                    updateProfileAlertState({
+                      lastClickAt: now,
+                      nextEligibleAt: now + PROFILE_ALERT_CLICK_COOLDOWN
+                    });
+                    setProfileAlert(null);
+                    setDrawerOpen(false);
+                    navigate('/edit-profile');
+                  }}
+                >
+                  {profileAlert.cta}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

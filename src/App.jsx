@@ -216,7 +216,11 @@ export default function App() {
                   }
                 />
               </Routes>
-              <Toaster position="top-center" />
+              <Toaster
+                position="top-right"
+                containerStyle={{ zIndex: 10000 }}
+                toastOptions={{ duration: 6500, style: { zIndex: 10000 } }}
+              />
             </BrowserRouter>
           </GeoProvider>
         </PurchaseNotificationsProvider>

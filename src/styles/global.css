@@ -5802,6 +5802,103 @@ body.templesale-header-search-open .home-search-bar {
   box-shadow: 0 8px 18px rgba(8, 145, 178, 0.25);
 }
 
+.profile-toast {
+  cursor: default;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.38rem 0.45rem;
+  width: min(170px, calc(100vw - 2rem));
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.95));
+  color: #334155;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  position: relative;
+  z-index: 10000;
+  transform: translateX(36px) scale(0.98);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
+}
+
+.profile-toast-wrapper {
+  position: fixed;
+  top: calc(var(--home-header-height, 64px) + 72px);
+  right: 0.9rem;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.profile-toast-wrapper .profile-toast {
+  pointer-events: auto;
+}
+
+.profile-toast--visible {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+
+.profile-toast--hidden {
+  transform: translateX(36px) scale(0.96);
+  opacity: 0;
+}
+
+.profile-toast__content {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.profile-toast__icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+  font-weight: 800;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.profile-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-toast__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.profile-toast__cta {
+  margin-top: 0.12rem;
+  align-self: flex-start;
+  padding: 0.22rem 0.45rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(148, 163, 184, 0.25);
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.6rem;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-toast__cta:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+}
+
+.profile-toast__cta:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.1);
+}
+
 /* Purchase notifications */
 .home-order-button {
   display: inline-flex;
