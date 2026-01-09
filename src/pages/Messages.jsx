@@ -153,7 +153,7 @@ import { MessageCircle } from 'lucide-react';
     const forcedChatRef = useRef(null);
     const activeConversationRef = useRef({ counterpartId: null, productId: null });
     const userId = user?.id;
-    const userDisplayName = user?.username || user?.name || 'Usuário SaleDay';
+    const userDisplayName = user?.username || user?.name || 'Usuário TempleSale';
     const threadContainerRef = useRef(null);
     const userAvatar = user?.profile_image_url ?? '';
     const userInitial = useMemo(
@@ -191,14 +191,14 @@ import { MessageCircle } from 'lucide-react';
 
     useEffect(() => {
       if (typeof window === 'undefined') return undefined;
-      const raw = window.sessionStorage.getItem('saleday:forced-chat');
+      const raw = window.sessionStorage.getItem('templesale:forced-chat');
       if (!raw) return undefined;
       try {
         forcedChatRef.current = JSON.parse(raw);
       } catch {
         forcedChatRef.current = null;
       }
-      window.sessionStorage.removeItem('saleday:forced-chat');
+      window.sessionStorage.removeItem('templesale:forced-chat');
       return undefined;
     }, []);
 
@@ -915,7 +915,7 @@ import { MessageCircle } from 'lucide-react';
     const isSeller = Boolean(selectedProductInfo?.user_id && selectedProductInfo.user_id === userId);
     const productSold = selectedProductInfo?.status === 'sold';
     const hasActiveConversation = Boolean(counterpartId);
-    const headerPartnerName = selectedMeta.counterpart || selectedMeta.seller || 'Vendedor SaleDay';
+    const headerPartnerName = selectedMeta.counterpart || selectedMeta.seller || 'Vendedor TempleSale';
     const headerSubtitle = selectedProduct ? 'Produto em foco abaixo' : 'Mensagens privadas';
     const sortedMessages = useMemo(() => {
       return [...messages].sort(
@@ -1155,12 +1155,12 @@ import { MessageCircle } from 'lucide-react';
                             <img
                               src={selectedMeta.avatar}
                               alt={
-                                selectedMeta.counterpart || selectedMeta.seller || 'Usuário SaleDay'
+                                selectedMeta.counterpart || selectedMeta.seller || 'Usuário TempleSale'
                               }
                               className="h-full w-full rounded-2xl object-cover"
                             />
                           ) : (
-                            getInitial(selectedMeta.counterpart || selectedMeta.seller || 'SaleDay')
+                            getInitial(selectedMeta.counterpart || selectedMeta.seller || 'TempleSale')
                           )}
                         </div>
                         <div className="min-w-0">
@@ -1210,7 +1210,7 @@ import { MessageCircle } from 'lucide-react';
                             : m.sender_name ||
                               selectedMeta.counterpart ||
                               selectedMeta.seller ||
-                              'Usuário SaleDay';
+                              'Usuário TempleSale';
                           const senderAvatar = isSender
                             ? userAvatar
                             : m.sender_avatar || selectedMeta.avatar || null;
@@ -1507,7 +1507,7 @@ import { MessageCircle } from 'lucide-react';
       ? conversation.receiver_name || conversation.seller_name
       : conversation.sender_name || conversation.seller_name;
     const counterpartAvatar = isSender ? conversation.receiver_avatar : conversation.sender_avatar;
-    const counterpartInitial = getInitial(counterpartName || 'SaleDay');
+    const counterpartInitial = getInitial(counterpartName || 'TempleSale');
     const conversationTitle =
       conversation.product_title || (!conversation.product_id ? 'Conversa direta' : `Produto #${conversation.product_id}`);
     const previewOffer = parseOfferMessage(conversation.content);
@@ -1552,7 +1552,7 @@ import { MessageCircle } from 'lucide-react';
             {counterpartAvatar ? (
               <img
                 src={counterpartAvatar}
-                alt={counterpartName || 'Usuário SaleDay'}
+                alt={counterpartName || 'Usuário TempleSale'}
                 className="h-full w-full rounded-2xl object-cover"
                 loading="lazy"
               />
@@ -1562,7 +1562,7 @@ import { MessageCircle } from 'lucide-react';
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-900">{conversationTitle}</p>
-            <p className="truncate text-xs text-slate-500">{counterpartName || 'Usuário SaleDay'}</p>
+            <p className="truncate text-xs text-slate-500">{counterpartName || 'Usuário TempleSale'}</p>
             <p className="truncate text-xs text-slate-600">{previewText}</p>
           </div>
         </div>
@@ -1576,9 +1576,9 @@ import { MessageCircle } from 'lucide-react';
         className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 overflow-hidden ${className}`}
       >
         {avatar ? (
-          <img src={avatar} alt={label || 'Usuário SaleDay'} className="h-full w-full object-cover" loading="lazy" />
+          <img src={avatar} alt={label || 'Usuário TempleSale'} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <span>{getInitial(label || 'SaleDay')}</span>
+          <span>{getInitial(label || 'TempleSale')}</span>
         )}
       </div>
     );

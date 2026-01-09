@@ -155,7 +155,7 @@ export default function ProductDetail() {
   const [viewerPortalRoot] = useState(() => {
     if (typeof document === 'undefined') return null;
     const node = document.createElement('div');
-    node.setAttribute('data-saleday-product-viewer', 'true');
+    node.setAttribute('data-templesale-product-viewer', 'true');
     return node;
   });
   const [touchStartX, setTouchStartX] = useState(null);
@@ -181,6 +181,29 @@ export default function ProductDetail() {
     },
     [promptLogin, token]
   );
+  const handleGoBack = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.sessionStorage.getItem('templesale:return-target');
+        const target = raw ? JSON.parse(raw) : null;
+        if (target?.path && window.history.length > 1) {
+          navigate(-1);
+          return;
+        }
+        if (target?.path) {
+          navigate(target.path);
+          return;
+        }
+      } catch {
+        // ignore storage failures
+      }
+      if (window.history.length > 1) {
+        navigate(-1);
+        return;
+      }
+    }
+    navigate('/');
+  }, [navigate]);
   const viewIncrementPending = useRef(false);
   const questionRefs = useRef(new Map());
   const replyInputRefs = useRef(new Map());
@@ -215,8 +238,8 @@ export default function ProductDetail() {
   const broadcastQuestionToStorage = useCallback((payload) => {
     if (typeof window === 'undefined' || !payload) return;
     try {
-      window.localStorage.setItem('saleday:product-question', JSON.stringify(payload));
-      window.localStorage.removeItem('saleday:product-question');
+      window.localStorage.setItem('templesale:product-question', JSON.stringify(payload));
+      window.localStorage.removeItem('templesale:product-question');
     } catch {
       // ignore storage issues
     }
@@ -248,9 +271,9 @@ export default function ProductDetail() {
             productId: question.product_id,
             sellerId: ownerId,
             questionUserId: questionAuthorId,
-            productTitle: question.product_title || product?.title || 'Produto SaleDay',
+            productTitle: question.product_title || product?.title || 'Produto TempleSale',
             content: question.content || '',
-            userName: question.user_name || 'Usuário SaleDay',
+            userName: question.user_name || 'Usuário TempleSale',
             createdAt: question.created_at || Date.now(),
             type: 'question'
           });
@@ -266,9 +289,9 @@ export default function ProductDetail() {
             productId: question.product_id,
             sellerId: ownerId,
             questionUserId: questionAuthorId,
-            productTitle: question.product_title || product?.title || 'Produto SaleDay',
+            productTitle: question.product_title || product?.title || 'Produto TempleSale',
             content: question.response_content || '',
-            userName: question.response_user_name || 'Vendedor SaleDay',
+            userName: question.response_user_name || 'Vendedor TempleSale',
             createdAt: question.response_created_at || Date.now(),
             type: 'response'
           });
@@ -284,7 +307,7 @@ export default function ProductDetail() {
       if (!incoming.length || typeof window === 'undefined') return;
       const detail = { questions: incoming };
       window.dispatchEvent(
-        new CustomEvent('saleday:product-question', {
+        new CustomEvent('templesale:product-question', {
           detail
         })
       );
@@ -739,7 +762,7 @@ export default function ProductDetail() {
       productId: product.id,
       productTitle: product.title,
        productImage: primaryImage,
-      senderName: user?.username || user?.name || 'Usuário SaleDay',
+      senderName: user?.username || user?.name || 'Usuário TempleSale',
       message: offerNote.trim() || null,
       createdAt: new Date().toISOString()
     };
@@ -782,7 +805,7 @@ export default function ProductDetail() {
 
   const openShare = () => {
     const url = window.location.href;
-    const title = product?.title || 'SaleDay';
+    const title = product?.title || 'TempleSale';
     const text = `Dê uma olhada neste produto: ${title}`;
     if (navigator.share) {
       navigator.share({ title, text, url }).catch(() => {});
@@ -863,7 +886,7 @@ export default function ProductDetail() {
     }
   };
 
-  const sellerName = product?.seller_name || 'Usuário SaleDay';
+  const sellerName = product?.seller_name || 'Usuário TempleSale';
   const sellerAvatar = product?.seller_avatar || '';
   const sellerInitial = useMemo(() => getInitial(sellerName), [sellerName]);
   const entryState = location.state;
@@ -972,7 +995,7 @@ export default function ProductDetail() {
   const priceFmt = getProductPriceLabel(product);
   const whatsappContactLink = phoneActions
     ? `${phoneActions.whatsappHref}?text=${encodeURIComponent(
-        `Olá! Tenho interesse no produto: ${product?.title || 'SaleDay'} - ${window.location.href}`
+        `Olá! Tenho interesse no produto: ${product?.title || 'TempleSale'} - ${window.location.href}`
       )}`
     : '';
   const propertySpecs = [
@@ -1035,7 +1058,7 @@ export default function ProductDetail() {
   };
 
   const shareUrl = encodeURIComponent(window.location.href);
-  const shareText = encodeURIComponent(product.title || 'Produto SaleDay');
+  const shareText = encodeURIComponent(product.title || 'Produto TempleSale');
   const whatsapp = `https://wa.me/?text=${shareText}%20${shareUrl}`;
   const telegram = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
   const facebook = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
@@ -1043,7 +1066,7 @@ export default function ProductDetail() {
 
   const sellerCardContent = (
     <>
-      <div className="product-detail__seller-avatar w-12 h-12 rounded-full overflow-hidden shadow-inner bg-gray-200 flex items-center justify-center text-lg font-semibold text-gray-600">
+              <div className="product-detail__seller-avatar w-10 h-10 rounded-full overflow-hidden shadow-inner bg-gray-200 flex items-center justify-center text-base font-semibold text-gray-600">
         {sellerAvatar ? (
           <img src={sellerAvatar} alt={sellerName} loading="lazy" />
         ) : (
@@ -1100,7 +1123,7 @@ export default function ProductDetail() {
 
               <img
                 src={images[activeImageIndex]}
-                alt={product?.title || 'Produto SaleDay'}
+                alt={product?.title || 'Produto TempleSale'}
                 draggable="false"
                 className="z-10 max-w-full max-h-full object-contain"
               />
@@ -1187,6 +1210,15 @@ export default function ProductDetail() {
       }
     >
       <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+          aria-label="Voltar para a página anterior"
+        >
+          <ChevronLeft size={14} />
+          Voltar
+        </button>
         {isDeleted && (
           <div className="rounded-xl bg-red-600 text-white text-xs font-semibold tracking-wide text-center py-2">
             Produto excluído!
@@ -1219,13 +1251,13 @@ export default function ProductDetail() {
             {sellerProfilePath ? (
               <Link
                 to={sellerProfilePath}
-                className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition md:min-w-[220px]"
+                className="product-detail__seller-card flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 hover:shadow-md transition md:min-w-[180px]"
                 aria-label={`Ver perfil completo de ${sellerName}`}
               >
                 {sellerCardContent}
               </Link>
             ) : (
-              <div className="product-detail__seller-card flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 hover:shadow-md transition md:min-w-[220px]">
+              <div className="product-detail__seller-card flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 hover:shadow-md transition md:min-w-[180px]">
                 {sellerCardContent}
               </div>
             )}
@@ -1582,7 +1614,7 @@ export default function ProductDetail() {
               const messageKey = getMessageIdentifier(msg);
               const responseText = (msg.response_content || '').trim();
               const hasResponse = Boolean(responseText);
-              const authorLabel = msg.user_name || 'Usuário SaleDay';
+              const authorLabel = msg.user_name || 'Usuário TempleSale';
               const responseAuthor = msg.response_user_name || 'Vendedor';
               const isHighlighted = highlightQuestionKey === messageKey;
               return (

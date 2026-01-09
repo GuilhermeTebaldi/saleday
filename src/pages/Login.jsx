@@ -12,7 +12,7 @@ import { sanitizeNextPath } from '../utils/authRedirect.js';
 export default function Login() {
   const [email, setEmail] = useState(() => {
     if (typeof window === 'undefined') return '';
-    return localStorage.getItem('saleday.loginEmail') ?? '';
+    return localStorage.getItem('templesale.loginEmail') ?? '';
   });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,9 +30,9 @@ export default function Login() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (email) {
-      localStorage.setItem('saleday.loginEmail', email);
+      localStorage.setItem('templesale.loginEmail', email);
     } else {
-      localStorage.removeItem('saleday.loginEmail');
+      localStorage.removeItem('templesale.loginEmail');
     }
   }, [email]);
 
@@ -40,7 +40,7 @@ export default function Login() {
     login(payload);
     const userCountry = payload?.user?.country;
     if (userCountry) {
-      localStorage.setItem('saleday.locale', localeFromCountry(userCountry));
+      localStorage.setItem('templesale.locale', localeFromCountry(userCountry));
     }
     navigate(nextPath, { replace: true });
   };
@@ -52,7 +52,7 @@ export default function Login() {
 
     try {
       if (!rememberMe && typeof window !== 'undefined') {
-        window.localStorage.removeItem('saleday.rememberToken');
+        window.localStorage.removeItem('templesale.rememberToken');
       }
       const res = await api.post('/auth/login', { email, password, rememberMe });
       handleLoginSuccess(res.data.data);

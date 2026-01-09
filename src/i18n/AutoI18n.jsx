@@ -43,7 +43,7 @@ function translateString(raw, helpers) {
 
 const originalTextMap = typeof WeakMap === 'function' ? new WeakMap() : null;
 
-const DATASET_PREFIX = 'saledayI18nOriginal';
+const DATASET_PREFIX = 'templesaleI18nOriginal';
 const TRACKED_ATTRS = ['placeholder', 'aria-label', 'title'];
 const TRANSLATE_ATTR = 'translate';
 const TRANSLATE_NO_VALUE = 'no';
@@ -56,7 +56,7 @@ const buildDatasetKey = (attr) => {
   return `${DATASET_PREFIX}${normalized}`;
 };
 
-const buildDataAttrName = (attr) => `data-saleday-i18n-original-${attr.toLowerCase()}`;
+const buildDataAttrName = (attr) => `data-templesale-i18n-original-${attr.toLowerCase()}`;
 const SKIP_TEXT_PARENTS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
 
 function hasTranslateNo(el) {
@@ -219,7 +219,7 @@ export default function AutoI18n() {
   const locale = useMemo(() => {
     const byUser = user?.country ? localeFromCountry(user.country) : null;
     const byStorage =
-      typeof window !== 'undefined' ? localStorage.getItem('saleday.locale') : null;
+      typeof window !== 'undefined' ? localStorage.getItem('templesale.locale') : null;
     const byBrowser =
       typeof navigator !== 'undefined'
         ? navigator.languages?.[0] || navigator.language
@@ -248,7 +248,7 @@ export default function AutoI18n() {
   useEffect(() => {
     if (!locale) return;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('saleday.locale', locale);
+      localStorage.setItem('templesale.locale', locale);
     }
     const previousLang = document.documentElement.lang;
 

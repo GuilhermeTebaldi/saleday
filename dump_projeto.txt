@@ -823,7 +823,7 @@ export const reverseGeocode = async (req, res) => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'SaleDay/1.0' }
+      headers: { 'User-Agent': 'TempleSale/1.0' }
     });
     const data = await response.json();
     const a = data.address || {};
@@ -861,7 +861,7 @@ export const forwardGeocode = async (req, res) => {
       q
     )}`;
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'SaleDay/1.0' }
+      headers: { 'User-Agent': 'TempleSale/1.0' }
     });
     const results = await response.json();
 
@@ -935,7 +935,7 @@ export const getByCep = async (req, res) => {
 
       const n1 = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&postalcode=${zip}&q=${q1}`,
-        { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+        { headers: { 'User-Agent': 'TempleSale/1.0 (templesale.local)' } }
       )
         .then((r) => r.json())
         .catch(() => []);
@@ -950,7 +950,7 @@ export const getByCep = async (req, res) => {
         const q2 = encodeURIComponent(`${addr.city || ''}, ${addr.state || ''}, BR, ${zip}`);
         const n2 = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&postalcode=${zip}&q=${q2}`,
-          { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+          { headers: { 'User-Agent': 'TempleSale/1.0 (templesale.local)' } }
         )
           .then((r) => r.json())
           .catch(() => []);
@@ -965,7 +965,7 @@ export const getByCep = async (req, res) => {
         const q3 = `${zip}, ${addr.city || ''}, ${addr.state || ''}, BR`;
         const n3 = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q3)}`,
-          { headers: { 'User-Agent': 'SaleDay/1.0 (saleday.local)' } }
+          { headers: { 'User-Agent': 'TempleSale/1.0 (templesale.local)' } }
         )
           .then((r) => r.json())
           .catch(() => []);
@@ -1478,11 +1478,11 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import api from '../api/api.js';
 import { useRef } from 'react';
 
-function SaleDayLogo({ className }) {
+function TempleSaleLogo({ className }) {
   return (
     <img
-      src="/logo-saleday.png"
-      alt="Logo SaleDay"
+      src="/logo-templesale.png"
+      alt="Logo TempleSale"
       className={className}
       width={120}
       height={120}
@@ -1648,7 +1648,7 @@ export default function Header() {
 
         <div className="relative flex items-center justify-center">
   <div className="relative">
-    <SaleDayLogo className="app-logo__mark animate-logoEntry" />
+    <TempleSaleLogo className="app-logo__mark animate-logoEntry" />
     <span
   className="absolute font-extrabold animate-slideIn
   text-2xl left-[35px] top-[2px]
@@ -1904,7 +1904,7 @@ export default function SearchBar({ onProductsLoaded }) {
         <button
     type="button"
     title="Localizar no mapa"
-    onClick={() => window.dispatchEvent(new Event('saleday:open-map'))}
+    onClick={() => window.dispatchEvent(new Event('templesale:open-map'))}
     className="p-2 rounded hover:bg-gray-100"
   >
     <MapIcon size={18} />
@@ -2037,8 +2037,8 @@ export default function MapSearch({ onProductsLoaded }) {
     function openFromBar() {
       setShowMap(true);
     }
-    window.addEventListener('saleday:open-map', openFromBar);
-    return () => window.removeEventListener('saleday:open-map', openFromBar);
+    window.addEventListener('templesale:open-map', openFromBar);
+    return () => window.removeEventListener('templesale:open-map', openFromBar);
   }, []);
 
   useEffect(() => {
@@ -2519,7 +2519,7 @@ export default function ProductDetail() {
 
   const openShare = () => {
     const url = window.location.href;
-    const title = product?.title || 'SaleDay';
+    const title = product?.title || 'TempleSale';
     const text = `Dê uma olhada neste produto: ${title}`;
     if (navigator.share) {
       navigator.share({ title, text, url }).catch(() => {});
@@ -2542,7 +2542,7 @@ export default function ProductDetail() {
   if (!product) return null;
 
   const priceBRL = Number(product.price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const sellerName = product.seller_name || 'Usuário SaleDay';
+  const sellerName = product.seller_name || 'Usuário TempleSale';
   const locCity = product.city || product.seller_city || '';
   const locState = product.state || product.seller_state || '';
   const locCountry = product.country || product.seller_country || '';
@@ -2566,7 +2566,7 @@ export default function ProductDetail() {
 
   // links de compartilhamento
   const shareUrl = encodeURIComponent(window.location.href);
-  const shareText = encodeURIComponent(product.title || 'Produto SaleDay');
+  const shareText = encodeURIComponent(product.title || 'Produto TempleSale');
   const whatsapp = `https://wa.me/?text=${shareText}%20${shareUrl}`;
   const telegram = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
   const facebook = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
@@ -3048,7 +3048,7 @@ export default function NewProduct() {
       <div className="new-product-card">
         <header className="new-product-header">
           <h1>Publicar novo produto</h1>
-          <p>Compartilhe seu produto com a comunidade SaleDay em poucos passos.</p>
+          <p>Compartilhe seu produto com a comunidade TempleSale em poucos passos.</p>
         </header>
 
         <form onSubmit={handleSubmit} className="new-product-form">

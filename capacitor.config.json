@@ -1,9 +1,9 @@
 {
-  "appId": "com.saleday.app",
-  "appName": "SaleDay",
+  "appId": "com.templesale.app",
+  "appName": "TempleSale",
   "webDir": "dist",
   "server": {
-    "url": "https://www.saleday.com.br",
+    "url": "https://www.templesale.com.br",
     "cleartext": false
   }
 }

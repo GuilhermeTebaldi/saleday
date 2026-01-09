@@ -11,6 +11,8 @@ import { getProductKey, mergeProductLists } from '../utils/productCollections.js
 
 const DEFAULT_CENTER = [-23.55, -46.63];
 const DEFAULT_ZOOM = 12;
+const SELECTION_DIAMETER_PX = 240;
+const SELECTION_RADIUS_PX = SELECTION_DIAMETER_PX / 2;
 const normalizeQueryValue = (value) => (value || '').trim().toLowerCase();
 
 const regionDisplay =
@@ -71,17 +73,55 @@ const resolveBoundsLocation = async (bounds) => {
   }
 };
 
+const buildBoundsFromCircle = (mapInstance) => {
+  if (!mapInstance) return null;
+  const size = mapInstance.getSize?.();
+  if (!size) return null;
+  const radius = Math.max(
+    8,
+    Math.min(SELECTION_RADIUS_PX, size.x / 2, size.y / 2)
+  );
+  const centerPoint = [size.x / 2, size.y / 2];
+  const northPoint = [centerPoint[0], centerPoint[1] - radius];
+  const southPoint = [centerPoint[0], centerPoint[1] + radius];
+  const westPoint = [centerPoint[0] - radius, centerPoint[1]];
+  const eastPoint = [centerPoint[0] + radius, centerPoint[1]];
+  const north = mapInstance.containerPointToLatLng?.(northPoint);
+  const south = mapInstance.containerPointToLatLng?.(southPoint);
+  const west = mapInstance.containerPointToLatLng?.(westPoint);
+  const east = mapInstance.containerPointToLatLng?.(eastPoint);
+  if (!north || !south || !west || !east) return null;
+  return {
+    minLat: south.lat,
+    maxLat: north.lat,
+    minLng: west.lng,
+    maxLng: east.lng,
+  };
+};
+
+const normalizeBounds = (bounds) => {
+  if (!bounds) return null;
+  const minLat = Number(bounds.minLat);
+  const maxLat = Number(bounds.maxLat);
+  const minLng = Number(bounds.minLng);
+  const maxLng = Number(bounds.maxLng);
+  if (![minLat, maxLat, minLng, maxLng].every(Number.isFinite)) return null;
+  return {
+    minLat: Math.min(minLat, maxLat),
+    maxLat: Math.max(minLat, maxLat),
+    minLng: Math.min(minLng, maxLng),
+    maxLng: Math.max(minLng, maxLng),
+  };
+};
+
 function MapEvents({ onBoundsChange, onViewportChange }) {
   useMapEvents({
     moveend(e) {
       const map = e.target;
-      const b = map.getBounds();
-      onBoundsChange({
-        minLat: b.getSouth(),
-        maxLat: b.getNorth(),
-        minLng: b.getWest(),
-        maxLng: b.getEast(),
-      });
+      const bounds = normalizeBounds(buildBoundsFromCircle(map));
+      if (bounds) {
+        onBoundsChange(bounds);
+      }
       if (typeof onViewportChange === 'function') {
         const center = map.getCenter();
         onViewportChange({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
@@ -89,6 +129,10 @@ function MapEvents({ onBoundsChange, onViewportChange }) {
     },
     zoomend(e) {
       const map = e.target;
+      const bounds = normalizeBounds(buildBoundsFromCircle(map));
+      if (bounds) {
+        onBoundsChange(bounds);
+      }
       if (typeof onViewportChange === 'function') {
         const center = map.getCenter();
         onViewportChange({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
@@ -168,27 +212,17 @@ export default function MapSearch({
   }, []);
 
   const buildBoundsFromMap = useCallback((mapInstance) => {
-    if (!mapInstance) return null;
-    const b = mapInstance.getBounds?.();
-    if (b) {
-      return {
-        minLat: b.getSouth(),
-        maxLat: b.getNorth(),
-        minLng: b.getWest(),
-        maxLng: b.getEast(),
-      };
-    }
-    const c = mapInstance.getCenter?.();
-    if (c) {
-      const range = 0.05;
-      return {
-        minLat: c.lat - range,
-        maxLat: c.lat + range,
-        minLng: c.lng - range,
-        maxLng: c.lng + range,
-      };
-    }
-    return null;
+    const bounds = normalizeBounds(buildBoundsFromCircle(mapInstance));
+    if (bounds) return bounds;
+    const c = mapInstance?.getCenter?.();
+    if (!c) return null;
+    const range = 0.05;
+    return {
+      minLat: c.lat - range,
+      maxLat: c.lat + range,
+      minLng: c.lng - range,
+      maxLng: c.lng + range,
+    };
   }, []);
 
   const closeModal = useCallback(() => {
@@ -357,13 +391,14 @@ export default function MapSearch({
     { keepExisting = true, centerOverride = null } = {}
   ) {
     setLoading(true);
-    const locationPromise = resolveBoundsLocation(bounds);
+    const normalizedBounds = normalizeBounds(bounds);
+    const locationPromise = resolveBoundsLocation(normalizedBounds || bounds);
     try {
       const params = {
-        minLat: bounds?.minLat,
-        maxLat: bounds?.maxLat,
-        minLng: bounds?.minLng,
-        maxLng: bounds?.maxLng,
+        minLat: normalizedBounds?.minLat ?? bounds?.minLat,
+        maxLat: normalizedBounds?.maxLat ?? bounds?.maxLat,
+        minLng: normalizedBounds?.minLng ?? bounds?.minLng,
+        maxLng: normalizedBounds?.maxLng ?? bounds?.maxLng,
         sort: 'rank'
       };
       const { data } = await api.get('/products', { params });
@@ -376,28 +411,6 @@ export default function MapSearch({
       const priorityKeys = regionProducts.map(getProductKey).filter(Boolean);
       let nextList = regionProducts;
       const locationInfo = await locationPromise;
-
-      let countryProducts = [];
-      if (locationInfo?.country) {
-        try {
-          const fallback = await api.get('/products', {
-            params: { sort: 'rank', country: locationInfo.country }
-          });
-          if (fallback.data?.success) {
-            countryProducts = Array.isArray(fallback.data.data) ? fallback.data.data : [];
-            if (nextList.length === 0 && countryProducts.length) {
-              nextList = countryProducts;
-            } else {
-              const missingCoords = countryProducts.filter((item) => !hasValidCoords(item));
-              if (missingCoords.length) {
-                nextList = mergeProductLists(nextList, missingCoords);
-              }
-            }
-          }
-        } catch (fallbackErr) {
-          console.error('fallback country fetch failed', fallbackErr);
-        }
-      }
 
       onProductsLoaded?.(nextList, { keepExisting, priorityKeys });
       if (bounds?.minLat != null) toast.success('Produtos atualizados para a região selecionada.');
@@ -427,15 +440,18 @@ export default function MapSearch({
   }
 
   function handleConfirmRegion() {
-    let selectedBounds = bbox;
-
-    if (!selectedBounds && mapRef.current) {
-      selectedBounds = buildBoundsFromMap(mapRef.current);
-      if (selectedBounds) setBbox(selectedBounds);
+    let selectedBounds = mapRef.current
+      ? buildBoundsFromMap(mapRef.current)
+      : null;
+    if (!selectedBounds) {
+      selectedBounds = bbox;
+    }
+    if (selectedBounds) {
+      setBbox(selectedBounds);
     }
 
     if (!selectedBounds) return toast.error('Selecione uma região no mapa.');
-    fetchProductsByBbox(selectedBounds);
+    fetchProductsByBbox(selectedBounds, { keepExisting: false });
     closeModal();
   }
 
@@ -443,8 +459,8 @@ export default function MapSearch({
     function openFromBar() {
       openModal();
     }
-    window.addEventListener('saleday:open-map', openFromBar);
-    return () => window.removeEventListener('saleday:open-map', openFromBar);
+    window.addEventListener('templesale:open-map', openFromBar);
+    return () => window.removeEventListener('templesale:open-map', openFromBar);
   }, [openModal]);
 
   useEffect(() => {
@@ -477,8 +493,8 @@ export default function MapSearch({
           <AnimatePresence>
             {showMap && (
               <motion.div
-                className="fixed inset-0"
-                style={{ zIndex: 8000 }}
+                className="fixed inset-0 temple-map-modal"
+                style={{ zIndex: 60000 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -486,7 +502,7 @@ export default function MapSearch({
                 <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
 
                 <motion.div
-                  className="relative h-full w-full bg-white shadow-2xl overflow-hidden"
+                  className="relative h-full w-full temple-map-panel shadow-2xl overflow-hidden"
                   initial={{ scale: 0.98, y: 8 }}
                   animate={{ scale: 1, y: 0 }}
                   exit={{ scale: 0.98, y: 8 }}

@@ -1,11 +1,11 @@
 {
-    "name": "SaleDay",
-    "short_name": "SaleDay",
+    "name": "TempleSale",
+    "short_name": "TempleSale",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#0f172a",
-    "description": "Marketplace SaleDay para Brasil e Estados Unidos.",
+    "description": "Marketplace TempleSale para Brasil e Estados Unidos.",
     "icons": [
       {
         "src": "/icons/icon-192.png",

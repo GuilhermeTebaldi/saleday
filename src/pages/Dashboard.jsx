@@ -218,7 +218,7 @@ const CogIcon = ({ className = '' }) => (
 
 const BOOST_LINK_TARGET = '/dashboard/impulsiona';
 const BOOST_LINK_STATE = undefined;
-const watermarkLogoSrc = '/logo-saleday.png';
+const watermarkLogoSrc = '/logo-templesale.png';
 
 const PrimaryButton = ({
   as: Component = 'button',
@@ -424,7 +424,7 @@ export default function Dashboard() {
   const sellerProfilePath = userId ? `/users/${userId}` : '';
 
   const userInitial = useMemo(
-    () => getInitial(user?.username || user?.email || 'SaleDay'),
+    () => getInitial(user?.username || user?.email || 'TempleSale'),
     [user?.username, user?.email]
   );
   const toggleAvatarMenu = useCallback(() => {
@@ -786,7 +786,7 @@ export default function Dashboard() {
 
 
   return (
-    <section className="dashboard min-h-screen bg-slate-50 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+    <section className="dashboard min-h-screen bg-slate-50 px-4 pb-16 pt-2 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <div className="space-y-3">
           {supportAlert?.conversationId && !isSupportModalOpen && (
@@ -819,7 +819,7 @@ export default function Dashboard() {
         <div className="relative overflow-visible rounded-[42px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
           <img
             src={watermarkLogoSrc}
-            alt="SaleDay logo"
+            alt="TempleSale logo"
             className="pointer-events-none absolute top-[-4px] right-[-14px] h-40 w-40 opacity-20 mix-blend-multiply blur-sm lg:hidden"
           />
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -1626,7 +1626,7 @@ export default function Dashboard() {
                 <p className="font-semibold text-gray-800">Compromisso de uso responsável</p>
                 <p className="mt-2">
                   Mantenha seus dados atualizados e leia as alterações sempre que forem publicadas. Ao continuar
-                  usando a SaleDay, você confirma que entende e aceita essas diretrizes.
+                  usando a TempleSale, você confirma que entende e aceita essas diretrizes.
                 </p>
               </div>
             </div>
@@ -1662,7 +1662,7 @@ export default function Dashboard() {
                 <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400">Central de Privacidade</p>
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Você no controle dos dados</h3>
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
-                  Consolidamos abaixo tudo que a SaleDay faz com suas informações e como você pode agir sobre cada
+                  Consolidamos abaixo tudo que a TempleSale faz com suas informações e como você pode agir sobre cada
                   parte.
                 </p>
               </div>
@@ -1725,7 +1725,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <a
-                href="mailto:privacidade@saleday.com"
+                href="mailto:privacidade@templesale.com"
                 className="rounded-2xl border border-white/30 bg-white/90 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-900 shadow-lg shadow-black/20 transition hover:bg-white"
               >
                 Enviar solicitação

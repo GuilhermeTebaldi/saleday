@@ -75,11 +75,11 @@ export default function AdminLayout() {
         setHasSupportAlert(Boolean(detail.hasPendingMessages));
       }
     };
-    window.addEventListener('saleday:support-status', listener);
+    window.addEventListener('templesale:support-status', listener);
     const interval = setInterval(refreshIndicator, 15000);
     return () => {
       active = false;
-      window.removeEventListener('saleday:support-status', listener);
+      window.removeEventListener('templesale:support-status', listener);
       clearInterval(interval);
     };
   }, []);
@@ -92,7 +92,7 @@ export default function AdminLayout() {
           <header className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-indigo-300">SaleDay Admin</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-indigo-300">TempleSale Admin</p>
                 <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
                   Central de Operações
                 </h1>
@@ -104,7 +104,7 @@ export default function AdminLayout() {
 
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => window.dispatchEvent(new Event('saleday:admin-refresh'))}
+                  onClick={() => window.dispatchEvent(new Event('templesale:admin-refresh'))}
                   className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:bg-white/10"
                 >
                   Sincronizar

@@ -149,7 +149,7 @@ export default function DashboardBoost() {
           <h1 className="text-2xl font-semibold mb-2 text-white">Impulsiona</h1>
           <p className="text-gray-400 text-sm">
             Você ainda não publicou produtos. Publique seu primeiro anúncio para liberar os impulsos
-            visuais do SaleDay.
+            visuais do TempleSale.
           </p>
         </div>
       </section>
@@ -190,14 +190,14 @@ export default function DashboardBoost() {
           <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-                SaleDay • Impulsiona
+                TempleSale • Impulsiona
               </p>
               <h1 className="mt-1 text-3xl md:text-4xl font-semibold">
                 Aumente o brilho dos seus anúncios
               </h1>
               <p className="mt-2 text-xs md:text-sm text-slate-400 max-w-xl">
                 Somente anúncios online aparecem aqui. Escolha qual produto receberá mais foco no
-                feed da SaleDay.
+                feed da TempleSale.
               </p>
             </div>
             <div className="inline-flex items-center gap-4 rounded-2xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-xs md:text-sm">
@@ -545,7 +545,7 @@ export function DashboardBoostPlan() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-[11px] uppercase tracking-[0.32em] text-slate-400">
-              SaleDay • Impulsiona
+              TempleSale • Impulsiona
             </p>
             <h1 className="mt-1 text-3xl md:text-4xl font-semibold">{product.title}</h1>
             <p className="text-xs md:text-sm text-slate-400 mt-1">
@@ -592,7 +592,7 @@ export function DashboardBoostPlan() {
               </div>
               <p className="text-xs md:text-sm text-slate-400 max-w-xl">
                 Escolha um plano de gema para destacar seu anúncio por tempo limitado nos feeds
-                mais disputados do SaleDay.
+                mais disputados do TempleSale.
               </p>
               <div className="flex flex-wrap gap-2 text-[11px] text-slate-400">
                 {product.city && (

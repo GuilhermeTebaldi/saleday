@@ -35,6 +35,7 @@ import AdminHistory from './pages/admin/AdminHistory.jsx';
 import AdminSupport from './pages/admin/AdminSupport.jsx';
 import Legal from './pages/Legal.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import ScrollRestoration from './components/ScrollRestoration.jsx';
 
 // i18n automático por país do usuário
 import AutoI18n from './i18n/AutoI18n.jsx';
@@ -44,6 +45,8 @@ import { PurchaseNotificationsProvider } from './context/PurchaseNotificationsCo
 
 export default function App() {
   const [banMessage, setBanMessage] = useState(null);
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
     return registerBanReasonListener((reason) => {
@@ -65,12 +68,35 @@ export default function App() {
     return undefined;
   }, []);
 
+  useEffect(() => {
+    document.body.classList.add('is-splashing');
+    const fadeTimer = setTimeout(() => setSplashVisible(false), 1400);
+    const doneTimer = setTimeout(() => {
+      setSplashDone(true);
+      document.body.classList.remove('is-splashing');
+    }, 2100);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(doneTimer);
+      document.body.classList.remove('is-splashing');
+    };
+  }, []);
+
   return (
     <Auth0ProviderWrapper>
       <AuthProvider>
         <PurchaseNotificationsProvider>
           <GeoProvider>
             <BrowserRouter>
+              <ScrollRestoration />
+              {!splashDone && (
+                <div
+                  className={`splash-screen ${splashVisible ? 'is-active' : 'is-fading'}`}
+                  role="presentation"
+                >
+                  <img src="/mira.png" alt="Mira" className="splash-screen__logo" />
+                </div>
+              )}
               <AutoI18n />
               <BanBanner message={banMessage} />
               <Header />

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../api/api.js';
 
-const REMEMBER_TOKEN_KEY = 'saleday.rememberToken';
+const REMEMBER_TOKEN_KEY = 'templesale.rememberToken';
 
 export const AuthContext = createContext();
 
@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
     setLoading(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    localStorage.removeItem('saleday.locale');
+    localStorage.removeItem('templesale.locale');
     persistRememberToken(null);
     setRememberAttempted(false);
   }, [persistRememberToken]);

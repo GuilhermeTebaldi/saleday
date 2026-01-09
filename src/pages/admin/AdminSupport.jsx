@@ -66,7 +66,7 @@ export default function AdminSupport() {
         });
         const hasPending = list.some((conversation) => conversation.last_sender_type === 'user');
         window.dispatchEvent(
-          new CustomEvent('saleday:support-status', {
+          new CustomEvent('templesale:support-status', {
             detail: { hasPendingMessages: hasPending }
           })
         );

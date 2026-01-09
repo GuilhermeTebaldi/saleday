@@ -1,4 +1,4 @@
-package com.saleday.app;
+package com.templesale.app;
 
 import com.getcapacitor.BridgeActivity;
 

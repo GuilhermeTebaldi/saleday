@@ -100,7 +100,7 @@ export default function SellerProfile() {
   const purchasesCount = Number.isFinite(Number(seller?.purchase_count))
     ? Number(seller.purchase_count)
     : 0;
-  const sellerDisplayName = seller?.username || 'Vendedor SaleDay';
+  const sellerDisplayName = seller?.username || 'Vendedor TempleSale';
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -386,21 +386,21 @@ export default function SellerProfile() {
     if (!isSelf) return;
     setShowAvatarMenu((prev) => !prev);
   };
-  const shareLogoSrc = '/logo-saleday.png';
+  const shareLogoSrc = '/logo-templesale.png';
 
   const profileUrl = seller?.id
     ? typeof window === 'undefined'
       ? `/users/${seller.id}`
       : `${window.location.origin}/users/${seller.id}`
     : '';
-  const shareLabel = `${sellerDisplayName} · SaleDay`;
+  const shareLabel = `${sellerDisplayName} · TempleSale`;
   const shareMessage = profileUrl
     ? `${shareLabel}\nConfira o perfil completo: ${profileUrl}`
-    : `${shareLabel}\nVeja as novidades do vendedor na SaleDay.`;
+    : `${shareLabel}\nVeja as novidades do vendedor na TempleSale.`;
   const encodedShareMessage = encodeURIComponent(shareMessage);
   const whatsappShareHref = `https://wa.me/?text=${encodedShareMessage}`;
-  const emailSubject = encodeURIComponent(`Perfil de ${sellerDisplayName} no SaleDay`);
-  const emailBody = encodeURIComponent(`${shareLabel}\n${profileUrl || 'https://saleday.com'}`);
+  const emailSubject = encodeURIComponent(`Perfil de ${sellerDisplayName} no TempleSale`);
+  const emailBody = encodeURIComponent(`${shareLabel}\n${profileUrl || 'https://templesale.com'}`);
   const emailShareHref = `mailto:?subject=${emailSubject}&body=${emailBody}`;
   const displayProfileLink = profileUrl ? profileUrl.replace(/^https?:\/\//, '') : '';
   const handleCopyProfileLink = async () => {
@@ -629,12 +629,12 @@ export default function SellerProfile() {
                     <div className="space-y-1 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-3 py-2 text-white shadow">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-[11px] uppercase tracking-wider text-slate-200 font-semibold">SaleDay · Perfil</p>
+                          <p className="text-[11px] uppercase tracking-wider text-slate-200 font-semibold">TempleSale · Perfil</p>
                           <p className="truncate text-sm font-semibold">{sellerDisplayName}</p>
                         </div>
                         <img
                           src={shareLogoSrc}
-                          alt="Logo SaleDay"
+                          alt="Logo TempleSale"
                           className="h-10 w-10 rounded-full border border-white/30 bg-white/10 object-contain p-1"
                         />
                       </div>
@@ -735,7 +735,7 @@ export default function SellerProfile() {
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-blue-600">Catálogo SaleDay</p>
+                <p className="text-[10px] uppercase tracking-wide text-blue-600">Catálogo TempleSale</p>
                 <h3 className="text-lg font-semibold leading-snug text-slate-900">
                   Crie um catálogo profissional para seus produtos
                 </h3>
@@ -836,7 +836,7 @@ export default function SellerProfile() {
                 ) : (
                   <ul className="space-y-3">
                     {reviews.map((review) => {
-                      const reviewerName = review.reviewer_name || 'Cliente SaleDay';
+                      const reviewerName = review.reviewer_name || 'Cliente TempleSale';
                       const reviewerInitial = getInitial(reviewerName);
                       const reviewerAvatar = review.reviewer_avatar ? makeAbsolute(review.reviewer_avatar) : '';
                       const starsValueRaw = Math.max(0, Math.min(5, Number(review.stars) || 0));

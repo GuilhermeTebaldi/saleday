@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
- <string name="app_name">SaleDay</string>
+ <string name="app_name">TempleSale</string>
 
-    <string name="title_activity_main">SaleDay</string>
-    <string name="package_name">com.saleday.app</string>
-    <string name="custom_url_scheme">com.saleday.app</string>
+    <string name="title_activity_main">TempleSale</string>
+    <string name="package_name">com.templesale.app</string>
+    <string name="custom_url_scheme">com.templesale.app</string>
 </resources>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saleday-v5';
+const CACHE_NAME = 'templesale-v5';
 const FALLBACK_URL = '/index.html';
 const FILES_TO_CACHE = ['/', '/index.html'];
 

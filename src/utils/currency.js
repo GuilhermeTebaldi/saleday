@@ -50,7 +50,7 @@ const normalizeCountryCode = (input) => {
 
 export const getUserCurrencyPreference = () => {
   if (typeof localStorage === 'undefined') return null;
-  const stored = (localStorage.getItem('saleday:currency') || '').trim().toUpperCase();
+  const stored = (localStorage.getItem('templesale:currency') || '').trim().toUpperCase();
   return ['BRL', 'USD', 'EUR'].includes(stored) ? stored : null;
 };
 

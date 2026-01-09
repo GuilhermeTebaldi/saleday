@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/global.css';
+//import './styles/templesale-theme.css';
 import ErrorOverlay from './components/ErrorOverlay.jsx';
 import { addOverlayError, logOverlayError, setOverlayPaused } from './utils/errorOverlayStore.js';
 

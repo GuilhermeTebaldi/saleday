@@ -1,7 +1,7 @@
 import { createContext, useEffect, useMemo, useState } from 'react';
 import api from '../api/api.js';
 
-const STORAGE_KEY = 'saleday.geo.location';
+const STORAGE_KEY = 'templesale.geo.location';
 
 const toNumberIfFinite = (value) => {
   if (value === undefined || value === null) return null;

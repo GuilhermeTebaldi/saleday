@@ -59,16 +59,16 @@ export default function Legal() {
     <div className="legal-page">
       <header>
         <p className="legal-eyebrow">Vigência imediata • Abrangência: Brasil e Estados Unidos</p>
-        <h1>Política de Privacidade – SaleDay</h1>
+        <h1>Política de Privacidade – TempleSale</h1>
         <p className="legal-meta">Última atualização: {LEGAL_VERSION_LABEL}</p>
       </header>
 
       {isReconsent && (
         <div className="legal-reconsent" role="alert">
           <div>
-            <strong>Você precisa aceitar nossa Política, Termos e Diretrizes para continuar usando o SaleDay.</strong>
+            <strong>Você precisa aceitar nossa Política, Termos e Diretrizes para continuar usando o TempleSale.</strong>
             <p className="legal-reconsent__hint">
-              Versão vigente: {LEGAL_VERSION_LABEL}. O SaleDay não responde por golpes entre terceiros — você é
+              Versão vigente: {LEGAL_VERSION_LABEL}. O TempleSale não responde por golpes entre terceiros — você é
               responsável por avaliar cada negociação.
             </p>
           </div>
@@ -93,12 +93,12 @@ export default function Legal() {
 
       <Section id="quem-somos" title="1. Quem somos">
         <ul>
-          <li>Controlador: SaleDay (“SaleDay”, “nós”).</li>
-          <li>Contato do DPO/Encarregado: saleday.world@gmail.com</li>
+          <li>Controlador: TempleSale (“TempleSale”, “nós”).</li>
+          <li>Contato do DPO/Encarregado: templesale.world@gmail.com</li>
         </ul>
       </Section>
 
-      <Section id="o-que-fazemos" title="2. O que o SaleDay faz">
+      <Section id="o-que-fazemos" title="2. O que o TempleSale faz">
         <p>
           Somos uma plataforma de classificados online com chat entre usuários. Não processamos pagamentos, não
           custodimos valores, não garantimos entrega, não avaliamos qualidade dos produtos e não participamos da
@@ -151,12 +151,12 @@ export default function Legal() {
         <p>
           Confirmação de tratamento e acesso, correção, anonimização/bloqueio/eliminação, portabilidade, informação
           sobre compartilhamento, revogação do consentimento e revisão de decisões automatizadas. Solicite por
-          saleday.world@gmail.com (prazo: até 15 dias).
+          templesale.world@gmail.com (prazo: até 15 dias).
         </p>
         <h3>4.4 Direitos de residentes na Califórnia (CCPA/CPRA)</h3>
         <p>
           Saber, acessar, corrigir e deletar dados; opt-out de venda/compartilhamento (não vendemos dados pessoais);
-          não discriminação por exercício de direitos. Solicite por saleday.world@gmail.com (prazo: até 45 dias).
+          não discriminação por exercício de direitos. Solicite por templesale.world@gmail.com (prazo: até 45 dias).
         </p>
       </Section>
 
@@ -210,11 +210,11 @@ export default function Legal() {
       </Section>
 
       <Section id="menores" title="11. Privacidade de menores">
-        <p>Serviço destinado a maiores de 13 anos. Pais/responsáveis podem solicitar exclusão por saleday.world@gmail.com.</p>
+        <p>Serviço destinado a maiores de 13 anos. Pais/responsáveis podem solicitar exclusão por templesale.world@gmail.com.</p>
       </Section>
 
       <Section id="automatizadas" title="12. Decisões automatizadas">
-        <p>Aplicamos detecções automáticas de abuso/spam. Você pode contestar via saleday.world@gmail.com.</p>
+        <p>Aplicamos detecções automáticas de abuso/spam. Você pode contestar via templesale.world@gmail.com.</p>
       </Section>
 
       <Section id="controles" title="13. Seus controles">
@@ -231,7 +231,7 @@ export default function Legal() {
       </Section>
 
       <Section id="contato" title="15. Contato">
-        <p>saleday.world@gmail.com | Assunto: “Privacidade – SaleDay”.</p>
+        <p>templesale.world@gmail.com | Assunto: “Privacidade – TempleSale”.</p>
       </Section>
 
       <Section id="aviso" title="16. Aviso">
@@ -239,12 +239,12 @@ export default function Legal() {
       </Section>
 
       <header id="termos">
-        <h1>Termos de Uso – SaleDay</h1>
+        <h1>Termos de Uso – TempleSale</h1>
         <p className="legal-meta">Última atualização: 27 de outubro de 2025</p>
       </header>
 
       <Section id="aceite" title="1. Aceite">
-        <p>Ao usar o SaleDay, você aceita estes Termos e as Diretrizes da Comunidade.</p>
+        <p>Ao usar o TempleSale, você aceita estes Termos e as Diretrizes da Comunidade.</p>
       </Section>
 
       <Section id="servico" title="2. Serviço">
@@ -264,7 +264,7 @@ export default function Legal() {
 
       <Section id="conteudo" title="4. Conteúdo do usuário">
         <p>
-          Você mantém direitos sobre seu conteúdo, mas concede licença não exclusiva, mundial e gratuita ao SaleDay para
+          Você mantém direitos sobre seu conteúdo, mas concede licença não exclusiva, mundial e gratuita ao TempleSale para
           hospedar e exibir seu conteúdo no serviço e em comunicações de produto.
         </p>
       </Section>
@@ -292,7 +292,7 @@ export default function Legal() {
           <li>Denuncie atividades suspeitas.</li>
         </ul>
         <p>
-          O SaleDay não responde por golpes ou prejuízos causados entre usuários. Você deve avaliar e mitigar os próprios
+          O TempleSale não responde por golpes ou prejuízos causados entre usuários. Você deve avaliar e mitigar os próprios
           riscos ao negociar.
         </p>
       </Section>
@@ -303,14 +303,14 @@ export default function Legal() {
 
       <Section id="responsabilidades" title="9. Responsabilidades">
         <p>
-          O SaleDay não garante veracidade de anúncios, identidade de usuários, qualidade ou entrega. Não respondemos por
+          O TempleSale não garante veracidade de anúncios, identidade de usuários, qualidade ou entrega. Não respondemos por
           perdas indiretas, lucros cessantes ou danos decorrentes do uso. Limite máximo de responsabilidade direta, quando
           aplicável e permitido por lei: maior entre R$ 500 ou US$ 100.
         </p>
       </Section>
 
       <Section id="propriedade" title="10. Propriedade intelectual">
-        <p>Marcas, logotipos e código do SaleDay são protegidos. Não copie, faça engenharia reversa ou extraia dados em massa.</p>
+        <p>Marcas, logotipos e código do TempleSale são protegidos. Não copie, faça engenharia reversa ou extraia dados em massa.</p>
       </Section>
 
       <Section id="privacidade-termos" title="11. Privacidade">
@@ -318,7 +318,7 @@ export default function Legal() {
       </Section>
 
       <Section id="denuncia" title="12. Denúncia, notificações e contato">
-        <p>Denúncias e notificações legais: saleday.world@gmail.com.</p>
+        <p>Denúncias e notificações legais: templesale.world@gmail.com.</p>
       </Section>
 
       <Section id="legislacao" title="13. Legislação e foro">
@@ -333,7 +333,7 @@ export default function Legal() {
       </Section>
 
       <header id="diretrizes">
-        <h1>Diretrizes da Comunidade e Política de Conteúdo – SaleDay</h1>
+        <h1>Diretrizes da Comunidade e Política de Conteúdo – TempleSale</h1>
         <p className="legal-meta">Última atualização: 27 de outubro de 2025</p>
       </header>
 
@@ -369,7 +369,7 @@ export default function Legal() {
       </Section>
 
       <Section id="denunciar" title="7. Como denunciar">
-        <p>Envie print, link do anúncio e descrição para saleday.world@gmail.com. Itens de risco imediato podem ser removidos sem aviso.</p>
+        <p>Envie print, link do anúncio e descrição para templesale.world@gmail.com. Itens de risco imediato podem ser removidos sem aviso.</p>
       </Section>
 
       <Section id="contranotificacao" title="8. Procedimento de notificação/contranotificação">
@@ -396,14 +396,14 @@ export default function Legal() {
       <Section id="suplementos" title="Suplementos regionais e operacionais">
         <h3>Brasil – LGPD e comércio local</h3>
         <ul>
-          <li>DPO: [NOME] – saleday.world@gmail.com</li>
+          <li>DPO: [NOME] – templesale.world@gmail.com</li>
           <li>Prazo respostas: até 15 dias</li>
           <li>Autoridade nacional: ANPD</li>
         </ul>
         <h3>EUA – CCPA/CPRA</h3>
         <ul>
           <li>Não vendemos dados pessoais.</li>
-          <li>Direitos por saleday.world@gmail.com (prazo: até 45 dias).</li>
+          <li>Direitos por templesale.world@gmail.com (prazo: até 45 dias).</li>
         </ul>
         <h3>Procedimentos operacionais (resumo público)</h3>
         <ul>
@@ -412,12 +412,12 @@ export default function Legal() {
           <li>Preservação de evidências: retenção mínima e segura.</li>
           <li>Backups e restauração: rotação 30–90 dias.</li>
         </ul>
-        <p>Contatos: Privacidade/DPO, Denúncias/Abuso, Jurídico — todos via saleday.world@gmail.com.</p>
+        <p>Contatos: Privacidade/DPO, Denúncias/Abuso, Jurídico — todos via templesale.world@gmail.com.</p>
       </Section>
 
       <footer className="legal-footer">
         <p>
-          Se tiver dúvidas, fale conosco em <a href="mailto:saleday.world@gmail.com">saleday.world@gmail.com</a>.{' '}
+          Se tiver dúvidas, fale conosco em <a href="mailto:templesale.world@gmail.com">templesale.world@gmail.com</a>.{' '}
           <Link to="/register">Voltar para cadastro</Link>
         </p>
       </footer>

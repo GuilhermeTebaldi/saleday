@@ -152,7 +152,7 @@ export default function SalesRequests() {
       }),
       productLocation: locationLabel
     };
-    window.sessionStorage.setItem('saleday:forced-chat', JSON.stringify(forced));
+    window.sessionStorage.setItem('templesale:forced-chat', JSON.stringify(forced));
   };
 
   const buyerNameForOrder = (order) => order.buyer_name || 'Comprador';
@@ -229,7 +229,7 @@ export default function SalesRequests() {
                 }),
                 productLocation: locationLabel
               };
-              window.sessionStorage.setItem('saleday:forced-chat', JSON.stringify(forced));
+              window.sessionStorage.setItem('templesale:forced-chat', JSON.stringify(forced));
             };
             const priceDisplay = getProductPriceLabel({
               price: order.total,
@@ -328,7 +328,7 @@ export default function SalesRequests() {
                         productLocation: locationLabel
                       };
                       window.sessionStorage.setItem(
-                        'saleday:forced-chat',
+                        'templesale:forced-chat',
                         JSON.stringify(forced)
                       );
                     }}

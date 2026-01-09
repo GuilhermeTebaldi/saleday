@@ -1,6 +1,6 @@
 const SELLER_SEEN_KEY = (userId) => {
   if (!userId) return null;
-  return `saleday:sellerOrdersSeen:${userId}`;
+  return `templesale:sellerOrdersSeen:${userId}`;
 };
 
 const safeParse = (value) => {
@@ -33,7 +33,7 @@ export const markSellerOrdersSeen = (userId, orderIds) => {
   try {
     localStorage.setItem(key, JSON.stringify(Array.from(next)));
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('saleday:seller-orders-sync'));
+      window.dispatchEvent(new CustomEvent('templesale:seller-orders-sync'));
     }
   } catch {
     // ignore persistence errors

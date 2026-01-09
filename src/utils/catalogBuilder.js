@@ -72,7 +72,7 @@ async function drawPremiumCatalog({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(38);
   doc.setTextColor(255, 214, 0);
-  doc.text('SaleDay', margin + 5, 52);
+  doc.text('TempleSale', margin + 5, 52);
   doc.setFontSize(14);
   doc.setTextColor(255);
   doc.text('', margin + 5, 72);
@@ -161,7 +161,7 @@ async function drawPremiumCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(255);
-    const title = (product.title || 'Produto SaleDay').trim();
+    const title = (product.title || 'Produto TempleSale').trim();
     doc.text(title, margin + 16, cursorY + 24, {
       maxWidth: cardWidth - imageWidth - 40
     });
@@ -251,13 +251,13 @@ async function drawPremiumCatalog({
   doc.setFontSize(14);
   doc.setTextColor(255);
   doc.text(
-    translate('Venda na SaleDay', 'Sell on SaleDay'),
+    translate('Venda na TempleSale', 'Sell on TempleSale'),
     margin + 16,
     footerY + 26
   );
   doc.setFontSize(10);
   doc.setTextColor(226, 232, 240);
-  doc.text('www.saleday.com.br', margin + 16, footerY + 44);
+  doc.text('www.templesale.com.br', margin + 16, footerY + 44);
 }
 
 const VIBRANT_PALETTE = [
@@ -368,7 +368,7 @@ async function drawClassicCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(255);
-    doc.text('SaleDay', leftX + 16, contentY + 32);
+    doc.text('TempleSale', leftX + 16, contentY + 32);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -396,7 +396,7 @@ async function drawClassicCatalog({
     // title + location
     let textY = contentY + bandH + 26;
 
-    const title = (product.title || 'Produto SaleDay').trim();
+    const title = (product.title || 'Produto TempleSale').trim();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(15, 23, 42);
@@ -521,7 +521,7 @@ async function drawClassicCatalog({
       }
     );
     doc.setFontSize(9);
-    doc.text('www.saleday.com.br', ctaX, footerY + 74, {
+    doc.text('www.templesale.com.br', ctaX, footerY + 74, {
       maxWidth: leftW - (ctaX - leftX) - 14
     });
 
@@ -566,7 +566,7 @@ const CATALOG_PREVIEW_META = {
     gradient: 'linear-gradient(135deg, #070c24, #1d2c63)',
     accent: '#FCE043',
     bullets: [
-      'Manchete ampla com logo SaleDay',
+      'Manchete ampla com logo TempleSale',
       'Imagem principal envolvente em destaque',
       'Área de detalhes e QR discreto'
     ]
@@ -660,7 +660,7 @@ async function drawVibrantCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(34);
     doc.setTextColor(255);
-    doc.text('SaleDay', margin + 6, 58);
+    doc.text('TempleSale', margin + 6, 58);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
@@ -691,7 +691,7 @@ async function drawVibrantCatalog({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text('SaleDay.', margin, y);
+    doc.text('TempleSale.', margin, y);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
@@ -787,7 +787,7 @@ async function drawVibrantCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(...palette.text);
-    const title = (product.title || 'Produto SaleDay').trim();
+    const title = (product.title || 'Produto TempleSale').trim();
     const titleLines = doc.splitTextToSize(title, titleMaxW);
     doc.text(titleLines.slice(0, 2), textX, cursorY + 42);
 
@@ -966,7 +966,7 @@ async function drawModernCatalog({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(26);
     doc.setTextColor(255);
-    doc.text('SaleDay', margin, 46);
+    doc.text('TempleSale', margin, 46);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -1023,7 +1023,7 @@ async function drawModernCatalog({
     }
 
     // ===== left column: title / badges / prices / cards
-    const title = ((product.title || 'Produto SaleDay') + '').trim();
+    const title = ((product.title || 'Produto TempleSale') + '').trim();
     const priceLabel = translatePriceLabel(product, translate);
 
     let y = contentTop + 14;
@@ -1163,7 +1163,7 @@ async function drawModernCatalog({
     doc.setFontSize(12);
     doc.setTextColor(15, 23, 42);
     doc.text(
-      translate('Abrir no SaleDay', 'Open on SaleDay'),
+      translate('Abrir no TempleSale', 'Open on TempleSale'),
       margin + 16,
       ctaY + 30
     );

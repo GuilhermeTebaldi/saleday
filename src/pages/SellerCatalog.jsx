@@ -29,7 +29,7 @@ export default function SellerCatalog() {
   const [catalogStyle, setCatalogStyle] = useState('premium');
   const [generatingCatalog, setGeneratingCatalog] = useState(false);
 
-  const sellerDisplayName = user?.username || 'Vendedor SaleDay';
+  const sellerDisplayName = user?.username || 'Vendedor TempleSale';
 
   useEffect(() => {
     if (!user?.id) {
@@ -139,9 +139,9 @@ export default function SellerCatalog() {
         await drawPremiumCatalog(props);
       }
       const safeName = (
-        (sellerDisplayName || 'SaleDay')
+        (sellerDisplayName || 'TempleSale')
           .replace(/\s+/g, '_')
-          .replace(/[^a-zA-Z0-9-_]/g, '') || 'SaleDay'
+          .replace(/[^a-zA-Z0-9-_]/g, '') || 'TempleSale'
       );
       doc.save(`${safeName}-catalogo.pdf`);
       toast.success(
@@ -201,7 +201,7 @@ export default function SellerCatalog() {
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Catálogo SaleDay</p>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Catálogo TempleSale</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900">Crie um catálogo profissional</h1>
             <p className="mt-2 text-sm text-slate-500">
               Selecione os seus melhores produtos, escolha um estilo e gere um PDF premium pronto para compartilhar.
@@ -224,7 +224,7 @@ export default function SellerCatalog() {
                   : 'cursor-not-allowed bg-slate-400/70'
               }`}
             >
-              {generatingCatalog ? 'Gerando catálogo...' : 'Gerar meu catálogo SaleDay'}
+              {generatingCatalog ? 'Gerando catálogo...' : 'Gerar meu catálogo TempleSale'}
             </button>
             <p className="text-[11px] text-slate-500">
               {selectedProductsForCatalog.length} produto
@@ -258,7 +258,7 @@ export default function SellerCatalog() {
                     }`}
                   >
                     <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100">
-                      <img src={thumbSrc} alt={`${optionLabel} SaleDay`} className="h-full w-full object-cover" />
+                      <img src={thumbSrc} alt={`${optionLabel} TempleSale`} className="h-full w-full object-cover" />
                     </div>
                     <div className="mt-2 space-y-0.5">
                       <p className="text-xs font-semibold text-slate-900">{optionLabel}</p>

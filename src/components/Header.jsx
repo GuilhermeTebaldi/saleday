@@ -21,21 +21,7 @@ const parseMessageContextPreview = (content) => {
 };
 import { getUnseenSellerOrderIds } from '../utils/orders.js';
 
-const NOTIF_CLEAR_KEY = 'saleday:last-cleared-unread';
-
-function SaleDayLogo({ className }) {
-  return (
-    <img
-      src="/logo-saleday.png"
-      alt="SaleDay"
-      translate="no"
-      className={className}
-      width={120}
-      height={120}
-      loading="lazy"
-    />
-  );
-}
+const NOTIF_CLEAR_KEY = 'templesale:last-cleared-unread';
 
 function BellIcon({ size = 20 }) {
   return (
@@ -51,6 +37,25 @@ function HomeIcon({ size = 20 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 11.5 12 4l9 7.5" />
       <path d="M5 10v10h5v-5h4v5h5V10" />
+    </svg>
+  );
+}
+
+function MenuIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
+function SearchIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+      <path d="M16.5 16.5 21 21" />
     </svg>
   );
 }
@@ -78,6 +83,10 @@ export default function Header() {
   const { user, token, logout } = useContext(AuthContext);
   const { hasUnseenOrders, unseenCount } = usePurchaseNotifications();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [navPanelOpen, setNavPanelOpen] = useState(false);
+  const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const headerSearchRef = useRef(null);
   const [conversations, setConversations] = useState([]);
   const [displayUnreadCount, setDisplayUnreadCount] = useState(0);
   const [sellerAlerts, setSellerAlerts] = useState({ unseen: 0, pending: 0 });
@@ -90,6 +99,9 @@ export default function Header() {
   const actualUnreadRef = useRef(0);
   const lastClearedCountRef = useRef(0);
   const headerRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHome = location.pathname === '/';
   const persistClearedCount = useCallback((count) => {
     lastClearedCountRef.current = count;
     if (typeof window === 'undefined') return;
@@ -111,8 +123,52 @@ export default function Header() {
     }
   }, []);
 
-  const location = useLocation();
-  const navigate = useNavigate();
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('templesale-panel-open', navPanelOpen);
+    return () => document.body.classList.remove('templesale-panel-open');
+  }, [navPanelOpen]);
+
+  useEffect(() => {
+    if (isHome) return;
+    if (navPanelOpen) setNavPanelOpen(false);
+  }, [isHome, navPanelOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleClosePanel = () => setNavPanelOpen(false);
+    window.addEventListener('templesale:close-panel', handleClosePanel);
+    return () => window.removeEventListener('templesale:close-panel', handleClosePanel);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleToggleSearch = () => setHeaderSearchOpen((prev) => !prev);
+    window.addEventListener('templesale:toggle-header-search', handleToggleSearch);
+    return () =>
+      window.removeEventListener('templesale:toggle-header-search', handleToggleSearch);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('templesale-header-search-open', headerSearchOpen);
+    return () => document.body.classList.remove('templesale-header-search-open');
+  }, [headerSearchOpen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (!navPanelOpen) return undefined;
+    const handleOutside = (event) => {
+      const target = event.target;
+      if (!target) return;
+      if (target.closest('.home-search-toolbar')) return;
+      if (target.closest('.nav-hamburger')) return;
+      setNavPanelOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [navPanelOpen]);
+
   const closeDrawer = () => setDrawerOpen(false);
   const purchaseLabel = hasUnseenOrders
     ? `${unseenCount} compra${unseenCount > 1 ? 's' : ''} confirmada${unseenCount > 1 ? 's' : ''}`
@@ -131,6 +187,29 @@ export default function Header() {
       navigate(to);
     },
     [closeDrawer, location.pathname, navigate]
+  );
+  const runHeaderSearch = useCallback(
+    (rawValue) => {
+      const trimmed = String(rawValue ?? '').trim();
+      if (!trimmed) return false;
+      if (isHome) {
+        window.dispatchEvent(
+          new CustomEvent('templesale:set-search-query', {
+            detail: { value: trimmed }
+          })
+        );
+        window.dispatchEvent(
+          new CustomEvent('templesale:trigger-search', {
+            detail: { value: trimmed }
+          })
+        );
+        return true;
+      }
+      const params = new URLSearchParams({ q: trimmed });
+      navigate(`/?${params.toString()}`);
+      return true;
+    },
+    [isHome, navigate]
   );
   const sortConversationsByDate = useCallback((items) => {
     if (!Array.isArray(items)) return [];
@@ -182,7 +261,7 @@ export default function Header() {
   }, []);
 
   const seenQuestionNotificationKeysRef = useRef(new Set());
-  const QA_SEEN_STORAGE_KEY = 'saleday_seen_question_notifications';
+  const QA_SEEN_STORAGE_KEY = 'templesale_seen_question_notifications';
   const getStorageKey = useCallback(
     (userId) => `${QA_SEEN_STORAGE_KEY}:${userId}`,
     []
@@ -422,12 +501,12 @@ export default function Header() {
     };
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('saleday:seller-orders-sync', fetchNotifications);
+    window.addEventListener('templesale:seller-orders-sync', fetchNotifications);
     return () => {
       clearInterval(intervalId);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('saleday:seller-orders-sync', fetchNotifications);
+      window.removeEventListener('templesale:seller-orders-sync', fetchNotifications);
     };
   }, [fetchNotifications, token]);
 
@@ -437,7 +516,7 @@ export default function Header() {
 
     if (!seenOffersRef.current) {
       try {
-        const stored = localStorage.getItem('saleday_seen_offer_responses');
+        const stored = localStorage.getItem('templesale_seen_offer_responses');
         const parsed = stored ? JSON.parse(stored) : [];
         seenOffersRef.current = new Set(Array.isArray(parsed) ? parsed : []);
       } catch {
@@ -449,7 +528,7 @@ export default function Header() {
       if (!seenOffersRef.current) return;
       try {
         const data = Array.from(seenOffersRef.current);
-        localStorage.setItem('saleday_seen_offer_responses', JSON.stringify(data));
+        localStorage.setItem('templesale_seen_offer_responses', JSON.stringify(data));
       } catch {
         // se falhar em persistir, ignorar
       }
@@ -569,7 +648,7 @@ export default function Header() {
       processQuestionNotifications(event?.detail?.questions);
     };
     const handleStorageEvent = (event) => {
-      if (event.key !== 'saleday:product-question' || !event.newValue) return;
+      if (event.key !== 'templesale:product-question' || !event.newValue) return;
       try {
         const payload = JSON.parse(event.newValue);
         processQuestionNotifications(payload?.questions);
@@ -577,10 +656,10 @@ export default function Header() {
         /* ignore */
       }
     };
-    window.addEventListener('saleday:product-question', handleProductQuestion);
+    window.addEventListener('templesale:product-question', handleProductQuestion);
     window.addEventListener('storage', handleStorageEvent);
     return () => {
-      window.removeEventListener('saleday:product-question', handleProductQuestion);
+      window.removeEventListener('templesale:product-question', handleProductQuestion);
       window.removeEventListener('storage', handleStorageEvent);
     };
   }, [processQuestionNotifications]);
@@ -664,51 +743,122 @@ export default function Header() {
 
   return (
     <header className="app-header" ref={headerRef}>
-      <div className="app-shell">
-        <a
-          href="/"
-          className="app-logo transition-transform duration-300 active:scale-95"
-          translate="no"
-          onClick={(e) => {
-            e.preventDefault();
-            // toca o som
-            const sound = new Audio('/sounds/open-logo.mp3');
-            sound.volume = 0.10;
-            sound.play().catch(() => {});
-            // adiciona pequena animação de saída
-            const logo = e.currentTarget.querySelector('.app-logo__mark');
-            if (logo) {
-              logo.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-              logo.style.transform = 'scale(0.9) rotate(-5deg)';
-              logo.style.opacity = '0.8';
-            }
-            // redireciona junto com o fim do som
-            setTimeout(() => handleLogoClick(e), 400);
+      <button
+        type="button"
+        className="nav-icon-button nav-hamburger"
+        aria-label={isHome ? "Abrir menu" : "Ir para a página inicial"}
+        aria-expanded={isHome ? navPanelOpen : false}
+        onClick={() => {
+          if (!isHome) {
+            navigate('/');
+            return;
+          }
+          setNavPanelOpen((prev) => !prev);
+        }}
+      >
+        <MenuIcon size={20} />
+      </button>
+      {navPanelOpen && (
+        <div
+          className="nav-side-backdrop"
+          role="presentation"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setNavPanelOpen(false);
           }}
-          aria-label="Ir para a página inicial e recarregar"
-        >
-          <div className="relative flex items-center justify-center">
-            <div className="relative">
-            <SaleDayLogo className="app-logo__mark animate-logoEntry" />
-            <span
-              className="absolute font-extrabold animate-slideIn
-              text-2xl left-[35px] top-[2px]
-              sm:text-3xl sm:left-[70px] sm:top-[15px]
-              md:text-4xl md:left-[50px] md:top-[5px]
-              bg-gradient-to-r from-yellow-300 via-amber-100 to-white bg-clip-text text-transparent "
-              style={{ whiteSpace: 'nowrap' }}
-              translate="no"
-            >
-              aleDay
-            </span>
+        />
+      )}
+      <div className="app-shell">
+        {headerSearchOpen ? (
+          <div className="app-logo transition-transform duration-300 active:scale-95" translate="no">
+            <div className="relative flex items-center justify-center">
+              <div className="relative">
+                <form
+                  className="app-header__search animate-logoEntry"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    runHeaderSearch(headerSearchQuery);
+                    setHeaderSearchOpen(false);
+                    setHeaderSearchQuery('');
+                  }}
+                >
+                  <input
+                    type="search"
+                    value={headerSearchQuery}
+                    onChange={(event) => setHeaderSearchQuery(event.target.value)}
+                    placeholder="Buscar"
+                    aria-label="Buscar"
+                    ref={headerSearchRef}
+                  />
+                </form>
+              </div>
             </div>
           </div>
-        </a>
+        ) : (
+          <a
+            href="/"
+            className="app-logo transition-transform duration-300 active:scale-95"
+            translate="no"
+            onClick={(e) => {
+              e.preventDefault();
+              // toca o som
+              const sound = new Audio('/sounds/open-logo.mp3');
+              sound.volume = 0.10;
+              sound.play().catch(() => {});
+              // adiciona pequena animação de saída
+              const logo = e.currentTarget.querySelector('.app-logo__word');
+              if (logo) {
+                logo.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                logo.style.transform = 'scale(0.9) rotate(-5deg)';
+                logo.style.opacity = '0.8';
+              }
+              // redireciona junto com o fim do som
+              setTimeout(() => handleLogoClick(e), 400);
+            }}
+            aria-label="Ir para a página inicial e recarregar"
+          >
+            <div className="relative flex items-center justify-center gap-3">
+              <img src="/mira.png" alt="Templesale" className="app-logo__mark" />
+              <div className="relative">
+                <span className="app-logo__word animate-logoEntry" aria-hidden="true">
+                  TEMPLESALE
+                </span>
+              </div>
+            </div>
+          </a>
+        )}
       </div>
 
       <nav className="app-nav" aria-label="Menu principal">
         {user ? (
           <>
+            <button
+              type="button"
+              className="nav-icon-button"
+              aria-label="Buscar"
+              onClick={() => {
+                playUISound('open-home.mp3');
+                if (headerSearchOpen) {
+                  if (headerSearchQuery.trim()) {
+                    runHeaderSearch(headerSearchQuery);
+                    setHeaderSearchOpen(false);
+                    setHeaderSearchQuery('');
+                    return;
+                  }
+                  setHeaderSearchOpen(false);
+                  setHeaderSearchQuery('');
+                  return;
+                } else {
+                  setHeaderSearchOpen(true);
+                  setTimeout(() => headerSearchRef.current?.focus(), 0);
+                }
+              }}
+            >
+              <SearchIcon size={20} />
+              <span className="sr-only">Buscar</span>
+            </button>
             <Link
               to="/dashboard"
               className={`nav-icon-button${sellerAlerts.unseen > 0 ? ' nav-icon-button--alert' : ''}`}

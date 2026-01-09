@@ -32,8 +32,8 @@ export default function AdminOverview() {
         setError('Erro ao sincronizar métricas.');
       }
     };
-    window.addEventListener('saleday:admin-refresh', syncListener);
-    return () => window.removeEventListener('saleday:admin-refresh', syncListener);
+    window.addEventListener('templesale:admin-refresh', syncListener);
+    return () => window.removeEventListener('templesale:admin-refresh', syncListener);
   }, []);
 
   const quickStats = useMemo(() => {

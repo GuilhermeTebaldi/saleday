@@ -22,6 +22,7 @@ import BuyerOrdersList from '../components/BuyerOrdersList.jsx';
 import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
+import { getCurrentPath } from '../components/ScrollRestoration.jsx';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -87,6 +88,54 @@ const formatPostDate = (value, locale = 'pt-BR') => {
 };
 const isActive = (p) => (p?.status || 'active') !== 'sold';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
+
+const HOME_SNAPSHOT_KEY = 'templesale:home-snapshot';
+const HOME_RESTORE_KEY = 'templesale:home-restore';
+
+const readHomeSnapshot = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(HOME_SNAPSHOT_KEY) || 'null');
+  } catch {
+    return null;
+  }
+};
+
+const writeHomeSnapshot = (payload) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(HOME_SNAPSHOT_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const clearHomeSnapshot = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const readHomeRestore = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(HOME_RESTORE_KEY) || 'null');
+  } catch {
+    return null;
+  }
+};
+
+const clearHomeRestore = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(HOME_RESTORE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
 
 const normalizeId = (value) => {
   const num = Number(value);
@@ -483,7 +532,7 @@ const readStoredPreferredCountry = () => {
   if (typeof window === 'undefined') return null;
   try {
     return normalizeCountryCode(
-      window.localStorage.getItem('saleday.preferredCountry')
+      window.localStorage.getItem('templesale.preferredCountry')
     );
   } catch {
     return null;
@@ -502,7 +551,7 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
 
       const candidates = [];
 
-      const storedLocale = window.localStorage.getItem('saleday.locale');
+      const storedLocale = window.localStorage.getItem('templesale.locale');
       if (storedLocale) candidates.push(storedLocale);
 
       if (typeof window.navigator !== 'undefined') {
@@ -538,7 +587,7 @@ const detectPreferredCountry = (userCountry, geoCountry) => {
   return DEFAULT_COUNTRY;
 };
 
-const MAP_CENTER_KEY = 'saleday.map.center';
+const MAP_CENTER_KEY = 'templesale.map.center';
 const readStoredMapCenter = () => {
   if (typeof window === 'undefined') return null;
   try {
@@ -1325,6 +1374,17 @@ export default function Home() {
   } = useContext(GeoContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const initialHomeSnapshot = useMemo(() => {
+    const restore = readHomeRestore();
+    if (!restore) return null;
+    const currentPath = getCurrentPath();
+    if (restore.path !== currentPath) return null;
+    const snapshot = readHomeSnapshot();
+    if (!snapshot || snapshot.path !== currentPath || !snapshot.hasActiveFilters) {
+      return null;
+    }
+    return snapshot;
+  }, []);
   const storedPreferredCountry = useMemo(() => readStoredPreferredCountry(), []);
   const preferredCountry = useMemo(
     () => detectPreferredCountry(user?.country, detectedCountry),
@@ -1334,13 +1394,15 @@ export default function Home() {
     const userLocale = user?.country ? localeFromCountry(user.country) : null;
     return userLocale || detectedLocale || 'pt-BR';
   }, [detectedLocale, user?.country]);
-  const [geoScope, setGeoScope] = useState(() => ({ type: 'country', country: preferredCountry }));
+  const [geoScope, setGeoScope] = useState(() =>
+    initialHomeSnapshot?.geoScope || { type: 'country', country: preferredCountry }
+  );
 
   // produtos / favoritos (já existia)
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => initialHomeSnapshot?.products ?? []);
   const [lastMapCenter, setLastMapCenter] = useState(() => readStoredMapCenter());
   const productsRef = useRef([]);
-  const [viewMode, setViewMode] = useState('all'); // 'all' | 'free'
+  const [viewMode, setViewMode] = useState(() => initialHomeSnapshot?.viewMode ?? 'all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -1364,6 +1426,7 @@ export default function Home() {
     unseenCount,
     markOrdersSeen
   } = usePurchaseNotifications();
+  const lastHeaderQueryRef = useRef('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -1384,6 +1447,39 @@ export default function Home() {
       { replace: true }
     );
   }, [location.search, location.pathname, navigate, markOrdersSeen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(location.search);
+    const rawQuery = params.get('q') || '';
+    const trimmed = rawQuery.trim();
+    if (!trimmed || lastHeaderQueryRef.current === trimmed) return;
+    lastHeaderQueryRef.current = trimmed;
+    const timeoutId = window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('templesale:set-search-query', {
+          detail: { value: trimmed }
+        })
+      );
+      window.dispatchEvent(
+        new CustomEvent('templesale:trigger-search', {
+          detail: { value: trimmed }
+        })
+      );
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [location.search]);
+  useEffect(() => {
+    const restore = readHomeRestore();
+    if (!restore) return;
+    clearHomeRestore();
+    if (!initialHomeSnapshot?.searchSummary || typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('templesale:set-search-query', {
+        detail: { value: initialHomeSnapshot.searchSummary }
+      })
+    );
+  }, [initialHomeSnapshot]);
   const drawerRef = useRef(null);
   const handlePersistMapCenter = useCallback((center) => {
     if (!center || !Number.isFinite(center.lat) || !Number.isFinite(center.lng)) return;
@@ -1396,12 +1492,12 @@ export default function Home() {
   const pulseTimerRef = useRef(null);
 
   // pedidos confirmados do comprador
-  const [searchSummary, setSearchSummary] = useState(null);
-  const [locationSummary, setLocationSummary] = useState(null);
-  const [locationCountry, setLocationCountry] = useState(null);
+  const [searchSummary, setSearchSummary] = useState(() => initialHomeSnapshot?.searchSummary ?? null);
+  const [locationSummary, setLocationSummary] = useState(() => initialHomeSnapshot?.locationSummary ?? null);
+  const [locationCountry, setLocationCountry] = useState(() => initialHomeSnapshot?.locationCountry ?? null);
   const [externalResetToken, setExternalResetToken] = useState(0);
-  const [categoryOptions, setCategoryOptions] = useState([]);
-  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [categoryOptions, setCategoryOptions] = useState(() => initialHomeSnapshot?.categoryOptions ?? []);
+  const [categoryFilter, setCategoryFilter] = useState(() => initialHomeSnapshot?.categoryFilter ?? null);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [countryShortcuts, setCountryShortcuts] = useState([]);
   const [countryShortcutsLoading, setCountryShortcutsLoading] = useState(false);
@@ -1411,8 +1507,6 @@ export default function Home() {
   // controle de interseção de view
   const observedRef = useRef(new Set());
   // menu do avatar
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const profileMenuRef = useRef(null);
 
   // botão "voltar ao topo"
   const [showTop, setShowTop] = useState(false);
@@ -1465,7 +1559,7 @@ export default function Home() {
   useEffect(() => {
     if (!preferredCountry || typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem('saleday.preferredCountry', preferredCountry);
+      window.localStorage.setItem('templesale.preferredCountry', preferredCountry);
     } catch {
       // ignora falha de storage (modo privado, quota, etc.)
     }
@@ -1473,12 +1567,13 @@ export default function Home() {
 
   useEffect(() => {
     setGeoScope((current) => {
+      if (initialHomeSnapshot) return current;
       if (!preferredCountry) return current;
       if (current?.type !== 'country') return current;
       if (current.country === preferredCountry) return current;
       return { type: 'country', country: preferredCountry };
     });
-  }, [preferredCountry, handlePersistMapCenter]);
+  }, [preferredCountry, handlePersistMapCenter, initialHomeSnapshot]);
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400);
     onScroll();
@@ -1556,8 +1651,45 @@ export default function Home() {
 
   // carregar produtos iniciais
   useEffect(() => {
+    if (initialHomeSnapshot) return;
     loadDefaultProducts();
-  }, [loadDefaultProducts]);
+  }, [loadDefaultProducts, initialHomeSnapshot]);
+
+  useEffect(() => {
+    const hasActiveFilters = Boolean(
+      searchSummary ||
+        locationSummary ||
+        locationCountry ||
+        categoryFilter ||
+        geoScope?.type === 'bbox' ||
+        viewMode === 'free'
+    );
+    if (!hasActiveFilters) {
+      clearHomeSnapshot();
+      return;
+    }
+    writeHomeSnapshot({
+      path: getCurrentPath(),
+      products,
+      categoryOptions,
+      categoryFilter,
+      searchSummary,
+      locationSummary,
+      locationCountry,
+      geoScope,
+      viewMode,
+      hasActiveFilters
+    });
+  }, [
+    products,
+    categoryOptions,
+    categoryFilter,
+    searchSummary,
+    locationSummary,
+    locationCountry,
+    geoScope,
+    viewMode
+  ]);
 
   // carregar favoritos
   useEffect(() => {
@@ -1726,16 +1858,54 @@ export default function Home() {
         }
         const { data } = await api.get('/products', { params });
         if (data.success) {
-          handleProductsLoaded(data.data, { preserveCategories: !isRemoving });
-          if (isRemoving) {
-            setCategoryFilter(null);
-            toast.success('Filtro de categoria removido.');
-          } else {
-            setCategoryFilter(normalized);
-            toast.success(`Filtrando por ${normalized}.`);
+          const incoming = Array.isArray(data.data) ? data.data : [];
+          if (incoming.length) {
+            handleProductsLoaded(incoming, { preserveCategories: !isRemoving });
+            if (isRemoving) {
+              setCategoryFilter(null);
+              toast.success('Filtro de categoria removido.');
+            } else {
+              setCategoryFilter(normalized);
+              toast.success(`Filtrando por ${normalized}.`);
+            }
+            return;
           }
+
+          const shouldFallbackToLocal =
+            !isRemoving &&
+            geoScope?.type === 'bbox' &&
+            productsRef.current.length > 0;
+          if (shouldFallbackToLocal) {
+            const normalizedLabel = normalizeLabel(normalized);
+            const localMatches = productsRef.current.filter(
+              (product) => normalizeLabel(product?.category || '') === normalizedLabel
+            );
+            if (localMatches.length) {
+              const priorityKeys = localMatches
+                .map((item) => getProductKey(item))
+                .filter(Boolean);
+              handleProductsLoaded(localMatches, {
+                preserveCategories: true,
+                keepExisting: false,
+                priorityKeys
+              });
+              setCategoryFilter(normalized);
+              toast.success(`Filtrando por ${normalized}.`);
+              return;
+            }
+          }
+
+          toast.error(
+            isRemoving
+              ? 'Não foi possível recarregar os produtos.'
+              : 'Nenhum produto nesta categoria.'
+          );
         } else {
-          toast.error(isRemoving ? 'Não foi possível recarregar os produtos.' : 'Nenhum produto nesta categoria.');
+          toast.error(
+            isRemoving
+              ? 'Não foi possível recarregar os produtos.'
+              : 'Nenhum produto nesta categoria.'
+          );
         }
       } catch (err) {
         console.error(err);
@@ -2022,21 +2192,6 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDrawer]);
 
-  // fechar menu do perfil clicando fora
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
-        setShowProfileMenu(false);
-      }
-    }
-    if (showProfileMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProfileMenu]);
-
   const heroSubtitle = token
     ? '.'
     : 'Crie sua conta para favoritar produtos, falar com vendedores e confirmar compras.';
@@ -2053,123 +2208,30 @@ export default function Home() {
       : `${favoriteIds.length} favoritos`;
 
   const hasProfile = Boolean(token);
-  const searchRowStyle = {
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '0.75rem'
-  };
-  const searchWrapperStyle = {
-    position: 'relative'
-  };
 
   let content;
 
   try {
     content = (
     <div className="home-page">
-      <section className="home-hero">
-
-        <div className="home-hero__tools">
-          <div className="home-hero__searchrow" style={searchRowStyle}>
-            {/* bloco SearchBar existente */}
-            <div className="home-hero__search" style={searchWrapperStyle}>
-              <SearchBar
-                onProductsLoaded={handleProductsLoaded}
-                onFiltersChange={handleSearchFilters}
-                resetSignal={externalResetToken}
-                onOpenMap={() => mapOpenRef.current?.()}
-                geoScope={geoScope}
-                originCountry={preferredCountry}
-                hasProfile={hasProfile}
-                categoryOptions={categoryOptions}
-                categoryFilter={categoryFilter}
-                categoryLoading={categoryLoading}
-                onCategorySelect={handleCategoryFilter}
-                locationSummary={locationSummary}
-              />
-              {token && (
-                <div className="home-profile home-profile--inline" ref={profileMenuRef}>
-                  <button
-                    type="button"
-                    className="home-profile__avatarbtn"
-                    onClick={() => setShowProfileMenu((v) => !v)}
-                    aria-label="Abrir menu do perfil"
-                  >
-                    {user?.profile_image_url ? (
-  <img
-    src={user.profile_image_url}
-    alt={user.username || 'Perfil'}
-    className="home-profile__avatarimg"
-    onError={(e) => {
-      e.currentTarget.src = IMG_PLACEHOLDER;
-      e.currentTarget.classList.add('home-profile__avatarimg--fallback');
-    }}
-  />
-) : (
-
-                      <span className="home-profile__avatarfallback">
-                        {(user?.username || 'U')
-                          .trim()
-                          .charAt(0)
-                          .toUpperCase()}
-                      </span>
-                    )}
-                  </button>
-
-                  {showProfileMenu && (
-                    <div className="home-profile__menu">
-                      <div className="home-profile__menu-header">
-                        <div className="home-profile__menu-avatar">
-                        {user?.profile_image_url ? (
-  <img
-    src={user.profile_image_url}
-    alt={user.username || 'Perfil'}
-    className="home-profile__menu-avatarimg"
-    onError={(e) => {
-      e.currentTarget.src = IMG_PLACEHOLDER;
-      e.currentTarget.classList.add('home-profile__menu-avatarimg--fallback');
-    }}
-  />
-) : (
-
-
-                            <span className="home-profile__menu-avatarfallback">
-                              {(user?.username || 'U')
-                                .trim()
-                                .charAt(0)
-                                .toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div className="home-profile__menu-info">
-                          <p className="home-profile__menu-name">{user?.username || 'Usuário'}</p>
-                          {user?.city ? (
-                            <p className="home-profile__menu-meta">{user.city}</p>
-                          ) : (
-                            <p className="home-profile__menu-meta">Perfil incompleto</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <Link
-                        to="/edit-profile"
-                        className="home-profile__menu-item"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Editar perfil
-                      </Link>
-                 
-                     
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-
-  </div>
-      </section>
+      {/* bloco SearchBar existente */}
+      <div id="search">
+        <SearchBar
+          onProductsLoaded={handleProductsLoaded}
+          onFiltersChange={handleSearchFilters}
+          resetSignal={externalResetToken}
+          onOpenMap={() => mapOpenRef.current?.()}
+          geoScope={geoScope}
+          originCountry={preferredCountry}
+          hasProfile={hasProfile}
+          user={user}
+          categoryOptions={categoryOptions}
+          categoryFilter={categoryFilter}
+          categoryLoading={categoryLoading}
+          onCategorySelect={handleCategoryFilter}
+          locationSummary={locationSummary}
+        />
+      </div>
       <MapSearch
         onProductsLoaded={handleProductsLoaded}
         onRegionApplied={handleRegionApplied}
@@ -2209,7 +2271,7 @@ export default function Home() {
       )}
 
       {/* grade de produtos pública */}
-      <section className="home-grid-section mt-2 px-0 sm:px-0">
+      <section id="feed" className="home-grid-section mt-2 px-0 sm:px-0">
 
         {displayedProducts.length === 0 ? (
           <div className="home-empty-state">
@@ -2540,7 +2602,7 @@ export default function Home() {
     console.error('Erro ao renderizar Home:', err);
     content = (
       <div className="home-page">
-        <section className="home-hero">
+        <section>
           <div className="home-empty-state">
             <h2>Erro ao carregar a página inicial</h2>
             <p>Tente recarregar a página ou voltar novamente em instantes.</p>

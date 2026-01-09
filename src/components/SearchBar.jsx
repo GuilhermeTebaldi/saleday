@@ -1,7 +1,7 @@
 // frontend/src/components/SearchBar.jsx
 //aqui é a barra com icones ! baixo da barra de logo
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter } from 'lucide-react';
@@ -176,6 +176,7 @@ export default function SearchBar({
   geoScope,
   originCountry,
   hasProfile,
+  user,
   categoryOptions = [],
   categoryFilter,
   categoryLoading,
@@ -194,7 +195,6 @@ export default function SearchBar({
   const [countryOptions, setCountryOptions] = useState([]);
   const [countryLoading, setCountryLoading] = useState(false);
   const [countryApplying, setCountryApplying] = useState(false);
-  const searchInputRef = useRef(null);
 
   const activeCountry =
     geoScope?.type === 'country' && geoScope?.country
@@ -253,10 +253,6 @@ export default function SearchBar({
       setCategoryPanelOpen(false);
     }
   }, [hasCategoryOptions]);
-
-  useEffect(() => {
-    searchInputRef.current?.focus();
-  }, []);
 
   const toggleCountryPanel = () => {
     setPanel((prev) => {
@@ -320,8 +316,8 @@ export default function SearchBar({
     }
   }
 
-  async function searchText() {
-    const trimmed = q.trim();
+  async function searchText(rawQuery = q) {
+    const trimmed = String(rawQuery).trim();
     if (!trimmed) {
       toast.error('Digite algo para buscar.');
       return;
@@ -539,34 +535,118 @@ export default function SearchBar({
     setPanel(null);
   }
 
-  const searchBarStyle = hasProfile ? { paddingRight: '72px' } : undefined;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!panel && !categoryPanelOpen) {
+      window.dispatchEvent(new Event('templesale:close-panel'));
+    }
+  }, [panel, categoryPanelOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleTriggerSearch = (event) => {
+      const nextValue = event?.detail?.value ?? q;
+      searchText(nextValue);
+    };
+    window.addEventListener('templesale:trigger-search', handleTriggerSearch);
+    return () =>
+      window.removeEventListener('templesale:trigger-search', handleTriggerSearch);
+  }, [q, geoScope]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleSetQuery = (event) => {
+      const nextValue = event?.detail?.value ?? '';
+      setQ(String(nextValue));
+    };
+    window.addEventListener('templesale:set-search-query', handleSetQuery);
+    return () =>
+      window.removeEventListener('templesale:set-search-query', handleSetQuery);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('templesale-dropdown-open', Boolean(panel || categoryPanelOpen));
+    return () => document.body.classList.remove('templesale-dropdown-open');
+  }, [panel, categoryPanelOpen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    if (!panel && !categoryPanelOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      if (!target) return;
+      if (target.closest('.home-search-toolbar')) return;
+      if (target.closest('.home-search-category-panel')) return;
+      if (target.closest('.home-search-country-dropdown')) return;
+      if (target.closest('.home-search-address-panel')) return;
+      if (target.closest('.home-search-seller-panel')) return;
+      setPanel(null);
+      setCategoryPanelOpen(false);
+      window.dispatchEvent(new Event('templesale:close-panel'));
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [panel, categoryPanelOpen]);
 
   return (
     <div className="relative" ref={popRef}>
       <div className="home-search-top">
-        {/* Barra de busca fixa */}
-        <div className="mb-2 home-search-bar" style={searchBarStyle}>
-          <div className="home-search-bar__inner flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border">
-            <Search size={18} className="text-gray-500 ml-1" />
-            <input
-              ref={searchInputRef}
-              className="flex-1 p-2 outline-none bg-transparent"
-              placeholder="Buscar por título, marca, modelo ou serviço"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchText()}
-            />
-            <button
-              onClick={searchText}
-              className="px-2 py-2 rounded-full bg-gray-900 text-white text-sm"
-            >
-              Buscar
-            </button>
-          </div>
-        </div>
-
         {/* Barra de ícones */}
-        <div className="home-search-toolbar">
+        <div
+          className="home-search-toolbar"
+          onClick={(event) => {
+            if (event.target.closest('.home-search-toolbtn')) {
+              setTimeout(() => {
+                window.dispatchEvent(new Event('templesale:close-panel'));
+              }, 0);
+            }
+          }}
+        >
+        {user && (
+          <div className="home-search-toolbar__profile">
+            <div className="home-search-toolbar__avatar">
+              {user?.profile_image_url ? (
+                <img
+                  src={user.profile_image_url}
+                  alt={user.username || 'Perfil'}
+                  onError={(e) => {
+                    e.currentTarget.src = IMG_PLACEHOLDER;
+                    e.currentTarget.classList.add('home-profile__avatarimg--fallback');
+                  }}
+                />
+              ) : (
+                <span>
+                  {(user?.username || 'U')
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="home-search-toolbar__profile-info">
+              <p className="home-search-toolbar__profile-name">
+                {user?.username || 'Usuário'}
+              </p>
+              {user?.city ? (
+                <p className="home-search-toolbar__profile-meta">{user.city}</p>
+              ) : (
+                <p className="home-search-toolbar__profile-meta">Perfil incompleto</p>
+              )}
+              <Link
+                to="/edit-profile"
+                className="home-search-toolbar__profile-link"
+                onClick={() => {
+                  setPanel(null);
+                  setCategoryPanelOpen(false);
+                  window.dispatchEvent(new Event('templesale:close-panel'));
+                }}
+              >
+                Editar perfil
+              </Link>
+            </div>
+          </div>
+        )}
         {hasCategoryOptions && (
           <div className="relative">
             <button
@@ -578,65 +658,11 @@ export default function SearchBar({
               className={`${TOOLBAR_ICON_BTN} relative ${categoryPanelOpen ? 'bg-white border-gray-200 shadow-md' : ''}`}
             >
               <Filter size={18} />
+              <span className="home-search-toolbtn__label">Filtro</span>
               {categoryFilter && (
                 <span className="pointer-events-none absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500" />
               )}
             </button>
-            {categoryPanelOpen && (
-              <div className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
-                <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {locationSummary ? `Disponíveis em ${locationSummary}` : 'Categorias'}
-                      </p>
-                    </div>
-                  <div className="flex items-center gap-2">
-                    {categoryFilter && (
-                      <button
-                        type="button"
-                        onClick={() => handleCategorySelection(categoryFilter)}
-                        disabled={categoryLoading}
-                        className="text-emerald-600 hover:underline disabled:cursor-wait disabled:opacity-60"
-                      >
-                        Limpar
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setCategoryPanelOpen(false)}
-                      className="text-gray-500 hover:underline"
-                    >
-                      Fechar
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
-                  {categoryOptions.map(({ label, count }) => {
-                    const active = categoryFilter === label;
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => handleCategorySelection(label)}
-                        disabled={categoryLoading}
-                        className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
-                          active
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                        } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
-                      >
-                        <span className="block text-sm font-semibold truncate">
-                          {label}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {count} anúncios
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
         <div className="relative">
@@ -650,85 +676,8 @@ export default function SearchBar({
             aria-expanded={panel === 'country'}
           >
             <Globe size={18} />
+            <span className="home-search-toolbtn__label">País</span>
           </button>
-          {panel === 'country' && (
-            <div
-              role="dialog"
-              aria-label="Lista de países disponíveis"
-              className="absolute left-0 top-full z-40 mt-2 w-64 min-w-[220px] max-w-[90vw] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
-            >
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <div>
-                  <p className="font-semibold text-sm text-gray-800">
-                    {countryLoading ? 'Carregando países' : 'Filtrar por país'}
-                  </p>
-                  <p className="text-[11px] text-gray-400">
-                    {countryLoading ? 'Aguarde enquanto atualizamos os países ativos' : 'Somente países com anúncios ativos'}
-                  </p>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => setPanel(null)}
-                  className="p-1.5 rounded-full hover:bg-gray-100 transition"
-                  aria-label="Fechar lista de países"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
-                {countryLoading ? (
-                  <p className="text-sm text-gray-500">Carregando países...</p>
-                ) : countryOptions.length === 0 ? (
-                  <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
-                ) : (
-                  countryOptions.map((item) => {
-                    const label = resolveCountryName(item.country);
-                    const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
-                    const isActive = activeCountry === item.country;
-                    const flagUrl = getFlagUrl(item.country);
-                    const theme = getCountryTheme(item.country);
-                    return (
-                      
-                      <button
-                        key={item.country}
-                        type="button"
-                        disabled={countryApplying}
-                        onClick={() => applyCountryFilter(item.country)}
-                        className={`w-full text-left p-3 rounded-2xl border transition shadow-sm hover:shadow-lg ${
-                          isActive
-                            ? `${theme.border} ${theme.bg} ${theme.text}`
-                            : 'border-gray-200 bg-white/80 text-gray-700 hover:border-gray-300'
-                        } duration-150`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            {flagUrl ? (
-                              <img
-                                src={flagUrl}
-                                alt={label}
-                                className="w-5 h-5 rounded-sm object-cover border border-white/60 shadow-inner"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
-                                {item.country}
-                              </span>
-                            )}
-                            <p className="font-semibold text-sm truncate">{label}</p>
-                          </div>
-                          <p className="text-xs text-gray-500">{countLabel}</p>
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              <div className="mt-3 rounded-2xl border border-dashed border-gray-200 bg-white/60 p-3 text-xs text-gray-500">
-                {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
-              </div>
-            </div>
-          )}
         </div>
         {false && (
           <button
@@ -750,6 +699,7 @@ export default function SearchBar({
           className={`${TOOLBAR_ICON_BTN}`}
         >
           <Crosshair size={18} />
+          <span className="home-search-toolbtn__label">GPS</span>
         </button>
         <button
           type="button"
@@ -758,6 +708,7 @@ export default function SearchBar({
           className={`${TOOLBAR_ICON_BTN}`}
         >
           <RotateCw size={18} />
+          <span className="home-search-toolbtn__label">Resetar</span>
         </button>
         <button
           type="button"
@@ -768,12 +719,13 @@ export default function SearchBar({
               handled = onOpenMap() === true;
             }
             if (!handled) {
-              window.dispatchEvent(new Event('saleday:open-map'));
+              window.dispatchEvent(new Event('templesale:open-map'));
             }
           }}
           className={`${TOOLBAR_ICON_BTN}`}
         >
           <MapIcon size={18} />
+          <span className="home-search-toolbtn__label">Mapa</span>
         </button>
         <button
           type="button"
@@ -784,6 +736,7 @@ export default function SearchBar({
           aria-expanded={panel === 'seller'}
         >
           <User size={18} />
+          <span className="home-search-toolbtn__label">Vendedor</span>
         </button>
         </div>
       </div>
@@ -791,7 +744,7 @@ export default function SearchBar({
       {/* Painéis */}
 
       {panel === 'address' && (
-        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 flex flex-col gap-3 backdrop-blur-sm">
+        <div className="home-search-address-panel absolute z-20 mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 flex flex-col gap-3 backdrop-blur-sm">
           <div>
             <p className="text-sm font-semibold text-slate-900">Aplicar endereço</p>
             <p className="text-xs text-gray-400">Cidade, bairro ou endereço (ex: Chapecó)</p>
@@ -826,7 +779,7 @@ export default function SearchBar({
       )}
 
       {panel === 'seller' && (
-        <div className="absolute z-20 mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
+        <div className="home-search-seller-panel absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">Buscar vendedores</p>
             <button
@@ -862,6 +815,139 @@ export default function SearchBar({
             >
               Buscar vendedores
             </button>
+          </div>
+        </div>
+      )}
+
+      {categoryPanelOpen && (
+        <div className="home-search-seller-panel home-search-category-panel absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
+          <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {locationSummary ? `Disponíveis em ${locationSummary}` : 'Categorias'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {categoryFilter && (
+                <button
+                  type="button"
+                  onClick={() => handleCategorySelection(categoryFilter)}
+                  disabled={categoryLoading}
+                  className="text-emerald-600 hover:underline disabled:cursor-wait disabled:opacity-60"
+                >
+                  Limpar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCategoryPanelOpen(false)}
+                className="text-gray-500 hover:underline"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+            {categoryOptions.map(({ label, count }) => {
+              const active = categoryFilter === label;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => handleCategorySelection(label)}
+                  disabled={categoryLoading}
+                  className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
+                    active
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
+                >
+                  <span className="block text-sm font-semibold truncate">
+                    {label}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {count} anúncios
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {panel === 'country' && (
+        <div
+          role="dialog"
+          aria-label="Lista de países disponíveis"
+          className="home-search-seller-panel home-search-country-dropdown absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
+        >
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <div>
+              <p className="font-semibold text-sm text-gray-800">
+                {countryLoading ? 'Carregando países' : 'Filtrar por país'}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                {countryLoading ? 'Aguarde enquanto atualizamos os países ativos' : 'Somente países com anúncios ativos'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPanel(null)}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition"
+              aria-label="Fechar lista de países"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+            {countryLoading ? (
+              <p className="text-sm text-gray-500">Carregando países...</p>
+            ) : countryOptions.length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
+            ) : (
+              countryOptions.map((item) => {
+                const label = resolveCountryName(item.country);
+                const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
+                const isActive = activeCountry === item.country;
+                const flagUrl = getFlagUrl(item.country);
+                const theme = getCountryTheme(item.country);
+                return (
+                  <button
+                    key={item.country}
+                    type="button"
+                    disabled={countryApplying}
+                    onClick={() => applyCountryFilter(item.country)}
+                    className={`w-full text-left p-3 rounded-2xl border transition shadow-sm hover:shadow-lg ${
+                      isActive
+                        ? `${theme.border} ${theme.bg} ${theme.text}`
+                        : 'border-gray-200 bg-white/80 text-gray-700 hover:border-gray-300'
+                    } duration-150`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {flagUrl ? (
+                          <img
+                            src={flagUrl}
+                            alt={label}
+                            className="w-5 h-5 rounded-sm object-cover border border-white/60 shadow-inner"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
+                            {item.country}
+                          </span>
+                        )}
+                        <p className="font-semibold text-sm truncate">{label}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{countLabel}</p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <div className="mt-3 rounded-2xl border border-dashed border-gray-200 bg-white/60 p-3 text-xs text-gray-500">
+            {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
           </div>
         </div>
       )}

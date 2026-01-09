@@ -71,7 +71,7 @@ export default function Register() {
       }
   
       login(data);
-      localStorage.setItem('saleday.locale', localeFromCountry(country)); // <- aqui
+      localStorage.setItem('templesale.locale', localeFromCountry(country)); // <- aqui
       navigate('/');                                                     // <- aqui
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Não foi possível criar sua conta.';
@@ -197,7 +197,7 @@ export default function Register() {
                 <Link to="/politica-de-privacidade#diretrizes" target="_blank" rel="noreferrer">
                   Diretrizes da Comunidade
                 </Link>
-                . Compreendo que o SaleDay não participa das negociações nem responde por golpes ou prejuízos causados
+                . Compreendo que o TempleSale não participa das negociações nem responde por golpes ou prejuízos causados
                 por terceiros.
               </span>
               <small>Vigência imediata · Última atualização: 27/10/2025</small>

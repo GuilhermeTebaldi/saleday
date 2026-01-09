@@ -34,7 +34,7 @@ export default function AdminLogin() {
       {/* Fundo: SALE DAY gigante desfocado */}
       <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none opacity-[0.05]">
         <h1 className="text-[18rem] md:text-[22rem] font-black uppercase tracking-tight text-white blur-3xl">
-          SaleDay
+          TempleSale
         </h1>
       </div>
 
@@ -43,7 +43,7 @@ export default function AdminLogin() {
         {/* Cabeçalho */}
         <div className="mb-6 text-center">
           <p className="text-[11px] font-semibold tracking-[0.35em] uppercase text-emerald-400">
-            SaleDay
+            TempleSale
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-50">
             Área administrativa
@@ -70,7 +70,7 @@ export default function AdminLogin() {
               </label>
               <input
                 className="w-full rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500 transition"
-                placeholder="admin@saleday.com"
+                placeholder="admin@templesale.com"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -111,7 +111,7 @@ export default function AdminLogin() {
           </form>
 
           <p className="text-[11px] text-slate-500 text-center pt-1">
-            Acesso restrito à equipe autorizada SaleDay.
+            Acesso restrito à equipe autorizada TempleSale.
           </p>
         </div>
       </div>

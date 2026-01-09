@@ -1,7 +1,7 @@
 import { parseImageList, toAbsoluteImageUrl } from './images.js';
 import formatProductPrice from './currency.js';
 
-export const PRODUCT_CONTEXT_PREFIX = '__saleday_product_context__:';
+export const PRODUCT_CONTEXT_PREFIX = '__templesale_product_context__:';
 
 export const buildProductContextPayload = (productId, meta = {}, productInfo = null) => {
   if (!productId) return null;

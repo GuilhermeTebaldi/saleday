@@ -36,7 +36,7 @@ const MIN_COMPRESS_QUALITY = 0.6;
 const FIELD_BASE_CLASS =
   'w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500';
 const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
-const WATERMARK_TEXT = 'saleday.com.br';
+const WATERMARK_TEXT = 'templesale.com';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 
 const buildSafeImageFilename = (name, extension) => {
@@ -406,9 +406,11 @@ export default function NewProduct() {
   const [showMissingSummary, setShowMissingSummary] = useState(false);
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
+  const zipInputRef = useRef(null);
   const geocodeTimeoutRef = useRef(null);
   const geocodeInFlightRef = useRef(false);
   const lastGeoQueryRef = useRef('');
+  const lastZipAutoFillRef = useRef({ zip: '', at: 0 });
   const [activeImageKindId, setActiveImageKindId] = useState(null);
 
   useEffect(() => {
@@ -832,28 +834,55 @@ export default function NewProduct() {
     );
   }
 
+  const focusZipInput = () => {
+    if (typeof window === 'undefined') return;
+    window.requestAnimationFrame(() => zipInputRef.current?.focus?.());
+  };
+
   // Valida e usa o CEP/ZIP higienizado no fetch
-  async function handleFillByZip() {
+  async function applyZipLookup({ showSuccessToast = true } = {}) {
     const country = (form.country || 'BR').toUpperCase();
     const cleaned = cleanZip(form.zip, country);
-    if (!cleaned) return toast.error('Informe o CEP/ZIP.');
-    if (country === 'BR' && cleaned.length !== 8) return toast.error('CEP deve ter 8 dígitos.');
+    if (!cleaned) {
+      toast.error('Informe o CEP/ZIP.');
+      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+      focusZipInput();
+      return { success: false };
+    }
+    if (country === 'BR' && cleaned.length !== 8) {
+      toast.error('CEP deve ter 8 dígitos.');
+      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+      focusZipInput();
+      return { success: false };
+    }
     if (country === 'US' && !(cleaned.length === 5 || cleaned.length === 9)) {
-      return toast.error('ZIP deve ter 5 ou 9 dígitos.');
+      toast.error('ZIP deve ter 5 ou 9 dígitos.');
+      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+      focusZipInput();
+      return { success: false };
     }
 
+    if (loadingZip) {
+      return { success: false };
+    }
     setLoadingZip(true);
     try {
       const { data } = await api.get('/geo/cep', { params: { country, zip: cleaned } });
-      if (!data.success || !data.data) return toast.error('CEP/ZIP não encontrado.');
+      if (!data.success || !data.data) {
+        toast.error('CEP/ZIP não encontrado.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+        return { success: false };
+      }
       const a = data.data;
-      let next = {
+      const resolvedCountry = normalizeCountryCode(a.country) || form.country || country;
+      const next = {
         ...form,
-        country: normalizeCountryCode(a.country) || form.country,
-        state: a.state || form.state,
-        city: normalizeCityName(a.city) || form.city,
-        neighborhood: a.neighborhood ?? form.neighborhood,
-        street: a.street ?? form.street,
+        country: resolvedCountry,
+        state: a.state || '',
+        city: normalizeCityName(a.city) || '',
+        neighborhood: a.neighborhood ?? '',
+        street: a.street ?? '',
         zip: a.zip || cleaned
       };
 
@@ -870,15 +899,55 @@ export default function NewProduct() {
         next.lng = a.lng;
       }
 
+      const latNum = toFiniteNumber(next.lat);
+      const lngNum = toFiniteNumber(next.lng);
+      if (latNum === null || lngNum === null || !inBounds(resolvedCountry, latNum, lngNum)) {
+        toast.error('CEP localizado sem coordenadas válidas. Digite novamente.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+        return { success: false };
+      }
+      next.lat = latNum;
+      next.lng = lngNum;
       setForm(next);
-      toast.success('Endereço preenchido pelo CEP.');
+      if (showSuccessToast) {
+        toast.success('Endereço preenchido pelo CEP.');
+      }
+      return { success: true };
     } catch (err) {
       console.error(err?.response?.data || err.message);
       toast.error('Erro ao consultar CEP.');
+      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+      focusZipInput();
+      return { success: false };
     } finally {
       setLoadingZip(false);
     }
   }
+
+  async function handleFillByZip() {
+    await applyZipLookup({ showSuccessToast: true });
+  }
+
+  const shouldAutoFillZip = (country, cleanedZip) => {
+    if (loadingZip) return false;
+    if (!cleanedZip) return false;
+    if (country === 'BR' && cleanedZip.length !== 8) return false;
+    if (country === 'US' && !(cleanedZip.length === 5 || cleanedZip.length === 9)) return false;
+    return true;
+  };
+
+  const handleZipBlur = (event) => {
+    if (event?.relatedTarget?.dataset?.zipAutofill === 'true') return;
+    const country = (form.country || 'BR').toUpperCase();
+    const cleaned = cleanZip(form.zip, country);
+    if (!shouldAutoFillZip(country, cleaned)) return;
+    const now = Date.now();
+    const last = lastZipAutoFillRef.current;
+    if (last.zip === cleaned && now - last.at < 5000) return;
+    lastZipAutoFillRef.current = { zip: cleaned, at: now };
+    handleFillByZip();
+  };
 
   const buildForwardGeoQuery = (countryCode, stateCode, address) => {
     const parts = [
@@ -1048,6 +1117,13 @@ export default function NewProduct() {
       toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
       return;
     }
+    const zipToastId = toast.loading('Validando CEP... só um segundo.');
+    const zipCheck = await applyZipLookup({ showSuccessToast: false });
+    toast.dismiss(zipToastId);
+    if (!zipCheck.success) {
+      setShowFieldErrors(true);
+      return;
+    }
 
     setPublishStage(images.length > 0 ? 'uploading' : 'processing');
     setUploadProgress(0);
@@ -1060,6 +1136,12 @@ export default function NewProduct() {
 
     try {
       const resolvedCoords = await resolveCoordinatesFromAddress({ notifyOnFail: true });
+      if (!resolvedCoords.success) {
+        toast.error('Não foi possível obter a localização. Revise o endereço e tente novamente.');
+        setSending(false);
+        resetPublishState();
+        return;
+      }
       const payload = buildPayload(resolvedCoords);
       const formData = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
@@ -1133,7 +1215,7 @@ export default function NewProduct() {
         <header className="text-center mb-6">
           <h1 className="text-3xl font-bold text-blue-700">Publicar novo produto</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Compartilhe seu produto com a comunidade SaleDay em poucos passos.
+            Compartilhe seu produto com a comunidade TempleSale em poucos passos.
           </p>
         </header>
 
@@ -1316,6 +1398,7 @@ export default function NewProduct() {
           <div className="my-2">
             <div className="flex gap-2">
               <input
+                ref={zipInputRef}
                 className={`flex-1 ${FIELD_BASE_CLASS} ${hasFieldError('zip') ? 'ring-2 ring-red-400' : ''}`}
                 placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
                 name="zip"
@@ -1324,7 +1407,7 @@ export default function NewProduct() {
                   const cleaned = cleanZip(e.target.value, (form.country || 'BR').toUpperCase());
                   setForm((prev) => ({ ...prev, zip: cleaned, lat: '', lng: '' }));
                 }}
-                onBlur={scheduleAutoGeocode}
+                onBlur={handleZipBlur}
                 required
               />
               <button
@@ -1332,6 +1415,7 @@ export default function NewProduct() {
                 onClick={handleFillByZip}
                 className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
                 disabled={loadingZip}
+                data-zip-autofill="true"
               >
                 {loadingZip ? 'Buscando...' : 'Preencher pelo CEP'}
               </button>
@@ -1376,7 +1460,9 @@ export default function NewProduct() {
               />
             </label>
 
-            <input
+            <label className="flex flex-col">
+              <span className="text-sm font-medium text-gray-700 mb-1">Bairro</span>
+              <input
               className={FIELD_BASE_CLASS}
               placeholder="Bairro"
               name="neighborhood"
@@ -1384,6 +1470,10 @@ export default function NewProduct() {
               onChange={handleChange}
               onBlur={scheduleAutoGeocode}
             />
+              </label>
+              <label className="flex flex-col">
+              <span className="text-sm font-medium text-gray-700 mb-1">Rua</span>
+              
             <input
               className={FIELD_BASE_CLASS}
               placeholder="Rua"
@@ -1392,6 +1482,7 @@ export default function NewProduct() {
               onChange={handleChange}
               onBlur={scheduleAutoGeocode}
             />
+             </label>
           </div>
 
           <div className="mt-4">
