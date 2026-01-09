@@ -6,6 +6,7 @@ import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter } from 'lucide-react';
 import { getCountryLabel } from '../data/countries.js';
+import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
