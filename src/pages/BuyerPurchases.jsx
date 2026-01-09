@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import BuyerOrdersList from '../components/BuyerOrdersList.jsx';
 import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 export default function BuyerPurchases() {
   const { orders: buyerOrders, markOrdersSeen } = usePurchaseNotifications();
@@ -12,6 +12,7 @@ export default function BuyerPurchases() {
 
   return (
     <section className="buyer-purchases-page px-4 py-8 sm:px-6 lg:px-8">
+      <CloseBackButton />
       <div className="mx-auto w-full max-w-5xl space-y-6">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white/80 px-5 py-4 shadow-lg">
           <div>
@@ -25,12 +26,6 @@ export default function BuyerPurchases() {
               Aqui você pode conferir produtos já confirmados e avaliar os vendedores assim que receber.
             </p>
           </div>
-          <Link
-            to="/dashboard"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:shadow"
-          >
-            Voltar ao painel
-          </Link>
         </header>
 
         <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl">
