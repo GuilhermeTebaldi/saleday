@@ -200,8 +200,30 @@ body.templesale-header-search-open .home-search-bar {
   border-bottom: 1px solid rgba(214, 182, 118, 0.18);
 }
 
+.nav-notifications__avatar {
+  background: rgba(12, 10, 9, 0.6);
+  color: var(--temple-text);
+  border: 1px solid rgba(214, 182, 118, 0.35);
+}
+
+.nav-notifications__avatar--direct {
+  border-color: rgba(214, 182, 118, 0.7);
+}
+
+.nav-notifications__avatar--product {
+  border-color: rgba(125, 211, 252, 0.6);
+}
+
 .nav-notifications__item-title {
   color: #f7efe0;
+}
+
+.nav-notifications__item-title--direct {
+  color: var(--temple-gold);
+}
+
+.nav-notifications__item-title--product {
+  color: #7dd3fc;
 }
 
 .nav-notifications__item-subtitle,

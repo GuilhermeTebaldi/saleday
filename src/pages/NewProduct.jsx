@@ -1367,7 +1367,7 @@ export default function NewProduct() {
               )}
             </label>
             <div className="flex flex-col gap-2 my-2">
-              <div className="flex flex-col gap-1" translate="no">
+              <div className="flex flex-col gap-1">
                 <span className="text-sm text-gray-600">Detectar localização automática:</span>
                 <button
                   type="button"

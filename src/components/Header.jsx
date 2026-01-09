@@ -6,6 +6,8 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { formatOfferAmount, parseOfferMessage, parseOfferResponse } from '../utils/offers.js';
+import { toAbsoluteImageUrl } from '../utils/images.js';
+import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import { PRODUCT_CONTEXT_PREFIX } from '../utils/productContext.js';
 import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 
@@ -258,6 +260,40 @@ export default function Header() {
       return conversation.receiver_name || conversation.seller_name || null;
     }
     return conversation.seller_name || null;
+  }, []);
+
+  // Resolve avatar sources for notifications without altering existing message logic.
+  const getConversationCounterpartAvatar = useCallback((conversation, counterpartId) => {
+    if (!conversation) return null;
+    if (counterpartId === conversation.sender_id) {
+      return (
+        conversation.sender_avatar ||
+        conversation.sender_profile_image ||
+        conversation.sender_photo ||
+        conversation.seller_avatar ||
+        null
+      );
+    }
+    if (counterpartId === conversation.receiver_id) {
+      return (
+        conversation.receiver_avatar ||
+        conversation.receiver_profile_image ||
+        conversation.receiver_photo ||
+        conversation.seller_avatar ||
+        null
+      );
+    }
+    return (
+      conversation.seller_avatar ||
+      conversation.sender_avatar ||
+      conversation.receiver_avatar ||
+      null
+    );
+  }, []);
+
+  const getAvatarInitial = useCallback((value, fallback) => {
+    const trimmed = String(value || '').trim();
+    return trimmed ? trimmed.charAt(0).toUpperCase() : fallback;
   }, []);
 
   const seenQuestionNotificationKeysRef = useRef(new Set());
@@ -1024,6 +1060,14 @@ export default function Header() {
                               offerPreview ||
                               notification.content?.slice(0, 60) ||
                               'Sem conteúdo recente.';
+                        const avatarUrl = toAbsoluteImageUrl(
+                          getConversationCounterpartAvatar(
+                            notification,
+                            conversationCounterpartId
+                          )
+                        );
+                        const avatarLabel = `Foto de ${counterpartName || 'usuário'}`;
+                        const avatarFallback = getAvatarInitial(counterpartName, 'U');
 
                         return (
                           <button
@@ -1034,15 +1078,51 @@ export default function Header() {
                             handleMessagesNavigation(`/messages?${params.toString()}`)
                           }
                         >
-                          <p className="nav-notifications__item-title">{conversationTitle}</p>
-                          <p className="nav-notifications__item-subtitle">{conversationSubtitle}</p>
-                          <p className="nav-notifications__item-preview">{previewText}</p>
-                          <span
-                            className="nav-notifications__item-meta"
-                            style={{ fontSize: '0.75rem', color: '#64748b' }}
-                          >
-                            {formatConversationTime(notification.created_at || notification.updated_at)}
-                          </span>
+                          <div className="nav-notifications__item-row">
+                            <div
+                              className={`nav-notifications__avatar${
+                                isDirectConversation
+                                  ? ' nav-notifications__avatar--direct'
+                                  : ' nav-notifications__avatar--product'
+                              }`}
+                            >
+                              {avatarUrl ? (
+                                <img
+                                  src={avatarUrl}
+                                  alt={avatarLabel}
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    event.currentTarget.src = IMG_PLACEHOLDER;
+                                  }}
+                                />
+                              ) : (
+                                <span aria-hidden="true">{avatarFallback}</span>
+                              )}
+                            </div>
+                            <div className="nav-notifications__item-content">
+                              <p
+                                className={`nav-notifications__item-title${
+                                  isDirectConversation
+                                    ? ' nav-notifications__item-title--direct'
+                                    : ' nav-notifications__item-title--product'
+                                }`}
+                              >
+                                {conversationTitle}
+                              </p>
+                              <p className="nav-notifications__item-subtitle">
+                                {conversationSubtitle}
+                              </p>
+                              <p className="nav-notifications__item-preview">{previewText}</p>
+                              <span
+                                className="nav-notifications__item-meta"
+                                style={{ fontSize: '0.75rem', color: '#64748b' }}
+                              >
+                                {formatConversationTime(
+                                  notification.created_at || notification.updated_at
+                                )}
+                              </span>
+                            </div>
+                          </div>
                         </button>
                       );
                     })
