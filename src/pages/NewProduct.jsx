@@ -913,7 +913,7 @@ export default function NewProduct() {
       if (showSuccessToast) {
         toast.success('Endereço preenchido pelo CEP.');
       }
-      return { success: true };
+      return { success: true, next };
     } catch (err) {
       console.error(err?.response?.data || err.message);
       toast.error('Erro ao consultar CEP.');
@@ -1026,21 +1026,21 @@ export default function NewProduct() {
   }, [form, resolveCoordinatesFromAddress]);
 
   // normalização final antes de enviar
-  function buildPayload(overrides = {}) {
-    const countryCode = normalizeCountryCode(form.country) || initialFormState.country;
+  function buildPayload(overrides = {}, base = form) {
+    const countryCode = normalizeCountryCode(base.country) || initialFormState.country;
 
-    const stateCode = normalizeState(form.state, countryCode);
+    const stateCode = normalizeState(base.state, countryCode);
     const latNum =
       overrides.lat === undefined || overrides.lat === null || overrides.lat === ''
-        ? form.lat === '' || form.lat === null || form.lat === undefined
+        ? base.lat === '' || base.lat === null || base.lat === undefined
           ? null
-          : Number(form.lat)
+          : Number(base.lat)
         : Number(overrides.lat);
     const lngNum =
       overrides.lng === undefined || overrides.lng === null || overrides.lng === ''
-        ? form.lng === '' || form.lng === null || form.lng === undefined
+        ? base.lng === '' || base.lng === null || base.lng === undefined
           ? null
-          : Number(form.lng)
+          : Number(base.lng)
         : Number(overrides.lng);
     const latOk =
       Number.isFinite(latNum) &&
@@ -1050,47 +1050,47 @@ export default function NewProduct() {
     const lng = latOk ? lngNum : null;
 
     const payload = {
-      title: form.title?.trim() || '',
-      description: form.description?.trim() || null,
-      category: form.category?.trim() || null,
+      title: base.title?.trim() || '',
+      description: base.description?.trim() || null,
+      category: base.category?.trim() || null,
       country: countryCode,
       state: stateCode || null,
-      city: form.city?.trim() || null,
-      neighborhood: form.neighborhood?.trim() || null,
-      street: form.street?.trim() || null,
-      zip: form.zip?.trim() || null,
+      city: base.city?.trim() || null,
+      neighborhood: base.neighborhood?.trim() || null,
+      street: base.street?.trim() || null,
+      zip: base.zip?.trim() || null,
       lat: lat !== null ? String(lat) : null,
       lng: lng !== null ? String(lng) : null,
-      brand: form.brand?.trim() || null,
-      model: form.model?.trim() || null,
-      color: form.color?.trim() || null,
-      year: form.year?.trim() || null,
-      propertyType: form.propertyType?.trim() || null,
-      area: form.area?.trim() || null,
-      bedrooms: form.bedrooms?.trim() || null,
-      bathrooms: form.bathrooms?.trim() || null,
-      parking: form.parking?.trim() || null,
-      rentType: form.rentType?.trim() || null,
-      serviceType: form.serviceType?.trim() || null,
-      serviceDuration: form.serviceDuration?.trim() || null,
-      serviceRate: form.serviceRate?.trim() || null,
-      serviceLocation: form.serviceLocation?.trim() || null,
-      jobTitle: form.jobTitle?.trim() || null,
-      jobType: form.jobType?.trim() || null,
-      jobSalary: form.jobSalary?.trim() || null,
-      jobRequirements: form.jobRequirements?.trim() || null,
-      is_free: form.isFree ? 'true' : 'false',
-      pickup_only: form.pickupOnly ? 'true' : 'false'
+      brand: base.brand?.trim() || null,
+      model: base.model?.trim() || null,
+      color: base.color?.trim() || null,
+      year: base.year?.trim() || null,
+      propertyType: base.propertyType?.trim() || null,
+      area: base.area?.trim() || null,
+      bedrooms: base.bedrooms?.trim() || null,
+      bathrooms: base.bathrooms?.trim() || null,
+      parking: base.parking?.trim() || null,
+      rentType: base.rentType?.trim() || null,
+      serviceType: base.serviceType?.trim() || null,
+      serviceDuration: base.serviceDuration?.trim() || null,
+      serviceRate: base.serviceRate?.trim() || null,
+      serviceLocation: base.serviceLocation?.trim() || null,
+      jobTitle: base.jobTitle?.trim() || null,
+      jobType: base.jobType?.trim() || null,
+      jobSalary: base.jobSalary?.trim() || null,
+      jobRequirements: base.jobRequirements?.trim() || null,
+      is_free: base.isFree ? 'true' : 'false',
+      pickup_only: base.pickupOnly ? 'true' : 'false'
     };
 
-    if (!form.isFree && form.price) {
-      const parsedPrice = parsePriceFlexible(form.price);
+    if (!base.isFree && base.price) {
+      const parsedPrice = parsePriceFlexible(base.price);
       if (parsedPrice !== '' && parsedPrice !== null) {
         payload.price = Number(parsedPrice).toFixed(2);
       }
     }
 
-    const normalizedLinks = buildLinkPayloadEntries(form.links);
+    const normalizedLinks = buildLinkPayloadEntries(base.links);
     payload.links = JSON.stringify(normalizedLinks);
     payload.image_kinds = JSON.stringify(images.map((image) => image.kind));
 
@@ -1142,7 +1142,8 @@ export default function NewProduct() {
         resetPublishState();
         return;
       }
-      const payload = buildPayload(resolvedCoords);
+      const formSnapshot = zipCheck.next ? { ...form, ...zipCheck.next } : form;
+      const payload = buildPayload(resolvedCoords, formSnapshot);
       const formData = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
         if (value === null || value === undefined) return;
