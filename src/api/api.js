@@ -19,7 +19,17 @@ const resolveBaseURL = () => {
   return 'http://localhost:5000/api';
 };
 
-const api = axios.create({ baseURL: resolveBaseURL(), withCredentials: true });
+const baseURL = resolveBaseURL();
+const shouldSendCredentials = () => {
+  if (typeof window === 'undefined') return true;
+  try {
+    const apiOrigin = new URL(baseURL, window.location.origin).origin;
+    return apiOrigin === window.location.origin;
+  } catch {
+    return false;
+  }
+};
+const api = axios.create({ baseURL, withCredentials: shouldSendCredentials() });
 
 let sessionExpiredNotice = false;
 let networkErrorNotice = false;

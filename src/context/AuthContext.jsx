@@ -46,6 +46,10 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     (data) => {
+      if (!data?.user) {
+        setLoading(false);
+        return;
+      }
       setUser(sanitizeUser(data.user));
       setToken(data.token);
       if (data?.rememberToken) {
