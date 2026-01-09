@@ -26,7 +26,6 @@ import { getUnseenSellerOrderIds } from '../utils/orders.js';
 const NOTIF_CLEAR_KEY = 'templesale:last-cleared-unread';
 const PROFILE_ALERTS_KEY = 'templesale:profile-alerts';
 const PROFILE_ALERT_DELAY = 4000;
-const PROFILE_ALERT_CLICK_COOLDOWN = 3 * 24 * 60 * 60 * 1000;
 const PROFILE_ALERT_FORCE = false;
 
 const readProfileAlertState = () => {
@@ -251,9 +250,9 @@ export default function Header() {
     if (missing.length === 0) return undefined;
 
     const state = readProfileAlertState();
-    const now = Date.now();
+    const todayKey = new Date().toISOString().slice(0, 10);
 
-    if (state.nextEligibleAt && now < state.nextEligibleAt) {
+    if (state.lastShownDate === todayKey) {
       return undefined;
     }
 
@@ -263,7 +262,7 @@ export default function Header() {
 
     const jitter = Math.floor(Math.random() * 1200);
     const timer = window.setTimeout(() => {
-      updateProfileAlertState({ nextEligibleAt: now + PROFILE_ALERT_CLICK_COOLDOWN });
+      updateProfileAlertState({ lastShownDate: todayKey });
 
       showProfileAlert(chosen);
       profileAlertPendingRef.current = null;
@@ -980,7 +979,8 @@ export default function Header() {
                   }}
                 >
                   <input
-                    type="search"
+                    type="text"
+                    inputMode="search"
                     value={headerSearchQuery}
                     onChange={(event) => setHeaderSearchQuery(event.target.value)}
                     placeholder="Buscar"
@@ -1320,10 +1320,8 @@ export default function Header() {
                   type="button"
                   className="profile-toast__cta"
                   onClick={() => {
-                    const now = Date.now();
                     updateProfileAlertState({
-                      lastClickAt: now,
-                      nextEligibleAt: now + PROFILE_ALERT_CLICK_COOLDOWN
+                      lastShownDate: todayKey
                     });
                     setProfileAlert(null);
                     setDrawerOpen(false);

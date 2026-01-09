@@ -165,7 +165,10 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  width: min(70vw, 640px);
+  width: clamp(140px, 52vw, 420px);
+  max-width: 100%;
+  flex: 1 1 auto;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(148, 163, 184, 0.32);
   border-radius: 999px;
@@ -237,8 +240,8 @@ button {
   }
 
   .app-header__search {
-    width: auto;
-    max-width: 100%;
+    width: clamp(140px, 46vw, 220px);
+    padding: 0.25rem 0.5rem;
   }
 }
 
