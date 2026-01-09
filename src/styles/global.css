@@ -305,8 +305,8 @@ button {
   display: block;
   height: 64px;
   width: auto;
-  filter: drop-shadow(0 0 16px rgb(150, 130, 58))
-    drop-shadow(0 0 6px rgba(189, 193, 79, 0.89));
+  filter: drop-shadow(0 0 46px rgb(150, 130, 58))
+    drop-shadow(0 0 2px rgba(189, 193, 79, 0.89));
 }
 
 .app-menu-toggle {
