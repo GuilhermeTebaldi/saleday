@@ -604,6 +604,18 @@ export default function SearchBar({
             }
           }}
         >
+        <button
+          type="button"
+          className="home-search-toolbar__close"
+          aria-label="Fechar menu de filtros"
+          onClick={() => {
+            setPanel(null);
+            setCategoryPanelOpen(false);
+            window.dispatchEvent(new Event('templesale:close-panel'));
+          }}
+        >
+          <X size={16} />
+        </button>
         {user && (
           <div className="home-search-toolbar__profile">
             <div className="home-search-toolbar__avatar">

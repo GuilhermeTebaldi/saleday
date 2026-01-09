@@ -10,6 +10,7 @@ import { COUNTRY_OPTIONS, normalizeCountryCode } from '../data/countries.js';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
@@ -1213,6 +1214,7 @@ export default function NewProduct() {
   return (
     <section className="bg-gray-100 min-h-screen py-10 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6">
+        <CloseBackButton />
         <header className="text-center mb-6">
           <h1 className="text-3xl font-bold text-blue-700">Publicar novo produto</h1>
           <p className="text-sm text-gray-600 mt-1">

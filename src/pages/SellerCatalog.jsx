@@ -6,6 +6,7 @@ import api from '../api/api.js';
 import GeoContext from '../context/GeoContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 import {
   createCatalogTranslator,
   DEFAULT_CATALOG_LOCALE,
@@ -198,6 +199,7 @@ export default function SellerCatalog() {
 
   return (
     <section className="ig-wrap ig-wrap--wide min-h-[calc(100vh-64px)] bg-gradient-to-b from-slate-50 to-slate-100 py-6 px-3">
+      <CloseBackButton />
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div>

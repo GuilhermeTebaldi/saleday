@@ -20,6 +20,7 @@ import formatProductPrice from '../utils/currency.js';
 import { isProductFree } from '../utils/product.js';
 import { normalizeOrderStatus } from '../utils/orderStatus.js';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -802,6 +803,7 @@ export default function Dashboard() {
   return (
     <section className="dashboard min-h-screen bg-slate-50 px-4 pb-16 pt-2 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <CloseBackButton />
         <div className="space-y-3">
           {supportAlert?.conversationId && !isSupportModalOpen && (
             <div
@@ -1126,7 +1128,17 @@ export default function Dashboard() {
             <div className="home-drawer__body">
               {quickPanelTab === 'favorites' ? (
                 <div className="home-drawer__section">
-                  <p className="home-drawer__eyebrow">Coleção pessoal</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="home-drawer__eyebrow">Coleção pessoal</p>
+                    <button
+                      type="button"
+                      className="home-drawer__close"
+                      onClick={closeQuickPanel}
+                      aria-label="Fechar painel de curtidas"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <h2 className="home-drawer__title">
                     {favoritePanelItems.length
                       ? `Você tem ${favoritePanelItems.length} curtida${
@@ -1191,7 +1203,17 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="home-drawer__section">
-                  <p className="home-drawer__eyebrow">Vendas</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="home-drawer__eyebrow">Vendas</p>
+                    <button
+                      type="button"
+                      className="home-drawer__close"
+                      onClick={closeQuickPanel}
+                      aria-label="Fechar painel de vendas"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <h2 className="home-drawer__title">
                     {orderSummary.total
                       ? `Você tem ${orderSummary.total} pedidos`

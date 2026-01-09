@@ -15,6 +15,7 @@ import { MessageCircle } from 'lucide-react';
   import { parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
   import formatProductPrice from '../utils/currency.js';
   import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
+  import CloseBackButton from '../components/CloseBackButton.jsx';
 
   const sortConversationsByDate = (list) =>
     [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -1129,8 +1130,7 @@ import { MessageCircle } from 'lucide-react';
     return (
       <>
     <div className="flex h-screen flex-col overflow-x-hidden overflow-y-hidden bg-slate-50 pt-[var(--home-header-height,64px)]">
-
-
+          <CloseBackButton />
           <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-0 py-0 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
             <aside className="hidden lg:flex lg:w-full lg:max-w-xs lg:min-h-0">
               {renderConversationList()}

@@ -14,6 +14,7 @@ import { localeFromCountry } from '../i18n/localeMap.js';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import { makeAbsolute } from '../utils/urlHelpers.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -487,6 +488,7 @@ export default function SellerProfile() {
   return (
     <>
       <section className="ig-wrap ig-wrap--wide min-h-[calc(100vh-64px)] bg-gradient-to-b from-slate-50 to-slate-100 py-6 px-3">
+        <CloseBackButton />
         <div className="max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           {/* HEADER / INFO PRINCIPAL */}
           <header className="flex flex-col md:flex-row md:items-center gap-6 p-6">

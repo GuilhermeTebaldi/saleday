@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 function Section({ id, title, children }) {
   return (
@@ -57,6 +58,7 @@ export default function Legal() {
 
   return (
     <div className="legal-page">
+      <CloseBackButton />
       <header>
         <p className="legal-eyebrow">Vigência imediata • Abrangência: Brasil e Estados Unidos</p>
         <h1>Política de Privacidade – TempleSale</h1>

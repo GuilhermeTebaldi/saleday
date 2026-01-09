@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import ProductCard from '../components/ProductCard.jsx';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 import { getProductPriceLabel } from '../utils/product.js';
 
 export default function MyProducts() {
@@ -211,9 +212,30 @@ export default function MyProducts() {
     };
   }, []);
 
-  if (loading) return <p className="my-products-empty">Carregando seus anúncios...</p>;
-  if (fetchError) return <p className="my-products-empty text-rose-600">{fetchError}</p>;
-  if (!safeProducts.length) return <p className="my-products-empty">Você ainda não publicou produtos.</p>;
+  if (loading) {
+    return (
+      <>
+        <CloseBackButton />
+        <p className="my-products-empty">Carregando seus anúncios...</p>
+      </>
+    );
+  }
+  if (fetchError) {
+    return (
+      <>
+        <CloseBackButton />
+        <p className="my-products-empty text-rose-600">{fetchError}</p>
+      </>
+    );
+  }
+  if (!safeProducts.length) {
+    return (
+      <>
+        <CloseBackButton />
+        <p className="my-products-empty">Você ainda não publicou produtos.</p>
+      </>
+    );
+  }
 
   const hasProductsList = safeProducts.length > 0;
 
@@ -228,6 +250,7 @@ export default function MyProducts() {
           Reset App
         </button>
       )}
+      <CloseBackButton />
       {hasProductsList && (
         <section className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
           {safeProducts.map((product, index) => (

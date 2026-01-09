@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import { getProductPriceLabel } from '../utils/product.js';
 import { parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
 import { getUnseenSellerOrderIds, markSellerOrdersSeen } from '../utils/orders.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 const STATUS_LABEL = {
   pending: 'Pendente',
@@ -159,6 +160,7 @@ export default function SalesRequests() {
 
   return (
     <section className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <CloseBackButton />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Solicitações de compra</h1>

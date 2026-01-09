@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/api.js';
 import { asStars } from '../utils/rating.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 
 const getInitial = (value) => {
   if (!value) return 'U';
@@ -87,7 +88,7 @@ export default function SellerSearch() {
 
   return (
     <section className="sellersearch-wrapper p-4 sm:p-6 max-w-4xl mx-auto">
-
+      <CloseBackButton />
 <header className="sellersearch-header bg-white/80 backdrop-blur-md border border-gray-100 shadow-md rounded-2xl p-5 mb-6 flex flex-col gap-4">
 
         <div>

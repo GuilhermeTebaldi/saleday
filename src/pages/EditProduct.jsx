@@ -14,6 +14,7 @@ import { getProductPriceLabel } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 import { buildProductImageEntries } from '../utils/images.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 import {
   IMAGE_KIND,
   IMAGE_KIND_BADGE_LABEL,
@@ -540,6 +541,7 @@ export default function EditProduct() {
           <span className="sr-only">{overlayLabel}</span>
         </div>
       )}
+      <CloseBackButton />
       <h2>Editar Produto</h2>
       <form onSubmit={handleSubmit} className="edit-product-form space-y-3">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">

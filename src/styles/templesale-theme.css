@@ -375,6 +375,25 @@ body.templesale-header-search-open .home-search-bar {
   z-index: 39000;
 }
 
+.home-search-toolbar__close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(200, 169, 107, 0.45);
+  background: rgba(10, 9, 8, 0.6);
+  color: var(--temple-text);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.home-search-toolbar__close:hover {
+  background: rgba(200, 169, 107, 0.2);
+  border-color: rgba(200, 169, 107, 0.65);
+  color: #f8f2e7;
+}
+
 body.templesale-panel-open .home-search-toolbar {
   display: flex;
   flex-direction: column;
@@ -393,6 +412,11 @@ body.templesale-panel-open .home-search-toolbar {
   z-index: 40000;
   align-items: stretch;
   width: min(260px, 86vw);
+}
+
+body.templesale-panel-open .home-search-toolbar__close {
+  display: inline-flex;
+  align-self: flex-end;
 }
 
 body.templesale-panel-open .home-search-toolbar__profile {

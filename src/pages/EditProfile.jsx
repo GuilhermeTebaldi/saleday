@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { COUNTRY_OPTIONS, normalizeCountryCode, getCountryLabel } from '../data/countries.js';
+import CloseBackButton from '../components/CloseBackButton.jsx';
 // Compressão segura de imagem para no máximo ~2MB
 const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0.4) =>
   new Promise((resolve, reject) => {
@@ -267,6 +268,7 @@ export default function EditProfile() {
 
   return (
     <section className="edit-profile-page">
+      <CloseBackButton />
       {saving && (
         <div
           className="edit-profile-page__overlay"
