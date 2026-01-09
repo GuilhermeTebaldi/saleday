@@ -1725,7 +1725,22 @@ export default function Home() {
       .catch((err) => {
         if (!active) return;
         console.error(err);
-        toast.error('Não foi possível carregar seus favoritos.');
+        if (err?.code === 'ERR_NETWORK') {
+          setFavoriteItems([]);
+          setFavoriteIds([]);
+          return;
+        }
+        const status = err?.response?.status;
+        const message = String(err?.response?.data?.message || '').toLowerCase();
+        const likelyTokenIssue =
+          message.includes('token') || message.includes('sessão') || message.includes('autentica');
+        if (status === 401 || status === 403) {
+          if (!likelyTokenIssue) {
+            toast.error('Sua sessão expirou. Faça login novamente para ver seus favoritos.');
+          }
+        } else {
+          toast.error('Não foi possível carregar seus favoritos.');
+        }
         setFavoriteItems([]);
         setFavoriteIds([]);
       })

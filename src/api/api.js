@@ -22,6 +22,7 @@ const resolveBaseURL = () => {
 const api = axios.create({ baseURL: resolveBaseURL(), withCredentials: true });
 
 let sessionExpiredNotice = false;
+let networkErrorNotice = false;
 
 const handleSessionExpiration = (message) => {
   if (typeof window === 'undefined') return;
@@ -84,6 +85,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   r => r,
   err => {
+    if (err?.code === 'ERR_NETWORK') {
+      if (!networkErrorNotice) {
+        networkErrorNotice = true;
+        const finalMessage =
+          'Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente.';
+        try {
+          toast.error(finalMessage, { id: 'network-error' });
+        } catch {
+          if (typeof window !== 'undefined') window.alert(finalMessage);
+        }
+      }
+      return Promise.reject(err);
+    }
     const banReasonFromServer = err?.response?.data?.banReason;
     const messageFromServer = err?.response?.data?.message || '';
     const normalizedMessage = messageFromServer.toLowerCase();
