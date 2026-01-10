@@ -1066,7 +1066,7 @@ export default function ProductDetail() {
 
   const sellerCardContent = (
     <>
-              <div className="product-detail__seller-avatar w-10 h-10 rounded-full overflow-hidden shadow-inner bg-gray-200 flex items-center justify-center text-base font-semibold text-gray-600">
+              <div className="product-detail__seller-avatar">
         {sellerAvatar ? (
           <img src={sellerAvatar} alt={sellerName} loading="lazy" />
         ) : (
@@ -1209,55 +1209,55 @@ export default function ProductDetail() {
           : undefined
       }
     >
-      <article className="product-detail-card p-4 md:p-6 space-y-6 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-lg">
+      <article className="product-detail-card p-4 md:p-6 space-y-6">
         <button
           type="button"
           onClick={handleGoBack}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+          className="product-detail__back"
           aria-label="Voltar para a página anterior"
         >
           <ChevronLeft size={14} />
           Voltar
         </button>
         {isDeleted && (
-          <div className="rounded-xl bg-red-600 text-white text-xs font-semibold tracking-wide text-center py-2">
+          <div className="product-detail__alert">
             Produto excluído!
           </div>
         )}
         {/* Cabeçalho com vendedor */}
-        <header className="product-detail__header flex flex-col gap-3 border-b pb-3 md:flex-row md:items-start md:justify-between">
+        <header className="product-detail__header">
           <div className="min-w-0">
-            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-snug">
+            <h1 className="product-detail__title">
               {product.title}
             </h1>
             {isSold && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-700">
+              <span className="product-detail__tag product-detail__tag--sold">
                 Vendido
               </span>
             )}
             {!isSold && isFreeProduct && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700 font-semibold">
+              <span className="product-detail__tag product-detail__tag--free">
                 Grátis
               </span>
             )}
-            <p className="text-gray-600 flex items-center gap-1 text-xs md:text-sm mt-1">
+            <p className="product-detail__location">
               <MapPin size={14} /> {locCity || 'Local não informado'}
               {locState ? `, ${locState}` : ''}
               {locCountry ? ` (${locCountry})` : ''}
             </p>
           </div>
 
-          <div className="flex flex-col items-start gap-3 md:items-end">
+          <div className="product-detail__header-actions">
             {sellerProfilePath ? (
               <Link
                 to={sellerProfilePath}
-                className="product-detail__seller-card flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 hover:shadow-md transition md:min-w-[180px]"
+                className="product-detail__seller-card"
                 aria-label={`Ver perfil completo de ${sellerName}`}
               >
                 {sellerCardContent}
               </Link>
             ) : (
-              <div className="product-detail__seller-card flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 hover:shadow-md transition md:min-w-[180px]">
+              <div className="product-detail__seller-card">
                 {sellerCardContent}
               </div>
             )}
@@ -1266,7 +1266,7 @@ export default function ProductDetail() {
               <button
                 type="button"
                 onClick={handleReturnToSellerProfile}
-                className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+                className="product-detail__backlink"
               >
                 <ChevronLeft size={14} />
                 Voltar ao perfil
@@ -1275,10 +1275,10 @@ export default function ProductDetail() {
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2 text-xs md:text-sm text-gray-600 mt-2">
-          <div className="flex items-center gap-1 rounded-full bg-white/70 backdrop-blur-sm border border-gray-200 px-3 py-1 shadow-sm">
-            <Eye size={16} className="text-gray-500" aria-hidden="true" />
-            <span className="font-semibold text-gray-900">{viewsCount}</span>
+        <div className="product-detail__metrics">
+          <div className="product-detail__metric">
+            <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
+            <span className="product-detail__metric-count">{viewsCount}</span>
             <span>Visualizações</span>
           </div>
           <button
@@ -1287,21 +1287,19 @@ export default function ProductDetail() {
             disabled={favoriteLoading}
             aria-pressed={favorite}
             title={favorite ? 'Remover curtida' : 'Curtir'}
-            className={`flex items-center gap-1 rounded-full border px-3 py-1 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
-              favorite
-                ? 'bg-red-50 border-red-200 text-red-700'
-                : 'bg-white/70 border-gray-200 text-gray-600'
+            className={`product-detail__metric product-detail__metric--favorite ${
+              favorite ? 'is-active' : ''
             }`}
           >
-            <Heart size={16} className={favorite ? 'text-red-500' : 'text-gray-500'} aria-hidden="true" />
-            <span className="font-semibold text-gray-900">{likesCount}</span>
+            <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
+            <span className="product-detail__metric-count">{likesCount}</span>
             <span>Curtidas</span>
           </button>
         </div>
 
       {/* Galeria de imagens */}
       <div
-        className="w-full bg-white/70 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg relative border border-gray-200"
+        className="product-detail__gallery"
         onTouchStart={handleGalleryTouchStart}
         onTouchMove={handleGalleryTouchMove}
         onTouchEnd={handleGalleryTouchEnd}
@@ -1310,23 +1308,23 @@ export default function ProductDetail() {
           <img
             src={images[activeImageIndex]}
             alt={product.title}
-            className="w-full h-72 md:h-[430px] object-cover cursor-zoom-in transition-all hover:scale-[1.02]"
+            className="product-detail__gallery-image"
             onClick={handleGalleryClick}
           />
         ) : (
-          <div className="w-full h-72 md:h-[420px] flex items-center justify-center text-gray-400">
+          <div className="product-detail__gallery-empty">
             Sem imagem
           </div>
         )}
 
         {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
         {isFreeProduct && !isSold && (
-          <span className="absolute top-3 left-3 bg-emerald-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+          <span className="product-detail__badge product-detail__badge--free">
             Grátis
           </span>
         )}
         {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
-          <span className="absolute top-3 right-3 rounded-full bg-amber-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+          <span className="product-detail__badge product-detail__badge--illustrative">
             {IMAGE_KIND_BADGE_LABEL}
           </span>
         )}
@@ -1336,7 +1334,7 @@ export default function ProductDetail() {
             <button
               type="button"
               onClick={goPrevImage}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
+              className="product-detail__gallery-arrow product-detail__gallery-arrow--left"
               aria-label="Imagem anterior"
             >
               ‹
@@ -1344,7 +1342,7 @@ export default function ProductDetail() {
             <button
               type="button"
               onClick={goNextImage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/30 backdrop-blur-md text-white rounded-full w-10 h-10 flex items-center justify-center shadow hover:bg-white/50 transition"
+              className="product-detail__gallery-arrow product-detail__gallery-arrow--right"
               aria-label="Próxima imagem"
             >
               ›
@@ -1355,14 +1353,15 @@ export default function ProductDetail() {
 
       {/* Tiras de miniaturas responsivas sem vazar largura */}
       {images.length > 1 && (
-        <div className="flex flex-wrap gap-2 pt-1 -mx-1 px-1 md:justify-start justify-center">
+        <div className="product-detail__thumbs">
           {images.map((image, index) => (
             <button
               key={`${product.id}-${image}`}
               type="button"
               onClick={() => setActiveImageIndex(index)}
-              className={`shrink-0 h-16 w-16 md:h-20 md:w-20 rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition
-          ${activeImageIndex === index ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-gray-200'}`}
+              className={`product-detail__thumb ${
+                activeImageIndex === index ? 'is-active' : ''
+              }`}
             >
               <img src={image} alt={`${product.title} ${index + 1}`} className="h-full w-full object-cover" />
             </button>
@@ -1371,15 +1370,11 @@ export default function ProductDetail() {
       )}
 
       {/* Botões de ação */}
-      <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+      <div className="product-detail__actions">
         <button
           onClick={openOfferModal}
           disabled={isSold || isOwner}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border text-sm ${
-            isSold || isOwner
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
+          className="product-detail__action product-detail__action--primary"
         >
           <Send size={18} />{' '}
           {isSold
@@ -1395,7 +1390,7 @@ export default function ProductDetail() {
           <button
             onClick={handleRequestPurchase}
             disabled={ordering}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-purple-600 text-white hover:bg-purple-700 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+            className="product-detail__action product-detail__action--accent"
           >
             {ordering ? 'Solicitando...' : 'Solicitar compra'}
           </button>
@@ -1404,7 +1399,7 @@ export default function ProductDetail() {
         {!isSeller && user && (
           <button
             onClick={handleOpenConversation}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
+            className="product-detail__action product-detail__action--info"
           >
             <MessageCircle size={18} /> Abrir conversa com o vendedor
           </button>
@@ -1412,7 +1407,7 @@ export default function ProductDetail() {
 
         <button
           onClick={openShare}
-          className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-blue-600 text-white hover:bg-blue-700 text-sm"
+          className="product-detail__action product-detail__action--ghost"
         >
           <Share2 size={18} /> Compartilhar
         </button>
@@ -1432,7 +1427,7 @@ export default function ProductDetail() {
                 toast.error('Falha ao marcar como vendido.');
               }
             }}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border bg-gray-800 text-white text-sm"
+            className="product-detail__action product-detail__action--dark"
           >
             Marcar como vendido
           </button>
@@ -1451,18 +1446,18 @@ export default function ProductDetail() {
       </div>
 
       {/* Detalhes do produto */}
-      <section className="space-y-2 border-t pt-4">
-      <p className={`text-2xl md:text-3xl font-bold ${isFreeProduct ? 'text-emerald-600' : 'text-green-600'}`}>
+      <section className="product-detail__section">
+      <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
         {priceFmt}
       </p>
         {product.pickup_only && (
-          <p className="text-sm text-emerald-700">
+          <p className="product-detail__pickup">
             Entrega: retirada em mãos combinada com o vendedor.
           </p>
         )}
 
         {isSeller && buyerInfo && (
-          <div className="p-3 border rounded bg-gray-50 text-sm space-y-1">
+          <div className="product-detail__buyer-card">
             <p>
               <strong>Status:</strong>{' '}
               {buyerInfo.status === 'confirmed'
@@ -1482,26 +1477,26 @@ export default function ProductDetail() {
           </div>
         )}
 
-        <p className="text-gray-700 text-sm md:text-base leading-relaxed whitespace-pre-line">
+        <p className="product-detail__description">
           {product.description || 'Sem descrição disponível.'}
         </p>
 
         {detailLinks.length > 0 && (
-          <div className="space-y-2 border-t pt-4">
-            <p className="text-sm font-semibold text-gray-700">Links úteis</p>
-            <div className="space-y-2">
+          <div className="product-detail__links">
+            <p className="product-detail__links-title">Links úteis</p>
+            <div className="product-detail__links-grid">
               {detailLinks.map((link, index) => (
                 <a
                   key={`${link.url ?? 'link'}-${index}`}
                   href={link.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex flex-col gap-1 rounded-xl border border-gray-200 bg-white/80 px-3 py-2 text-sm text-gray-800 transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="product-detail__link"
                 >
-                  <span className="font-medium text-emerald-600">
+                  <span className="product-detail__link-label">
                     {link.label || `Link ${index + 1}`}
                   </span>
-                  <span className="text-xs text-gray-500 break-all">{link.url}</span>
+                  <span className="product-detail__link-url">{link.url}</span>
                 </a>
               ))}
             </div>
@@ -1509,7 +1504,7 @@ export default function ProductDetail() {
         )}
 
         {specEntries.length > 0 && (
-          <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-y-1 md:gap-x-8 mt-2">
+          <div className="product-detail__specs">
             {specEntries.map((entry) => (
               <p key={entry.label}>
                 {entry.label}: <span className="text-gray-800">{entry.value}</span>
@@ -1518,19 +1513,19 @@ export default function ProductDetail() {
           </div>
         )}
 
-        <div className="text-xs md:text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-y-1 md:gap-y-0 md:gap-x-6">
-          <p>Categoria: <span className="text-gray-800">{product.category || 'Não informada'}</span></p>
-          <p>CEP: <span className="text-gray-800">{product.zip || 'Não informado'}</span></p>
-          <p>Rua: <span className="text-gray-800">{product.street || 'Não informada'}</span></p>
-          <p>Bairro: <span className="text-gray-800">{product.neighborhood || 'Não informado'}</span></p>
+        <div className="product-detail__location-grid">
+          <p>Categoria: <span>{product.category || 'Não informada'}</span></p>
+          <p>CEP: <span>{product.zip || 'Não informado'}</span></p>
+          <p>Rua: <span>{product.street || 'Não informada'}</span></p>
+          <p>Bairro: <span>{product.neighborhood || 'Não informado'}</span></p>
         </div>
 
         {(hasMapLocation || mapLoading) && (
-          <div className="mt-4 rounded-2xl border border-gray-200 bg-white/80 p-3 md:p-4 shadow-sm">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="product-detail__map-card">
+            <div className="product-detail__map-header">
               <div>
-                <p className="text-sm font-semibold text-gray-700">Mapa do local</p>
-                <p className="text-xs text-gray-500">
+                <p className="product-detail__map-title">Mapa do local</p>
+                <p className="product-detail__map-subtitle">
                   {mapCoords.source === 'city'
                     ? 'Aproximação baseada na cidade informada no anúncio.'
                     : 'Aproximação baseada nas coordenadas informadas no anúncio.'}
@@ -1541,23 +1536,23 @@ export default function ProductDetail() {
                   href={buildOpenStreetMapLink(mapCoords.lat, mapCoords.lng)}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+                  className="product-detail__map-link"
                 >
                   Abrir mapa
                 </a>
               )}
             </div>
-            <div className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+            <div className="product-detail__map-frame">
               {hasMapLocation ? (
                 <iframe
                   title="Mapa do local do produto"
                   src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
-                  className="h-64 w-full md:h-80"
+                  className="product-detail__map-embed"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               ) : (
-                <div className="h-64 md:h-80 w-full flex items-center justify-center text-xs text-gray-500">
+                <div className="product-detail__map-placeholder">
                   Buscando mapa pela cidade...
                 </div>
               )}
@@ -1568,24 +1563,24 @@ export default function ProductDetail() {
 
       {/* Perguntas e respostas da publicação */}
       {!isSold && (
-        <section className="border-t pt-4 space-y-4">
-          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+        <section className="product-detail__qa">
+          <div className="product-detail__qa-header">
             <div>
-              <h3 className="font-semibold text-sm md:text-base">Perguntas e respostas</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="product-detail__qa-title">Perguntas e respostas</h3>
+              <p className="product-detail__qa-subtitle">
                 As mensagens ficam registradas aqui para que qualquer pessoa veja a conversa diretamente no produto.
               </p>
             </div>
-            <span className="text-xs font-semibold text-gray-500">
+            <span className="product-detail__qa-count">
               {visibleProductQuestions.length} {visibleProductQuestions.length === 1 ? 'mensagem' : 'mensagens'}
             </span>
           </div>
 
           {!isOwner && (
-            <div className="space-y-2">
+            <div className="product-detail__qa-form">
               <textarea
                 rows={4}
-                className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="product-detail__qa-textarea"
                 placeholder="Faça uma pergunta pública ao vendedor sobre este produto..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -1593,22 +1588,22 @@ export default function ProductDetail() {
               <button
                 onClick={handleSendMessage}
                 disabled={sending}
-                className="flex w-fit items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="product-detail__qa-submit"
               >
                 {sending ? 'Enviando...' : 'Enviar pergunta'}
               </button>
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="product-detail__qa-list">
             {questionsLoading && (
-              <p className="text-center text-gray-500">Carregando perguntas...</p>
+              <p className="product-detail__qa-empty">Carregando perguntas...</p>
             )}
             {!questionsLoading && questionsError && (
-              <p className="text-xs text-red-600">{questionsError}</p>
+              <p className="product-detail__qa-error">{questionsError}</p>
             )}
             {!questionsLoading && !questionsError && visibleProductQuestions.length === 0 && (
-              <p className="text-xs text-gray-500">Ainda não há perguntas para este anúncio.</p>
+              <p className="product-detail__qa-empty">Ainda não há perguntas para este anúncio.</p>
             )}
             {displayedQuestions.map((msg) => {
               const messageKey = getMessageIdentifier(msg);
@@ -1621,39 +1616,39 @@ export default function ProductDetail() {
                 <article
                   key={messageKey}
                   ref={(node) => setQuestionRef(messageKey, node)}
-                  className={`space-y-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-gray-200 transition ${
-                    isHighlighted ? 'ring-sky-400 bg-sky-50 shadow-lg' : ''
+                  className={`product-detail__qa-card ${
+                    isHighlighted ? 'is-highlighted' : ''
                   }`}
                 >
-                  <header className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="font-semibold text-gray-700">Pergunta</span>
+                  <header className="product-detail__qa-meta">
+                    <span>Pergunta</span>
                     <span>{formatMessageTimestamp(msg.created_at)}</span>
                   </header>
-                  <p className="text-sm text-gray-900 leading-relaxed">{msg.content}</p>
-                  <p className="text-xs text-gray-400">Feita por {authorLabel}</p>
+                  <p className="product-detail__qa-text">{msg.content}</p>
+                  <p className="product-detail__qa-author">Feita por {authorLabel}</p>
 
                   {hasResponse && (
-                    <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-                      <div className="flex items-center justify-between text-xs text-emerald-700">
+                    <div className="product-detail__qa-response">
+                      <div className="product-detail__qa-response-meta">
                         <span>Resposta do vendedor</span>
                         <span>{formatMessageTimestamp(msg.response_created_at)}</span>
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed">{responseText}</p>
-                      <p className="text-[0.65rem] text-emerald-600">Por {responseAuthor}</p>
+                      <p className="product-detail__qa-response-text">{responseText}</p>
+                      <p className="product-detail__qa-response-author">Por {responseAuthor}</p>
                     </div>
                   )}
 
                   {!hasResponse && isOwner && (
-                    <div className="space-y-2">
+                    <div className="product-detail__qa-reply">
                       <button
                         type="button"
                         onClick={() => toggleReplyArea(msg.id)}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-500"
+                        className="product-detail__qa-reply-toggle"
                       >
                         {activeReplyQuestionId === msg.id ? 'Cancelar' : 'Responder'}
                       </button>
                       {activeReplyQuestionId === msg.id && (
-                        <div className="space-y-2">
+                        <div className="product-detail__qa-reply-form">
                           <textarea
                             rows={3}
                             value={replyDrafts[msg.id] || ''}
@@ -1665,14 +1660,14 @@ export default function ProductDetail() {
                                 replyInputRefs.current.delete(msg.id);
                               }
                             }}
-                            className="w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="product-detail__qa-reply-textarea"
                             placeholder="Responda diretamente esta pergunta..."
                           />
                           <button
                             type="button"
                             onClick={() => submitAnswer(msg.id)}
                             disabled={answerLoadingId === msg.id}
-                            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="product-detail__qa-reply-submit"
                           >
                             {answerLoadingId === msg.id ? 'Enviando...' : 'Enviar resposta'}
                           </button>
@@ -1688,7 +1683,7 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   onClick={showMoreQuestions}
-                  className="rounded-full border border-gray-300 px-4 py-1 text-xs font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900"
+                  className="product-detail__qa-more"
                 >
                   Ver mais perguntas
                 </button>
@@ -1847,48 +1842,48 @@ export default function ProductDetail() {
 
       {/* Modal de compartilhamento (fallback) */}
       {shareOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
-          <div className="bg-white w-full md:w-[420px] rounded-t-2xl md:rounded-2xl p-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold">Compartilhar</h4>
+        <div className="product-detail__share-overlay">
+          <div className="product-detail__share-sheet">
+            <div className="product-detail__share-header">
+              <h4>Compartilhar</h4>
               <button
                 onClick={() => setShareOpen(false)}
-                className="p-1 rounded hover:bg-gray-100"
+                className="product-detail__share-close"
                 aria-label="Fechar"
               >
                 <CloseIcon size={18} />
               </button>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 text-center">
-              <a href={whatsapp} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+            <div className="product-detail__share-grid">
+              <a href={whatsapp} target="_blank" rel="noreferrer" className="product-detail__share-item">
                 <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WhatsApp" className="w-8 h-8 mx-auto" />
                 WhatsApp
               </a>
-              <a href={telegram} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+              <a href={telegram} target="_blank" rel="noreferrer" className="product-detail__share-item">
                 <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/telegram.svg" alt="Telegram" className="w-8 h-8 mx-auto" />
                 Telegram
               </a>
-              <a href={facebook} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+              <a href={facebook} target="_blank" rel="noreferrer" className="product-detail__share-item">
                 <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" className="w-8 h-8 mx-auto" />
                 Facebook
               </a>
-              <a href={xUrl} target="_blank" rel="noreferrer" className="text-sm hover:opacity-80">
+              <a href={xUrl} target="_blank" rel="noreferrer" className="product-detail__share-item">
                 <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X" className="w-8 h-8 mx-auto" />
                 X
               </a>
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="product-detail__share-actions">
               <button
                 onClick={copyLink}
-                className="inline-flex items-center gap-2 px-3 py-2 border rounded text-sm hover:bg-gray-50"
+                className="product-detail__share-button"
               >
                 <CopyIcon size={16} /> Copiar link
               </button>
               <button
                 onClick={() => setShareOpen(false)}
-                className="ml-auto px-3 py-2 bg-gray-800 text-white rounded text-sm"
+                className="product-detail__share-button product-detail__share-button--dark"
               >
                 Fechar
               </button>

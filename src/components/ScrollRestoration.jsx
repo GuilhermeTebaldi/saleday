@@ -6,6 +6,7 @@ import { useLocation } from 'react-router-dom';
 const SCROLL_KEY = 'templesale:scroll-positions';
 const RETURN_KEY = 'templesale:return-target';
 const HOME_RESTORE_KEY = 'templesale:home-restore';
+const LAST_PATH_KEY = 'templesale:last-path';
 
 export const getCurrentPath = () => {
   if (typeof window === 'undefined') return '';
@@ -52,6 +53,15 @@ const writeHomeRestore = (payload) => {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(HOME_RESTORE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const writeLastPath = (value) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(LAST_PATH_KEY, value);
   } catch {
     // ignore storage failures
   }
@@ -125,6 +135,7 @@ export default function ScrollRestoration() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const currentPath = getCurrentPath();
+    writeLastPath(currentPath);
     const returnTarget = readReturnTarget();
     if (returnTarget?.path === currentPath) {
       restoreScrollPosition(returnTarget.y || 0);
