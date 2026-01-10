@@ -1205,32 +1205,41 @@ export default function ProductDetail() {
         )
       : null;
 
+  const backButtonPortal =
+    typeof document !== 'undefined'
+      ? createPortal(
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="product-detail__back"
+            aria-label="Voltar para a página anterior"
+          >
+            <ChevronLeft size={14} />
+            Voltar
+          </button>,
+          document.body
+        )
+      : null;
+
   return (
-    <section
-      className="product-detail-page"
-      style={
-        showFloatingContactBar
-          ? {
-              paddingBottom: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1rem)`
-            }
-          : undefined
-      }
-    >
-      <article className="product-detail-card p-4 md:p-6 space-y-6">
-        <button
-          type="button"
-          onClick={handleGoBack}
-          className="product-detail__back"
-          aria-label="Voltar para a página anterior"
-        >
-          <ChevronLeft size={14} />
-          Voltar
-        </button>
-        {isDeleted && (
-          <div className="product-detail__alert">
-            Produto excluído!
-          </div>
-        )}
+    <>
+      {backButtonPortal}
+      <section
+        className="product-detail-page"
+        style={
+          showFloatingContactBar
+            ? {
+                paddingBottom: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1rem)`
+              }
+            : undefined
+        }
+      >
+        <article className="product-detail-card p-4 md:p-6 space-y-6">
+          {isDeleted && (
+            <div className="product-detail__alert">
+              Produto excluído!
+            </div>
+          )}
         {/* Cabeçalho com vendedor */}
         <header className="product-detail__header">
           <div className="min-w-0">
@@ -1953,5 +1962,6 @@ export default function ProductDetail() {
       )}
     </article>
     </section>
+    </>
   );
 }
