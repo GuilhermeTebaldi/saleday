@@ -425,11 +425,11 @@ export default function NewProduct() {
   const autoZipTriggeredRef = useRef(false);
   const initialZipRef = useRef(baseForm.zip);
   const [activeImageKindId, setActiveImageKindId] = useState(null);
-  const isFurnitureCategory = useMemo(
-    () => normalizeCategoryLabel(form.category).includes('moveis'),
-    [form.category]
-  );
-  const lastFurnitureCategoryRef = useRef(isFurnitureCategory);
+  const isFloorplanCategory = useMemo(() => {
+    const normalized = normalizeCategoryLabel(form.category);
+    return normalized.includes('moveis') || normalized.includes('imovel');
+  }, [form.category]);
+  const lastFloorplanCategoryRef = useRef(isFloorplanCategory);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -662,13 +662,13 @@ export default function NewProduct() {
   const categoryDetails = useMemo(() => getCategoryDetailFields(form.category), [form.category]);
 
   useEffect(() => {
-    const wasFurniture = lastFurnitureCategoryRef.current;
-    if (wasFurniture && !isFurnitureCategory && floorplanFiles.length > 0) {
+    const wasEligible = lastFloorplanCategoryRef.current;
+    if (wasEligible && !isFloorplanCategory && floorplanFiles.length > 0) {
       resetFloorplanPreviews();
-      toast('Plantas removidas porque a categoria não é de móveis.');
+      toast('Plantas removidas porque a categoria não permite planta.');
     }
-    lastFurnitureCategoryRef.current = isFurnitureCategory;
-  }, [floorplanFiles.length, isFurnitureCategory, resetFloorplanPreviews]);
+    lastFloorplanCategoryRef.current = isFloorplanCategory;
+  }, [floorplanFiles.length, isFloorplanCategory, resetFloorplanPreviews]);
 
   const prepareImagesForUpload = useCallback(async (entries) => {
     if (!entries?.length) return [];
@@ -1282,7 +1282,7 @@ export default function NewProduct() {
       });
 
       const uploadFiles = await prepareImagesForUpload(images);
-      const floorplanUploadFiles = isFurnitureCategory
+      const floorplanUploadFiles = isFloorplanCategory
         ? await prepareFloorplansForUpload(floorplanFiles)
         : [];
       const allUploads = [...uploadFiles, ...floorplanUploadFiles];
@@ -1685,7 +1685,7 @@ export default function NewProduct() {
             <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
           </div>
 
-          {isFurnitureCategory && (
+          {isFloorplanCategory && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-700">Planta do ambiente</h2>

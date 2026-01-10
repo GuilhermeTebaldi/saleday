@@ -102,14 +102,14 @@ export default function EditProduct() {
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
   const [activeImageKindId, setActiveImageKindId] = useState(null);
-  const isFurnitureCategory = useMemo(
-    () => normalizeCategoryLabel(form.category).includes('moveis'),
-    [form.category]
-  );
+  const isFloorplanCategory = useMemo(() => {
+    const normalized = normalizeCategoryLabel(form.category);
+    return normalized.includes('moveis') || normalized.includes('imovel');
+  }, [form.category]);
 
   const totalImages = existingImages.length + newImages.length;
   const totalFloorplans = existingFloorplans.length + newFloorplans.length;
-  const showFloorplanSection = isFurnitureCategory || totalFloorplans > 0;
+  const showFloorplanSection = isFloorplanCategory || totalFloorplans > 0;
   const isActionLoading = isSubmitting || isDeleting;
   const overlayLabel = isSubmitting ? 'Salvando produto' : 'Excluindo produto';
 
