@@ -81,15 +81,6 @@ function MenuIcon({ size = 20 }) {
   );
 }
 
-function CloseIcon({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M18 6 6 18" />
-      <path d="M6 6 18 18" />
-    </svg>
-  );
-}
-
 function SearchIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -949,7 +940,7 @@ export default function Header() {
       <button
         type="button"
         className="nav-icon-button nav-hamburger"
-        aria-label={isHome ? (navPanelOpen ? "Fechar menu" : "Abrir menu") : "Ir para a página inicial"}
+        aria-label={isHome ? "Abrir menu" : "Ir para a página inicial"}
         aria-expanded={isHome ? navPanelOpen : false}
         onClick={() => {
           if (!isHome) {
@@ -959,7 +950,7 @@ export default function Header() {
           setNavPanelOpen((prev) => !prev);
         }}
       >
-        {isHome && navPanelOpen ? <CloseIcon size={20} /> : <MenuIcon size={20} />}
+        <MenuIcon size={20} />
       </button>
       {navPanelOpen && (
         <div

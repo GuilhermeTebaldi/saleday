@@ -6442,15 +6442,13 @@ body.templesale-header-search-open .home-search-bar {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(15, 23, 42, 0.04);
+  border: 0;
+  background: transparent;
   color: #334155;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .home-search-toolbar__close:hover {
-  background: rgba(148, 163, 184, 0.16);
-  border-color: rgba(148, 163, 184, 0.45);
   color: #0f172a;
 }
 
@@ -6476,6 +6474,7 @@ body.templesale-panel-open .home-search-toolbar {
 body.templesale-panel-open .home-search-toolbar__close {
   display: inline-flex;
   align-self: flex-end;
+  margin-right: -13.35rem;
 }
 
 body.templesale-panel-open .home-search-toolbar__profile {
