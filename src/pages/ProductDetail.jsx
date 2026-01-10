@@ -1754,87 +1754,90 @@ export default function ProductDetail() {
         />
       )}
 
-      {offerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6 transition-opacity duration-200">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-emerald-600 shadow-2xl">
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9)_0,_transparent_55%)] pointer-events-none" />
-            <div className="relative p-6 sm:p-8 space-y-5 text-white">
-              <header className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-2xl font-semibold drop-shadow-sm">Fazer oferta</h3>
-                  <p className="text-sm text-emerald-50">
-                    Negocie um valor especial para{' '}
-                    <span className="font-medium">{product.title}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeOfferModal}
-                  className="rounded-full bg-white/15 p-2 hover:bg-white/25 transition"
-                  aria-label="Fechar"
-                >
-                  <CloseIcon size={20} />
-                </button>
-              </header>
-
-              <div className="space-y-4">
-                <label className="block">
-                  <span className="text-sm font-medium uppercase tracking-wide text-white/80">
-                    Valor da oferta
-                  </span>
-                  <div className="mt-2 flex items-center rounded-2xl bg-white/90 px-4 shadow-lg ring-2 ring-white/40 focus-within:ring-emerald-100">
-                    <span className="text-emerald-700 font-semibold text-sm">
-                      {getCurrencySettings(resolveCurrencyFromCountry(product.country)).symbol}
-                    </span>
-                    <input
-                      type="number"
-                      min="1"
-                      step="0.01"
-                      inputMode="decimal"
-                      className="w-full bg-transparent py-3 pl-3 pr-1 text-lg font-semibold text-emerald-900 placeholder:text-emerald-400 focus:outline-none"
-                      placeholder="0,00"
-                      value={offerValue}
-                      onChange={(event) => setOfferValue(event.target.value)}
-                    />
+      {offerOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6 transition-opacity duration-200">
+            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-emerald-600 shadow-2xl">
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9)_0,_transparent_55%)] pointer-events-none" />
+              <div className="relative p-6 sm:p-8 space-y-5 text-white">
+                <header className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-semibold drop-shadow-sm">Fazer oferta</h3>
+                    <p className="text-sm text-emerald-50">
+                      Negocie um valor especial para{' '}
+                      <span className="font-medium">{product.title}</span>
+                    </p>
                   </div>
-                </label>
+                  <button
+                    type="button"
+                    onClick={closeOfferModal}
+                    className="rounded-full bg-white/15 p-2 hover:bg-white/25 transition"
+                    aria-label="Fechar"
+                  >
+                    <CloseIcon size={20} />
+                  </button>
+                </header>
 
-                <label className="block">
-                  <span className="text-sm font-medium uppercase tracking-wide text-white/80">
-                    Mensagem ao vendedor (opcional)
-                  </span>
-                  <textarea
-                    rows={3}
-                    className="mt-2 w-full resize-none rounded-2xl bg-white/90 px-4 py-3 text-sm text-emerald-900 placeholder:text-emerald-400 shadow-lg ring-2 ring-white/40 focus:outline-none focus:ring-emerald-100"
-                    placeholder="Ex.: Posso retirar amanhã à tarde, tudo bem?"
-                    value={offerNote}
-                    onChange={(event) => setOfferNote(event.target.value)}
-                  />
-                </label>
-              </div>
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-medium uppercase tracking-wide text-white/80">
+                      Valor da oferta
+                    </span>
+                    <div className="mt-2 flex items-center rounded-2xl bg-white/90 px-4 shadow-lg ring-2 ring-white/40 focus-within:ring-emerald-100">
+                      <span className="text-emerald-700 font-semibold text-sm">
+                        {getCurrencySettings(resolveCurrencyFromCountry(product.country)).symbol}
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        inputMode="decimal"
+                        className="w-full bg-transparent py-3 pl-3 pr-1 text-lg font-semibold text-emerald-900 placeholder:text-emerald-400 focus:outline-none"
+                        placeholder="0,00"
+                        value={offerValue}
+                        onChange={(event) => setOfferValue(event.target.value)}
+                      />
+                    </div>
+                  </label>
 
-              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeOfferModal}
-                  className="rounded-full border border-white/40 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition"
-                  disabled={sendingOffer}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={submitOffer}
-                  className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={sendingOffer}
-                >
-                  {sendingOffer ? 'Enviando oferta...' : 'Enviar oferta'}
-                </button>
+                  <label className="block">
+                    <span className="text-sm font-medium uppercase tracking-wide text-white/80">
+                      Mensagem ao vendedor (opcional)
+                    </span>
+                    <textarea
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-2xl bg-white/90 px-4 py-3 text-sm text-emerald-900 placeholder:text-emerald-400 shadow-lg ring-2 ring-white/40 focus:outline-none focus:ring-emerald-100"
+                      placeholder="Ex.: Posso retirar amanhã à tarde, tudo bem?"
+                      value={offerNote}
+                      onChange={(event) => setOfferNote(event.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeOfferModal}
+                    className="rounded-full border border-white/40 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition"
+                    disabled={sendingOffer}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitOffer}
+                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={sendingOffer}
+                  >
+                    {sendingOffer ? 'Enviando oferta...' : 'Enviar oferta'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
 
       {viewerPortal}
