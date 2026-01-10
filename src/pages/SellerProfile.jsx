@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import { asStars } from '../utils/rating.js';
 import { getProductPriceLabel } from '../utils/product.js';
+import { buildProductMessageLink } from '../utils/messageLinks.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { localeFromCountry } from '../i18n/localeMap.js';
@@ -439,15 +440,6 @@ export default function SellerProfile() {
       toast.error('Produto inválido.');
       return;
     }
-    const params = new URLSearchParams();
-    params.set('product', String(product.id));
-    params.set('seller', String(seller.id));
-    if (product.title) {
-      params.set('productTitle', product.title);
-    }
-    if (seller.username) {
-      params.set('sellerName', seller.username);
-    }
     const primaryImage =
       (Array.isArray(product.image_urls) && product.image_urls[0]) ||
       product.image_url ||
@@ -456,19 +448,14 @@ export default function SellerProfile() {
       price: product.price,
       country: product.country
     });
-    const locationLabel = [product.city, product.state, product.country]
-      .filter(Boolean)
-      .join(', ');
-    if (primaryImage) {
-      params.set('productImage', makeAbsolute(primaryImage));
-    }
-    if (productPrice) {
-      params.set('productPrice', productPrice);
-    }
-    if (locationLabel) {
-      params.set('productLocation', locationLabel);
-    }
-    navigate(`/messages?${params.toString()}`);
+    const messageLink = buildProductMessageLink({
+      product,
+      sellerId: seller.id,
+      sellerName: seller.username,
+      productImage: primaryImage ? makeAbsolute(primaryImage) : '',
+      productPrice
+    });
+    navigate(messageLink);
   };
 
   const reviewLocale =

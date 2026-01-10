@@ -1935,7 +1935,7 @@ body.templesale-header-search-open .home-search-bar {
   border: 1px solid rgba(18, 42, 75, 0.5);
   background: #f8f8f9;
   width: 100%;
-  height: 100%;
+  height: auto;
   box-shadow: none;
 }
 
@@ -2151,6 +2151,15 @@ body.templesale-header-search-open .home-search-bar {
 
   .home-card__media-indicator {
     bottom: 12px;
+  }
+
+  .home-card__contact {
+    gap: 0.35rem;
+  }
+
+  .home-card__contact-btn {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.45rem;
   }
 }
 
@@ -2377,6 +2386,28 @@ body.templesale-header-search-open .home-search-bar {
   color: #0f766e;
 }
 
+.home-card__description {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, 0.75);
+  overflow-wrap: break-word;
+}
+
+.home-card__description--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.home-card__description-more {
+  color: rgba(2, 132, 199, 0.9);
+  font-weight: 700;
+  margin-left: 0.2rem;
+}
+
 .home-card__meta-row {
   display: flex;
   align-items: center;
@@ -2387,6 +2418,47 @@ body.templesale-header-search-open .home-search-bar {
 .home-card__location {
   font-size: 0.85rem;
   color: rgba(71, 85, 105, 0.85);
+}
+
+.home-card__contact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.home-card__contact-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.home-card__contact-btn--chat {
+  background: rgba(5, 150, 105, 0.95);
+  color: #fff;
+}
+
+.home-card__contact-btn--phone {
+  background: rgba(2, 132, 199, 0.95);
+  color: #fff;
+}
+
+.home-card__contact-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -14px rgba(15, 23, 42, 0.6);
+}
+
+.home-card__contact-btn:focus-visible {
+  outline: 2px solid rgba(15, 23, 42, 0.4);
+  outline-offset: 2px;
 }
 
 .home-card__date-label {
@@ -4579,15 +4651,16 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: #f8f8f9;
-  border: 1px solid rgba(18, 42, 75, 0.2);
-  border-radius: 16px;
-  padding: 0.55rem 0.8rem;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.9), rgba(239, 246, 255, 0.95));
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 18px;
+  padding: 0.6rem 0.9rem;
   min-width: 180px;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 14px 26px -20px rgba(37, 99, 235, 0.5);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 /* container geral do perfil */
 .ig-wrap {
@@ -4997,21 +5070,22 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__seller-card:hover,
 .product-detail__seller-card:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(18, 42, 75, 0.35);
-  box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.45);
+  border-color: rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.95), rgba(255, 255, 255, 0.95));
+  box-shadow: 0 22px 40px -24px rgba(37, 99, 235, 0.6);
 }
 
 .product-detail__seller-avatar {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.1), rgba(59, 130, 246, 0.18));
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.7), rgba(30, 64, 175, 0.25));
+  border: 1px solid rgba(37, 99, 235, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #1f2933;
+  color: #1e3a8a;
   font-size: 0.95rem;
   overflow: hidden;
 }
@@ -5031,14 +5105,15 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__seller-label {
   margin: 0;
   font-size: 0.68rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(71, 85, 105, 0.8);
+  color: rgba(30, 64, 175, 0.75);
 }
 
 .product-detail__seller-name {
   margin: 0;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
   font-size: 0.95rem;
 }
@@ -5225,22 +5300,28 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.6rem;
-  justify-content: center;
 }
 
 .product-detail__action {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  padding: 0.55rem 1.1rem;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-radius: 10px;
+  padding: 0.7rem 1.1rem;
   font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  font-weight: 800;
+  border: none;
+  justify-content: center;
+  min-height: 48px;
+  background: transparent;
+  color: #2563eb;
+  box-shadow: none;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .product-detail__action:disabled {
@@ -5250,59 +5331,66 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__action--primary {
-  background: #16a34a;
-  color: #fff;
-  box-shadow: 0 16px 28px -20px rgba(22, 163, 74, 0.6);
+  background: transparent;
+  color: #2563eb;
 }
 
 .product-detail__action--primary:hover:not(:disabled) {
-  background: #15803d;
+  background: rgba(37, 99, 235, 0.08);
   transform: translateY(-1px);
 }
 
 .product-detail__action--accent {
-  background: rgba(212, 227, 99, 0.9);
-  color: #1f2933;
-  border-color: rgba(148, 163, 184, 0.4);
-  box-shadow: 0 16px 28px -20px rgba(212, 227, 99, 0.6);
+  background: transparent;
+  color: #2563eb;
 }
 
 .product-detail__action--accent:hover:not(:disabled) {
-  background: rgba(190, 214, 86, 0.95);
+  background: rgba(37, 99, 235, 0.08);
   transform: translateY(-1px);
 }
 
 .product-detail__action--info {
-  background: #2563eb;
-  color: #fff;
-  box-shadow: 0 16px 28px -20px rgba(37, 99, 235, 0.6);
+  background: transparent;
+  color: #2563eb;
 }
 
 .product-detail__action--info:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: rgba(37, 99, 235, 0.08);
   transform: translateY(-1px);
 }
 
 .product-detail__action--ghost {
-  background: rgba(255, 255, 255, 0.9);
-  color: #1f2933;
-  border-color: rgba(15, 23, 42, 0.18);
+  background: transparent;
+  color: #2563eb;
 }
 
 .product-detail__action--ghost:hover:not(:disabled) {
-  border-color: rgba(15, 23, 42, 0.35);
+  background: rgba(37, 99, 235, 0.08);
   transform: translateY(-1px);
 }
 
 .product-detail__action--dark {
   background: #0f172a;
   color: #fff;
-  box-shadow: 0 16px 28px -20px rgba(15, 23, 42, 0.6);
+  border-color: transparent;
+  box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.6);
 }
 
 .product-detail__action--dark:hover:not(:disabled) {
   background: #111827;
   transform: translateY(-1px);
+}
+
+.product-detail__action svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 640px) {
+  .product-detail__actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .product-detail__section {
@@ -5316,8 +5404,8 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__price {
   font-size: clamp(1.6rem, 1.4rem + 1vw, 2.2rem);
   font-weight: 800;
-  color: #15803d;
-  text-shadow: 0 2px 6px rgba(21, 128, 61, 0.2);
+  color: #000;
+  text-shadow: none;
 }
 
 .product-detail__price.is-free {
@@ -5489,6 +5577,39 @@ body.templesale-header-search-open .home-search-bar {
   justify-content: center;
   font-size: 0.75rem;
   color: rgba(71, 85, 105, 0.6);
+}
+
+.product-detail__image-stack {
+  margin-top: 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 18px 32px -26px rgba(15, 23, 42, 0.4);
+}
+
+.product-detail__image-stack-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.8);
+}
+
+.product-detail__image-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.product-detail__image-stack-item {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 16px 26px -22px rgba(15, 23, 42, 0.35);
+  object-fit: cover;
+  max-height: 420px;
 }
 
 @media (min-width: 768px) {

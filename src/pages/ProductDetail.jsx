@@ -3,7 +3,7 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft, PhoneCall } from 'lucide-react';
+import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft, PhoneCall, ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -17,6 +17,7 @@ import { buildProductImageEntries } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getPhoneActions } from '../utils/phone.js';
+import { buildProductMessageLink } from '../utils/messageLinks.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -831,32 +832,19 @@ export default function ProductDetail() {
       toast.error('Você é o vendedor deste anúncio.');
       return;
     }
-
-    const params = new URLSearchParams();
-    params.set('product', String(product.id));
-    if (product.user_id) params.set('seller', String(product.user_id));
-    if (product.seller_name) params.set('sellerName', product.seller_name);
-    if (product.title) {
-      params.set('productTitle', product.title);
-    }
     const primaryImage = images?.[0] || product?.image_url || '';
     const formattedPrice = getProductPriceLabel({
       price: product?.price,
       country: product?.country
     });
-    const locationLabel = [product?.city, product?.state, product?.country]
-      .filter(Boolean)
-      .join(', ');
-    if (primaryImage) {
-      params.set('productImage', primaryImage);
-    }
-    if (formattedPrice) {
-      params.set('productPrice', formattedPrice);
-    }
-    if (locationLabel) {
-      params.set('productLocation', locationLabel);
-    }
-    navigate(`/messages?${params.toString()}`);
+    const messageLink = buildProductMessageLink({
+      product,
+      sellerId: product.user_id,
+      sellerName: product.seller_name,
+      productImage: primaryImage,
+      productPrice: formattedPrice
+    });
+    navigate(messageLink);
   };
 
   const submitPurchaseRequest = async () => {
@@ -1187,7 +1175,7 @@ export default function ProductDetail() {
                   onClick={handleOpenConversation}
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
                 >
-                  <MessageCircle size={18} /> Bater papo
+                  <MessageCircle size={18} /> Contatar
                 </button>
               )}
               {showPhoneAction && (
@@ -1242,27 +1230,6 @@ export default function ProductDetail() {
           )}
         {/* Cabeçalho com vendedor */}
         <header className="product-detail__header">
-          <div className="min-w-0">
-            <h1 className="product-detail__title">
-              {product.title}
-            </h1>
-            {isSold && (
-              <span className="product-detail__tag product-detail__tag--sold">
-                Vendido
-              </span>
-            )}
-            {!isSold && isFreeProduct && (
-              <span className="product-detail__tag product-detail__tag--free">
-                Grátis
-              </span>
-            )}
-            <p className="product-detail__location">
-              <MapPin size={14} /> {locCity || 'Local não informado'}
-              {locState ? `, ${locState}` : ''}
-              {locCountry ? ` (${locCountry})` : ''}
-            </p>
-          </div>
-
           <div className="product-detail__header-actions">
             {sellerProfilePath ? (
               <Link
@@ -1289,29 +1256,28 @@ export default function ProductDetail() {
               </button>
             )}
           </div>
-        </header>
 
-        <div className="product-detail__metrics">
-          <div className="product-detail__metric">
-            <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
-            <span className="product-detail__metric-count">{viewsCount}</span>
-            <span>Visualizações</span>
+          <div className="min-w-0">
+            <h1 className="product-detail__title">
+              {product.title}
+            </h1>
+            {isSold && (
+              <span className="product-detail__tag product-detail__tag--sold">
+                Vendido
+              </span>
+            )}
+            {!isSold && isFreeProduct && (
+              <span className="product-detail__tag product-detail__tag--free">
+                Grátis
+              </span>
+            )}
+            <p className="product-detail__location">
+              <MapPin size={14} /> {locCity || 'Local não informado'}
+              {locState ? `, ${locState}` : ''}
+              {locCountry ? ` (${locCountry})` : ''}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={handleFavorite}
-            disabled={favoriteLoading}
-            aria-pressed={favorite}
-            title={favorite ? 'Remover curtida' : 'Curtir'}
-            className={`product-detail__metric product-detail__metric--favorite ${
-              favorite ? 'is-active' : ''
-            }`}
-          >
-            <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
-            <span className="product-detail__metric-count">{likesCount}</span>
-            <span>Curtidas</span>
-          </button>
-        </div>
+        </header>
 
       {/* Galeria de imagens */}
       <div
@@ -1408,18 +1374,11 @@ export default function ProductDetail() {
             disabled={ordering}
             className="product-detail__action product-detail__action--accent"
           >
-            {ordering ? 'Solicitando...' : 'Solicitar compra'}
+            <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
           </button>
         )}
 
-        {!isSeller && user && (
-          <button
-            onClick={handleOpenConversation}
-            className="product-detail__action product-detail__action--info"
-          >
-            <MessageCircle size={18} /> Abrir conversa com o vendedor
-          </button>
-        )}
+       
 
         <button
           onClick={openShare}
@@ -1463,6 +1422,27 @@ export default function ProductDetail() {
 
       {/* Detalhes do produto */}
       <section className="product-detail__section">
+      <div className="product-detail__metrics">
+        <div className="product-detail__metric">
+          <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
+          <span className="product-detail__metric-count">{viewsCount}</span>
+          <span>Visualizações</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleFavorite}
+          disabled={favoriteLoading}
+          aria-pressed={favorite}
+          title={favorite ? 'Remover curtida' : 'Curtir'}
+          className={`product-detail__metric product-detail__metric--favorite ${
+            favorite ? 'is-active' : ''
+          }`}
+        >
+          <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
+          <span className="product-detail__metric-count">{likesCount}</span>
+          <span>Curtidas</span>
+        </button>
+      </div>
       <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
         {priceFmt}
       </p>
@@ -1572,6 +1552,24 @@ export default function ProductDetail() {
                   Buscando mapa pela cidade...
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {images.length > 0 && (
+          <div className="product-detail__image-stack">
+            <p className="product-detail__image-stack-title">Fotos do anúncio</p>
+            <div className="product-detail__image-stack-list">
+              {images.map((image, index) => (
+                <img
+                  key={`${product.id}-stack-${image}`}
+                  src={image}
+                  alt={`${product.title} ${index + 1}`}
+                  className="product-detail__image-stack-item"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ))}
             </div>
           </div>
         )}

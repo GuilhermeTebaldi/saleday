@@ -1,8 +1,10 @@
 // frontend/src/pages/Home.jsx
 // Página inicial com destaques, busca e feed de produtos.
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MessageCircle, PhoneCall } from 'lucide-react';
 import SearchBar from '../components/SearchBar.jsx';
 import MapSearch from '../components/MapSearch.jsx';
 import { buildProductImageEntries, getPrimaryImageEntry } from '../utils/images.js';
@@ -23,6 +25,8 @@ import { usePurchaseNotifications } from '../context/PurchaseNotificationsContex
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getCurrentPath } from '../components/ScrollRestoration.jsx';
+import { getPhoneActions } from '../utils/phone.js';
+import { buildProductMessageLink } from '../utils/messageLinks.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -1365,6 +1369,13 @@ const buildQuickCategoryCounts = (list = [], activeCountry) => {
 export default function Home() {
   const { token, user } = useContext(AuthContext);
   const promptLogin = useLoginPrompt();
+  const requireAuth = useCallback(
+    (message) => {
+      if (token) return true;
+      return promptLogin(message);
+    },
+    [promptLogin, token]
+  );
   const {
     country: detectedCountry,
     lat: detectedLat,
@@ -1419,6 +1430,7 @@ export default function Home() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
+  const [activePhoneActions, setActivePhoneActions] = useState(null);
 
   const {
     orders: buyerOrders,
@@ -1770,6 +1782,52 @@ export default function Home() {
   const registerClick = useCallback((productId) => {
     if (!productId) return;
     api.put(`/products/${productId}/click`).catch(() => {});
+  }, []);
+
+  const handleOpenConversation = useCallback(
+    (event, product, chatMeta) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!product?.id) return;
+      if (!requireAuth('Faça login para conversar com o vendedor.')) return;
+      const sellerId = chatMeta?.sellerId;
+      if (sellerId && user?.id && Number(user.id) === Number(sellerId)) {
+        toast.error('Você é o vendedor deste anúncio.');
+        return;
+      }
+      const messageLink = buildProductMessageLink({
+        product,
+        sellerId,
+        sellerName: chatMeta?.sellerName,
+        productImage: chatMeta?.productImage,
+        productPrice: chatMeta?.productPrice,
+        productLocation: chatMeta?.productLocation
+      });
+      navigate(messageLink);
+    },
+    [navigate, requireAuth, user?.id]
+  );
+
+  const handleOpenPhoneActions = useCallback((event, product, phoneActions) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!phoneActions || !product?.id) return;
+    const productUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/product/${product.id}`
+        : '';
+    const title = product?.title || 'Produto TempleSale';
+    const whatsappContactLink = `${phoneActions.whatsappHref}?text=${encodeURIComponent(
+      `Olá! Tenho interesse no produto: ${title}${productUrl ? ` - ${productUrl}` : ''}`
+    )}`;
+    setActivePhoneActions({
+      phoneActions,
+      whatsappContactLink
+    });
+  }, []);
+
+  const handleClosePhoneActions = useCallback(() => {
+    setActivePhoneActions(null);
   }, []);
 
   const registerView = useCallback(async (productId) => {
@@ -2223,6 +2281,57 @@ export default function Home() {
       : `${favoriteIds.length} favoritos`;
 
   const hasProfile = Boolean(token);
+  const phoneActionsPortal =
+    activePhoneActions && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
+            onClick={handleClosePhoneActions}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Contato do vendedor
+                  </p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {activePhoneActions.phoneActions.display}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClosePhoneActions}
+                  className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
+              </header>
+
+              <div className="mt-4 grid gap-2">
+                <a
+                  href={activePhoneActions.phoneActions.telHref}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                >
+                  <PhoneCall size={18} /> Ligar agora
+                </a>
+                <a
+                  href={activePhoneActions.whatsappContactLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  <MessageCircle size={18} /> WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   let content;
 
@@ -2325,6 +2434,31 @@ export default function Home() {
                 '';
               const postedAtLabel = formatPostDate(postTimestamp, homeLocale);
               const priceLabel = getProductPriceLabel(product);
+              const sellerId =
+                product.user_id ?? product.userId ?? product.seller_id ?? product.sellerId;
+              const sellerName =
+                product.seller_name ?? product.sellerName ?? product.username ?? '';
+              const phoneActions = getPhoneActions(
+                product.seller_phone ?? product.sellerPhone ?? ''
+              );
+              const showChatAction = true;
+              const showPhoneAction = Boolean(phoneActions);
+              const showContactBar = showChatAction || showPhoneAction;
+              const contactPriceLabel = getProductPriceLabel({
+                price: product?.price,
+                country: product?.country
+              });
+              const contactLocationLabel = [product.city, product.state, product.country]
+                .filter(Boolean)
+                .join(', ');
+              const primaryImage = productImageEntries[0]?.url || product.image_url || '';
+              const chatMeta = {
+                sellerId,
+                sellerName,
+                productImage: primaryImage,
+                productPrice: contactPriceLabel,
+                productLocation: contactLocationLabel
+              };
               
 
               return (
@@ -2388,6 +2522,19 @@ export default function Home() {
                       >
                         {priceLabel}
                       </p>
+                      {product.description && (() => {
+                        const description = String(product.description || '').trim();
+                        if (!description) return null;
+                        const showMore = description.length > 200;
+                        return (
+                          <p className="home-card__description home-card__description--clamped">
+                            {description}
+                            {showMore && (
+                              <span className="home-card__description-more">... ver mais</span>
+                            )}
+                          </p>
+                        );
+                      })()}
                       {cardFacts.length > 0 && (
                         <div className="home-card__facts">
                           {cardFacts.map((fact, index) => {
@@ -2419,7 +2566,33 @@ export default function Home() {
                         </span>
                       )}
                     </div>
-                   
+                    {showContactBar && (
+                      <div className="home-card__contact" aria-label="Contato com vendedor">
+                        {/* Contato rapido com vendedor */}
+                        {showChatAction && (
+                          <button
+                            type="button"
+                            className="home-card__contact-btn home-card__contact-btn--chat"
+                            onClick={(event) =>
+                              handleOpenConversation(event, product, chatMeta)
+                            }
+                          >
+                            <MessageCircle size={14} /> Contatar
+                          </button>
+                        )}
+                        {showPhoneAction && (
+                          <button
+                            type="button"
+                            className="home-card__contact-btn home-card__contact-btn--phone"
+                            onClick={(event) =>
+                              handleOpenPhoneActions(event, product, phoneActions)
+                            }
+                          >
+                            <PhoneCall size={14} /> Telefone
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                   </div>
                 </Link>
@@ -2428,6 +2601,8 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {phoneActionsPortal}
 
       <AnimatePresence>
         {activeDrawer && (
