@@ -7,6 +7,7 @@ const SCROLL_KEY = 'templesale:scroll-positions';
 const RETURN_KEY = 'templesale:return-target';
 const HOME_RESTORE_KEY = 'templesale:home-restore';
 const LAST_PATH_KEY = 'templesale:last-path';
+const CURRENT_PATH_KEY = 'templesale:current-path';
 
 export const getCurrentPath = () => {
   if (typeof window === 'undefined') return '';
@@ -62,6 +63,24 @@ const writeLastPath = (value) => {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(LAST_PATH_KEY, value);
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const readCurrentPath = () => {
+  if (typeof window === 'undefined') return '';
+  try {
+    return window.sessionStorage.getItem(CURRENT_PATH_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+const writeCurrentPath = (value) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(CURRENT_PATH_KEY, value);
   } catch {
     // ignore storage failures
   }
@@ -135,7 +154,11 @@ export default function ScrollRestoration() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const currentPath = getCurrentPath();
-    writeLastPath(currentPath);
+    const previousPath = readCurrentPath();
+    if (previousPath && previousPath !== currentPath) {
+      writeLastPath(previousPath);
+    }
+    writeCurrentPath(currentPath);
     const returnTarget = readReturnTarget();
     if (returnTarget?.path === currentPath) {
       restoreScrollPosition(returnTarget.y || 0);

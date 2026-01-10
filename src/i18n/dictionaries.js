@@ -97,6 +97,14 @@ const ENTRIES = [
 { key: 'Sair', en: 'Logout', es: 'Salir', it: 'Esci', ja: 'ログアウト' },
   { key: 'Carregando...', en: 'Loading...', es: 'Cargando...', it: 'Caricamento...', ja: '読み込み中...' },
   { key: 'Cancelar', en: 'Cancel', es: 'Cancelar', it: 'Annulla', ja: 'キャンセル' },
+  { key: 'Confirmar compra', en: 'Confirm purchase', es: 'Confirmar compra', it: 'Conferma acquisto', ja: '購入を確認' },
+  {
+    key: 'Ao confirmar, o pedido será enviado e a compra só será concluída após a aprovação do vendedor.',
+    en: 'Upon confirmation, the order will be sent and the purchase will only be completed after the seller approves.',
+    es: 'Al confirmar, el pedido se enviará y la compra solo se completará después de la aprobación del vendedor.',
+    it: 'Confermandolo, l’ordine verrà inviato e l’acquisto sarà completato solo dopo l’approvazione del venditore.',
+    ja: '確認すると注文が送信され、購入は出品者の承認後に完了します。'
+  },
   { key: 'Confirmar região', en: 'Confirm region', es: 'Confirmar región', it: 'Conferma area', ja: 'エリアを確認' },
   { key: 'Fechar', en: 'Close', es: 'Cerrar', it: 'Chiudi', ja: '閉じる' },
   { key: 'Copiar link', en: 'Copy link', es: 'Copiar enlace', it: 'Copia link', ja: 'リンクをコピー' },

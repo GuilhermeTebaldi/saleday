@@ -102,6 +102,39 @@ button {
   cursor: pointer;
 }
 
+.templesale-back-button {
+  position: fixed;
+  left: 1rem;
+  top: calc(var(--home-header-height, 64px) + 0.5rem);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #475569;
+  box-shadow: 0 24px 40px -30px rgba(15, 23, 42, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.templesale-back-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(100, 116, 139, 0.8);
+  box-shadow: 0 28px 44px -30px rgba(15, 23, 42, 0.7);
+}
+
+.templesale-back-button:focus-visible {
+  outline: 2px solid rgba(148, 163, 184, 0.6);
+  outline-offset: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
