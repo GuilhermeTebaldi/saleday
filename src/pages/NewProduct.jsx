@@ -674,7 +674,6 @@ export default function NewProduct() {
     }
     if (wasEligible && !isFloorplanCategory && floorplanFiles.length > 0) {
       resetFloorplanPreviews();
-      toast('Plantas removidas porque a categoria não permite planta.');
     }
     lastFloorplanCategoryRef.current = isFloorplanCategory;
   }, [floorplanFiles.length, isFloorplanCategory, resetFloorplanPreviews]);

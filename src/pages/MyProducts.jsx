@@ -24,6 +24,7 @@ export default function MyProducts() {
     ? products.filter((product) => product && typeof product === 'object' && typeof product.title === 'string')
     : [];
   const [resetVisible, setResetVisible] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, productId: null });
 
   const isValidImageSource = (url) =>
     typeof url === 'string' &&
@@ -139,7 +140,15 @@ export default function MyProducts() {
     }
   }
 
-  async function deleteProduct(id) {
+  const requestDeleteProduct = (id) => {
+    setDeleteConfirm({ open: true, productId: id });
+  };
+
+  const closeDeleteConfirm = () => {
+    setDeleteConfirm({ open: false, productId: null });
+  };
+
+  async function performDeleteProduct(id) {
     try {
       await api.delete(`/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -160,6 +169,23 @@ export default function MyProducts() {
       toast.error('Falha ao remover o produto.');
     }
   }
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteConfirm.productId) return;
+    await performDeleteProduct(deleteConfirm.productId);
+    closeDeleteConfirm();
+  };
+
+  useEffect(() => {
+    if (!deleteConfirm.open) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeDeleteConfirm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deleteConfirm.open]);
 
   const handleHardReset = () => {
     if (typeof window === 'undefined') return;
@@ -260,12 +286,46 @@ export default function MyProducts() {
               buyerInfo={buyers[product.id]}
               token={token}
               markAsSold={markAsSold}
-              deleteProduct={deleteProduct}
+              deleteProduct={requestDeleteProduct}
               isValidImageSource={isValidImageSource}
               getProductPriceLabel={getProductPriceLabel}
             />
           ))}
         </section>
+      )}
+      {deleteConfirm.open && (
+        <div
+          className="my-products-confirm"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeDeleteConfirm}
+        >
+          <div
+            className="my-products-confirm__card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="my-products-confirm__title">Excluir produto?</h3>
+            <p className="my-products-confirm__text">
+              Tem certeza que deseja excluir este produto?
+            </p>
+            <div className="my-products-confirm__actions">
+              <button
+                type="button"
+                className="my-products-confirm__btn my-products-confirm__btn--ghost"
+                onClick={closeDeleteConfirm}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="my-products-confirm__btn my-products-confirm__btn--danger"
+                onClick={confirmDeleteProduct}
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

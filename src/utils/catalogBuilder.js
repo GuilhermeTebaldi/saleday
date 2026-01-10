@@ -257,7 +257,7 @@ async function drawPremiumCatalog({
   );
   doc.setFontSize(10);
   doc.setTextColor(226, 232, 240);
-  doc.text('www.templesale.com.br', margin + 16, footerY + 44);
+  doc.text('www.templesale.com', margin + 16, footerY + 44);
 }
 
 const VIBRANT_PALETTE = [
@@ -521,7 +521,7 @@ async function drawClassicCatalog({
       }
     );
     doc.setFontSize(9);
-    doc.text('www.templesale.com.br', ctaX, footerY + 74, {
+    doc.text('www.templesale.com', ctaX, footerY + 74, {
       maxWidth: leftW - (ctaX - leftX) - 14
     });
 
