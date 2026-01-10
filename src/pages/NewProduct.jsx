@@ -430,6 +430,7 @@ export default function NewProduct() {
     return normalized.includes('moveis') || normalized.includes('imovel');
   }, [form.category]);
   const lastFloorplanCategoryRef = useRef(isFloorplanCategory);
+  const suppressFloorplanToastRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -532,6 +533,7 @@ export default function NewProduct() {
 
   const finalizePublishSuccess = useCallback(() => {
     toast.success('Produto publicado com sucesso!');
+    suppressFloorplanToastRef.current = true;
     resetImagePreviews();
     resetPublishState();
     setForm(baseForm);
@@ -663,6 +665,13 @@ export default function NewProduct() {
 
   useEffect(() => {
     const wasEligible = lastFloorplanCategoryRef.current;
+    if (suppressFloorplanToastRef.current) {
+      if (floorplanFiles.length === 0) {
+        suppressFloorplanToastRef.current = false;
+      }
+      lastFloorplanCategoryRef.current = isFloorplanCategory;
+      return;
+    }
     if (wasEligible && !isFloorplanCategory && floorplanFiles.length > 0) {
       resetFloorplanPreviews();
       toast('Plantas removidas porque a categoria não permite planta.');
@@ -1766,6 +1775,7 @@ export default function NewProduct() {
               type="button"
               className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
               onClick={() => {
+                suppressFloorplanToastRef.current = true;
                 resetImagePreviews();
                 setForm(baseForm);
                 setShowFieldErrors(false);
