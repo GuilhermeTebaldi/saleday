@@ -1141,14 +1141,16 @@ import { MessageCircle } from 'lucide-react';
             {hasActiveConversation ? (
                   <>
           <header className="z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white px-6 py-5 shadow backdrop-blur-lg">
-          <button
-                          type="button"
-                          className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/30 transition-all duration-200 hover:bg-blue-700 lg:hidden"
-                          onClick={() => setSidebarOpen(true)}
-                        >
-                          <MessageCircle size={16} aria-hidden="true" />
-                          Abrir conversas
-                        </button>
+          <div className="flex w-full justify-center lg:hidden">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/30 transition-all duration-200 hover:bg-blue-700"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <MessageCircle size={16} aria-hidden="true" />
+              Abrir conversas
+            </button>
+          </div>
     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20">
                           {selectedMeta.avatar ? (
