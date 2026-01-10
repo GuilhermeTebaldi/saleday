@@ -13,7 +13,7 @@ import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/pro
 import { isProductFree, getProductPriceLabel } from '../utils/product.js';
 import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
-import { buildProductImageEntries } from '../utils/images.js';
+import { buildProductImageEntries, parseImageList } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getPhoneActions } from '../utils/phone.js';
@@ -106,6 +106,9 @@ const toFiniteNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const isImageUrl = (value) =>
+  /\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i.test(String(value || ''));
 
 const buildOpenStreetMapEmbedUrl = (lat, lng) => {
   const delta = 0.01;
@@ -466,6 +469,10 @@ export default function ProductDetail() {
   const images = useMemo(
     () => imageEntries.map((entry) => entry.url).filter(Boolean),
     [imageEntries]
+  );
+  const floorplanUrls = useMemo(
+    () => parseImageList(product?.floorplan_urls ?? product?.floorplanUrls),
+    [product?.floorplan_urls, product?.floorplanUrls]
   );
   const activeImageKind = imageEntries[activeImageIndex]?.kind ?? null;
 
@@ -1570,6 +1577,36 @@ export default function ProductDetail() {
                   decoding="async"
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {floorplanUrls.length > 0 && (
+          <div className="product-detail__image-stack">
+            <p className="product-detail__image-stack-title">Plantas do ambiente</p>
+            <div className="product-detail__image-stack-list">
+              {floorplanUrls.map((url, index) =>
+                isImageUrl(url) ? (
+                  <img
+                    key={`floorplan-${url}`}
+                    src={url}
+                    alt={`${product.title} planta ${index + 1}`}
+                    className="product-detail__image-stack-item"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <a
+                    key={`floorplan-${url}`}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="product-detail__image-stack-file"
+                  >
+                    Abrir arquivo da planta {index + 1}
+                  </a>
+                )
+              )}
             </div>
           </div>
         )}

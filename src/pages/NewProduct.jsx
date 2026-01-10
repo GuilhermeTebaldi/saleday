@@ -31,6 +31,7 @@ const BOUNDS = {
 };
 
 const MAX_PRODUCT_PHOTOS = 10;
+const MAX_FLOORPLAN_FILES = 4;
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2048;
 const MIN_COMPRESS_QUALITY = 0.6;
@@ -39,6 +40,7 @@ const FIELD_BASE_CLASS =
 const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
 const WATERMARK_TEXT = 'templesale.com';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
+const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
 
 const buildSafeImageFilename = (name, extension) => {
   const base = typeof name === 'string' && name.trim() ? name.trim() : 'imagem';
@@ -191,6 +193,12 @@ const initialFormState = {
   isFree: false,
   pickupOnly: false
 };
+
+const normalizeCategoryLabel = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 
 
 // normaliza UF para duas letras quando possível
@@ -392,7 +400,9 @@ export default function NewProduct() {
   const baseForm = useMemo(() => ({ ...initialFormState, ...savedAddress }), [savedAddress]);
   const [form, setForm] = useState(baseForm);
   const [images, setImages] = useState([]);
+  const [floorplanFiles, setFloorplanFiles] = useState([]);
   const previewsRef = useRef(new Set());
+  const floorplanPreviewsRef = useRef(new Set());
   const [sending, setSending] = useState(false);
   const [publishStage, setPublishStage] = useState('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -412,7 +422,14 @@ export default function NewProduct() {
   const geocodeInFlightRef = useRef(false);
   const lastGeoQueryRef = useRef('');
   const lastZipAutoFillRef = useRef({ zip: '', at: 0 });
+  const autoZipTriggeredRef = useRef(false);
+  const initialZipRef = useRef(baseForm.zip);
   const [activeImageKindId, setActiveImageKindId] = useState(null);
+  const isFurnitureCategory = useMemo(
+    () => normalizeCategoryLabel(form.category).includes('moveis'),
+    [form.category]
+  );
+  const lastFurnitureCategoryRef = useRef(isFurnitureCategory);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -430,6 +447,8 @@ export default function NewProduct() {
   useEffect(() => {
     setForm(baseForm);
     setShowFieldErrors(false);
+    initialZipRef.current = baseForm.zip;
+    autoZipTriggeredRef.current = false;
   }, [baseForm]);
 
   useEffect(() => {
@@ -486,6 +505,15 @@ export default function NewProduct() {
     previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
     previewsRef.current.clear();
     setImages([]);
+    floorplanPreviewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    floorplanPreviewsRef.current.clear();
+    setFloorplanFiles([]);
+  }, []);
+
+  const resetFloorplanPreviews = useCallback(() => {
+    floorplanPreviewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    floorplanPreviewsRef.current.clear();
+    setFloorplanFiles([]);
   }, []);
 
   useEffect(() => () => {
@@ -633,6 +661,15 @@ export default function NewProduct() {
   }, [form.isFree]);
   const categoryDetails = useMemo(() => getCategoryDetailFields(form.category), [form.category]);
 
+  useEffect(() => {
+    const wasFurniture = lastFurnitureCategoryRef.current;
+    if (wasFurniture && !isFurnitureCategory && floorplanFiles.length > 0) {
+      resetFloorplanPreviews();
+      toast('Plantas removidas porque a categoria não é de móveis.');
+    }
+    lastFurnitureCategoryRef.current = isFurnitureCategory;
+  }, [floorplanFiles.length, isFurnitureCategory, resetFloorplanPreviews]);
+
   const prepareImagesForUpload = useCallback(async (entries) => {
     if (!entries?.length) return [];
 
@@ -644,6 +681,23 @@ export default function NewProduct() {
         console.error('Erro ao aplicar marca d’água', err);
         processed.push(entry.file);
       }
+    }
+    return processed;
+  }, []);
+
+  const prepareFloorplansForUpload = useCallback(async (entries) => {
+    if (!entries?.length) return [];
+    const processed = [];
+    for (const entry of entries) {
+      if (entry.isImage) {
+        try {
+          processed.push(await createWatermarkedFile(entry.file));
+          continue;
+        } catch (err) {
+          console.error('Erro ao aplicar marca d’água nas plantas', err);
+        }
+      }
+      processed.push(entry.file);
     }
     return processed;
   }, []);
@@ -767,10 +821,70 @@ export default function NewProduct() {
     }
 
     if (leftover > 0) {
-      toast.info(message);
+      toast(message);
       return;
     }
     toast.success(message);
+  };
+
+  const handleFloorplanSelection = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+
+    const validFiles = files.filter(
+      (file) => file.type.startsWith('image/') || file.type === 'application/pdf'
+    );
+    if (!validFiles.length) {
+      toast.error('Envie imagens ou PDF para a planta do ambiente.');
+      return;
+    }
+
+    let addedCount = 0;
+    let hitLimit = false;
+
+    setFloorplanFiles((prev) => {
+      const available = MAX_FLOORPLAN_FILES - prev.length;
+      if (available <= 0) {
+        hitLimit = true;
+        return prev;
+      }
+      const limited = validFiles.slice(0, available);
+      addedCount = limited.length;
+      const mapped = limited.map((file) => {
+        const isImage = file.type.startsWith('image/');
+        const previewUrl = isImage ? URL.createObjectURL(file) : '';
+        if (previewUrl) floorplanPreviewsRef.current.add(previewUrl);
+        return {
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          preview: previewUrl,
+          isImage,
+          name: file.name
+        };
+      });
+      return [...prev, ...mapped];
+    });
+
+    if (hitLimit) {
+      toast.error('Você já alcançou o limite de 4 plantas. Remova alguma para adicionar outra.');
+      return;
+    }
+
+    if (addedCount > 0) {
+      toast.success('Plantas atualizadas.');
+    }
+  };
+
+  const handleRemoveFloorplan = (id) => {
+    setFloorplanFiles((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.preview) {
+        URL.revokeObjectURL(target.preview);
+        floorplanPreviewsRef.current.delete(target.preview);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
   };
 
   const handleRemoveImage = (id) => {
@@ -929,6 +1043,17 @@ export default function NewProduct() {
   async function handleFillByZip() {
     await applyZipLookup({ showSuccessToast: true });
   }
+
+  useEffect(() => {
+    if (autoZipTriggeredRef.current) return;
+    const country = (form.country || 'BR').toUpperCase();
+    const initialZip = initialZipRef.current;
+    if (!initialZip || form.zip !== initialZip) return;
+    const cleaned = cleanZip(initialZip, country);
+    if (!shouldAutoFillZip(country, cleaned)) return;
+    autoZipTriggeredRef.current = true;
+    handleFillByZip();
+  }, [form.country, form.zip]);
 
   const shouldAutoFillZip = (country, cleanedZip) => {
     if (loadingZip) return false;
@@ -1157,7 +1282,11 @@ export default function NewProduct() {
       });
 
       const uploadFiles = await prepareImagesForUpload(images);
-      const oversizeCount = uploadFiles.filter((file) => file.size > MAX_IMAGE_UPLOAD_BYTES).length;
+      const floorplanUploadFiles = isFurnitureCategory
+        ? await prepareFloorplansForUpload(floorplanFiles)
+        : [];
+      const allUploads = [...uploadFiles, ...floorplanUploadFiles];
+      const oversizeCount = allUploads.filter((file) => file.size > MAX_IMAGE_UPLOAD_BYTES).length;
       if (oversizeCount > 0) {
         toast.error('Algumas imagens estão acima de 5MB. Reduza o tamanho antes de publicar.');
         setSending(false);
@@ -1166,6 +1295,9 @@ export default function NewProduct() {
       }
       uploadFiles.forEach((file) => {
         formData.append('images', file);
+      });
+      floorplanUploadFiles.forEach((file) => {
+        formData.append('floorplan_files', file);
       });
 
       const { data } = await api.post('/products', formData, {
@@ -1552,6 +1684,62 @@ export default function NewProduct() {
             </p>
             <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
           </div>
+
+          {isFurnitureCategory && (
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-700">Planta do ambiente</h2>
+                <span className="text-xs text-gray-500">
+                  {floorplanFiles.length}/{MAX_FLOORPLAN_FILES}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                {floorplanFiles.map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative group aspect-square rounded-lg overflow-hidden border border-gray-300 shadow-md"
+                  >
+                    {item.isImage ? (
+                      <img
+                        src={item.preview}
+                        alt="Pré-visualização da planta"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-600 px-2 text-center">
+                        {item.name || 'Arquivo'}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFloorplan(item.id)}
+                      className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
+                    >
+                      remover
+                    </button>
+                  </div>
+                ))}
+                {floorplanFiles.length < MAX_FLOORPLAN_FILES && (
+                  <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 text-xs text-gray-500 cursor-pointer hover:border-emerald-400 hover:text-emerald-600 transition bg-gray-50">
+                    <span>Adicionar planta</span>
+                    <span className="mt-1 text-[10px] text-gray-400">
+                      Máx. {MAX_FLOORPLAN_FILES} arquivos
+                    </span>
+                    <input
+                      type="file"
+                      accept={FLOORPLAN_ACCEPT}
+                      multiple
+                      className="hidden"
+                      onChange={handleFloorplanSelection}
+                    />
+                  </label>
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                Você pode enviar até {MAX_FLOORPLAN_FILES} arquivos (imagem ou PDF) com a planta do ambiente.
+              </p>
+            </div>
+          )}
           <LinkListEditor
             links={form.links}
             onChange={(links) => setForm((prev) => ({ ...prev, links }))}

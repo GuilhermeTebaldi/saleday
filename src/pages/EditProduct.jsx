@@ -13,7 +13,7 @@ import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js
 import { getProductPriceLabel } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
-import { buildProductImageEntries } from '../utils/images.js';
+import { buildProductImageEntries, parseImageList } from '../utils/images.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import {
   IMAGE_KIND,
@@ -25,6 +25,8 @@ import {
 } from '../utils/imageKinds.js';
 
 const MAX_PRODUCT_PHOTOS = 10;
+const MAX_FLOORPLAN_FILES = 4;
+const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
 
 const initialFormState = {
   title: '',
@@ -67,6 +69,12 @@ const sanitizeYear = (value) => value.replace(/\D/g, '').slice(0, 4);
 const normalizeFieldValue = (value) =>
   value === undefined || value === null ? '' : String(value);
 
+const normalizeCategoryLabel = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 export default function EditProduct() {
   const { id } = useParams();
   const { token } = useContext(AuthContext);
@@ -82,7 +90,10 @@ export default function EditProduct() {
   const [existingImages, setExistingImages] = useState([]);
   const [existingImageKinds, setExistingImageKinds] = useState([]);
   const [newImages, setNewImages] = useState([]);
+  const [existingFloorplans, setExistingFloorplans] = useState([]);
+  const [newFloorplans, setNewFloorplans] = useState([]);
   const previewsRef = useRef(new Set());
+  const floorplanPreviewsRef = useRef(new Set());
   const isMountedRef = useRef(true);
   const [loading, setLoading] = useState(true);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -91,19 +102,28 @@ export default function EditProduct() {
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
   const [activeImageKindId, setActiveImageKindId] = useState(null);
+  const isFurnitureCategory = useMemo(
+    () => normalizeCategoryLabel(form.category).includes('moveis'),
+    [form.category]
+  );
 
   const totalImages = existingImages.length + newImages.length;
+  const totalFloorplans = existingFloorplans.length + newFloorplans.length;
+  const showFloorplanSection = isFurnitureCategory || totalFloorplans > 0;
   const isActionLoading = isSubmitting || isDeleting;
   const overlayLabel = isSubmitting ? 'Salvando produto' : 'Excluindo produto';
 
   const cleanupPreviews = () => {
     previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
     previewsRef.current.clear();
+    floorplanPreviewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    floorplanPreviewsRef.current.clear();
   };
 
   const resetUploads = () => {
     cleanupPreviews();
     setNewImages([]);
+    setNewFloorplans([]);
   };
 
   useEffect(() => {
@@ -133,9 +153,11 @@ export default function EditProduct() {
         const imageEntries = buildProductImageEntries(data);
         const images = imageEntries.map((entry) => entry.url);
         const kinds = imageEntries.map((entry) => entry.kind ?? null);
+        const floorplans = parseImageList(data.floorplan_urls ?? data.floorplanUrls);
         const isFree = Boolean(data.is_free);
         setExistingImages(images);
         setExistingImageKinds(kinds.length ? kinds : images.map(() => null));
+        setExistingFloorplans(floorplans);
         setForm({
           title: data.title ?? '',
           description: data.description ?? '',
@@ -361,6 +383,63 @@ export default function EditProduct() {
     });
   };
 
+  const handleFloorplanSelection = (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+
+    const validFiles = files.filter(
+      (file) => file.type.startsWith('image/') || file.type === 'application/pdf'
+    );
+    if (!validFiles.length) {
+      toast.error('Envie imagens ou PDF para a planta do ambiente.');
+      return;
+    }
+
+    let hitLimit = false;
+
+    setNewFloorplans((prev) => {
+      const available = MAX_FLOORPLAN_FILES - existingFloorplans.length - prev.length;
+      if (available <= 0) {
+        hitLimit = true;
+        return prev;
+      }
+      const limited = validFiles.slice(0, available);
+      const mapped = limited.map((file) => {
+        const isImage = file.type.startsWith('image/');
+        const previewUrl = isImage ? URL.createObjectURL(file) : '';
+        if (previewUrl) floorplanPreviewsRef.current.add(previewUrl);
+        return {
+          id: `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          preview: previewUrl,
+          isImage,
+          name: file.name
+        };
+      });
+      return [...prev, ...mapped];
+    });
+
+    if (hitLimit) {
+      toast.error('Você já atingiu o limite de 4 plantas.');
+    }
+  };
+
+  const removeExistingFloorplan = (url) => {
+    setExistingFloorplans((prev) => prev.filter((item) => item !== url));
+  };
+
+  const removeNewFloorplan = (id) => {
+    setNewFloorplans((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.preview) {
+        URL.revokeObjectURL(target.preview);
+        floorplanPreviewsRef.current.delete(target.preview);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
   const buildPayload = () => {
     const latNum = form.lat === '' ? null : Number(form.lat);
     const lngNum = form.lng === '' ? null : Number(form.lng);
@@ -482,8 +561,12 @@ export default function EditProduct() {
       });
       formData.append('existing_images', JSON.stringify(existingImages));
       formData.append('existing_image_kinds', JSON.stringify(existingImageKinds));
+      formData.append('existing_floorplans', JSON.stringify(existingFloorplans));
       newImages.forEach((image) => {
         formData.append('images', image.file);
+      });
+      newFloorplans.forEach((item) => {
+        formData.append('floorplan_files', item.file);
       });
       formData.append(
         'new_image_kinds',
@@ -738,6 +821,82 @@ export default function EditProduct() {
           </p>
           <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
         </div>
+
+        {showFloorplanSection && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">Planta do ambiente</span>
+              <span className="text-xs text-gray-500">
+                {totalFloorplans}/{MAX_FLOORPLAN_FILES}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {existingFloorplans.map((url) => (
+                <div key={`floorplan-${url}`} className="relative group aspect-square rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  {url.match(/\.(png|jpe?g|webp|gif|bmp|svg)(\?|#|$)/i) ? (
+                    <img src={url} alt="Planta atual" className="h-full w-full object-cover" />
+                  ) : (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-600 px-2 text-center"
+                    >
+                      Arquivo
+                    </a>
+                  )}
+                  <span className="absolute bottom-1 left-1 rounded bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white">
+                    atual
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeExistingFloorplan(url)}
+                    className="absolute top-1 right-1 rounded-full bg-black/70 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                  >
+                    remover
+                  </button>
+                </div>
+              ))}
+              {newFloorplans.map((item) => (
+                <div key={item.id} className="relative group aspect-square rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  {item.isImage ? (
+                    <img src={item.preview} alt="Nova planta selecionada" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-600 px-2 text-center">
+                      {item.name || 'Arquivo'}
+                    </div>
+                  )}
+                  <span className="absolute bottom-1 left-1 rounded bg-emerald-600/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white">
+                    nova
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeNewFloorplan(item.id)}
+                    className="absolute top-1 right-1 rounded-full bg-black/70 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                  >
+                    remover
+                  </button>
+                </div>
+              ))}
+              {totalFloorplans < MAX_FLOORPLAN_FILES && (
+                <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 text-xs text-gray-500 cursor-pointer hover:border-emerald-400 hover:text-emerald-600 transition bg-gray-50">
+                  <span>Adicionar planta</span>
+                  <span className="mt-1 text-[10px] text-gray-400">Máx. {MAX_FLOORPLAN_FILES}</span>
+                  <input
+                    type="file"
+                    accept={FLOORPLAN_ACCEPT}
+                    multiple
+                    className="hidden"
+                    onChange={handleFloorplanSelection}
+                  />
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              Você pode manter as plantas atuais, remover alguma ou enviar novas (até {MAX_FLOORPLAN_FILES} arquivos).
+            </p>
+          </div>
+        )}
 
         <LinkListEditor
           links={form.links}

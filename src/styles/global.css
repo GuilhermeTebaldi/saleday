@@ -5612,6 +5612,22 @@ body.templesale-header-search-open .home-search-bar {
   max-height: 420px;
 }
 
+.product-detail__image-stack-file {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border-radius: 16px;
+  border: 1px dashed rgba(15, 23, 42, 0.2);
+  background: rgba(248, 250, 252, 0.9);
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  text-align: center;
+  padding: 0.75rem;
+}
+
 @media (min-width: 768px) {
   .product-detail__thumbs {
     justify-content: flex-start;
