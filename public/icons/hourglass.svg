@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none">
+  <path
+    d="M25 10
+       Q50 0 75 10
+       Q92 20 86 34
+       Q72 58 60 60
+       Q72 62 86 86
+       Q92 100 75 110
+       Q50 120 25 110
+       Q8 100 14 86
+       Q28 62 40 60
+       Q28 58 14 34
+       Q8 20 25 10
+       Z"
+    stroke="currentColor"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M42 30
+       Q50 24 58 30
+       L62 44
+       Q50 48 38 44
+       Z"
+    fill="currentColor"
+  />
+  <path
+    d="M34 82
+       Q50 74 66 82
+       Q60 92 50 92
+       Q40 92 34 82
+       Z"
+    fill="currentColor"
+  />
+  <line
+    x1="50"
+    y1="58"
+    x2="50"
+    y2="66"
+    stroke="currentColor"
+    stroke-width="10"
+    stroke-linecap="round"
+  />
+</svg>

@@ -1130,7 +1130,7 @@ export default function ProductDetail() {
                 className="z-10 max-w-full max-h-full object-contain"
               />
               {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
-                <span className="absolute left-4 top-4 z-20 rounded-full bg-amber-500/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                <span className="product-detail__viewer-badge">
                   {IMAGE_KIND_BADGE_LABEL}
                 </span>
               )}
@@ -1139,7 +1139,7 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   aria-label="Imagem anterior"
-                  className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70 w-12 h-12 flex items-center justify-center"
+                  className="product-detail__viewer-arrow product-detail__viewer-arrow--left"
                   onClick={(event) => {
                     event.stopPropagation();
                     goPrevImage();
@@ -1153,7 +1153,7 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   aria-label="Próxima imagem"
-                  className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring focus-visible:ring-white/70 w-12 h-12 flex items-center justify-center"
+                  className="product-detail__viewer-arrow product-detail__viewer-arrow--right"
                   onClick={(event) => {
                     event.stopPropagation();
                     goNextImage();
@@ -1180,7 +1180,7 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   onClick={handleOpenConversation}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-700"
+                  className="product-detail__cta product-detail__cta--primary"
                 >
                   <MessageCircle size={18} /> Contatar
                 </button>
@@ -1189,7 +1189,7 @@ export default function ProductDetail() {
                 <button
                   type="button"
                   onClick={() => setPhoneActionsOpen(true)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-sky-700"
+                  className="product-detail__cta product-detail__cta--secondary"
                 >
                   <PhoneCall size={18} /> Chamar
                 </button>
@@ -1358,106 +1358,113 @@ export default function ProductDetail() {
         </div>
       )}
 
-      {/* Botões de ação */}
-      <div className="product-detail__actions">
-        <button
-          onClick={openOfferModal}
-          disabled={isSold || isOwner}
-          className="product-detail__action product-detail__action--primary"
-        >
-          <Send size={18} />{' '}
-          {isSold
-            ? 'Produto vendido'
-            : isOwner
-            ? 'Você é o vendedor'
-            : isFreeProduct
-            ? 'Combinar retirada'
-            : 'Fazer oferta'}
-        </button>
-
-        {!isSeller && !isSold && user && (
-          <button
-            onClick={handleRequestPurchase}
-            disabled={ordering}
-            className="product-detail__action product-detail__action--accent"
-          >
-            <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
-          </button>
-        )}
-
-       
-
-        <button
-          onClick={openShare}
-          className="product-detail__action product-detail__action--ghost"
-        >
-          <Share2 size={18} /> Compartilhar
-        </button>
-
-        {isOwner && !isSold && (
-          <button
-            onClick={async () => {
-              try {
-                await api.put(
-                  `/products/${product.id}/status`,
-                  { status: 'sold' },
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                setProduct((prev) => ({ ...prev, status: 'sold' }));
-                toast.success('Produto marcado como vendido.');
-              } catch {
-                toast.error('Falha ao marcar como vendido.');
-              }
-            }}
-            className="product-detail__action product-detail__action--dark"
-          >
-            Marcar como vendido
-          </button>
-        )}
-        
-        {false && isOwner && !isSold && (
-          // para voltar o botao é só tirar o : false && 
-          <Link
-            to={boostLinkTarget}
-            state={boostLinkState}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
-          >
-            Impulsionar anúncio
-          </Link>
-        )}
-      </div>
-
       {/* Detalhes do produto */}
       <section className="product-detail__section">
-      <div className="product-detail__metrics">
-        <div className="product-detail__metric">
-          <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
-          <span className="product-detail__metric-count">{viewsCount}</span>
-          <span>Visualizações</span>
+      <div className="product-detail__price-card">
+        <div className="product-detail__metrics">
+          <div className="product-detail__metric">
+            <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
+            <span className="product-detail__metric-count">{viewsCount}</span>
+            <span>Visualizações</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleFavorite}
+            disabled={favoriteLoading}
+            aria-pressed={favorite}
+            title={favorite ? 'Remover curtida' : 'Curtir'}
+            className={`product-detail__metric product-detail__metric--favorite ${
+              favorite ? 'is-active' : ''
+            }`}
+          >
+            <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
+            <span className="product-detail__metric-count">{likesCount}</span>
+            <span>Curtidas</span>
+          </button>
+          <details className="product-detail__more-actions product-detail__more-actions--inline">
+            <summary
+              className="product-detail__more-actions-toggle"
+              aria-label="Mais ações"
+              title="Mais ações"
+            >
+              ...
+            </summary>
+            <div className="product-detail__more-actions-panel">
+              <button
+                onClick={openOfferModal}
+                disabled={isSold || isOwner}
+                className="product-detail__action product-detail__action--secondary"
+              >
+                <Send size={18} />{' '}
+                {isSold
+                  ? 'Produto vendido'
+                  : isOwner
+                  ? 'Você é o vendedor'
+                  : isFreeProduct
+                  ? 'Combinar retirada'
+                  : 'Fazer oferta'}
+              </button>
+
+              {!isSeller && !isSold && user && (
+                <button
+                  onClick={handleRequestPurchase}
+                  disabled={ordering}
+                  className="product-detail__action product-detail__action--tertiary"
+                >
+                  <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
+                </button>
+              )}
+
+              <button
+                onClick={openShare}
+                className="product-detail__action product-detail__action--secondary"
+              >
+                <Share2 size={18} /> Compartilhar
+              </button>
+
+              {isOwner && !isSold && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.put(
+                        `/products/${product.id}/status`,
+                        { status: 'sold' },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                      );
+                      setProduct((prev) => ({ ...prev, status: 'sold' }));
+                      toast.success('Produto marcado como vendido.');
+                    } catch {
+                      toast.error('Falha ao marcar como vendido.');
+                    }
+                  }}
+                  className="product-detail__action product-detail__action--dark"
+                >
+                  Marcar como vendido
+                </button>
+              )}
+
+              {false && isOwner && !isSold && (
+                // para voltar o botao é só tirar o : false && 
+                <Link
+                  to={boostLinkTarget}
+                  state={boostLinkState}
+                  className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
+                >
+                  Impulsionar anúncio
+                </Link>
+              )}
+            </div>
+          </details>
         </div>
-        <button
-          type="button"
-          onClick={handleFavorite}
-          disabled={favoriteLoading}
-          aria-pressed={favorite}
-          title={favorite ? 'Remover curtida' : 'Curtir'}
-          className={`product-detail__metric product-detail__metric--favorite ${
-            favorite ? 'is-active' : ''
-          }`}
-        >
-          <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
-          <span className="product-detail__metric-count">{likesCount}</span>
-          <span>Curtidas</span>
-        </button>
-      </div>
-      <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
-        {priceFmt}
-      </p>
+        <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
+          {priceFmt}
+        </p>
         {product.pickup_only && (
           <p className="product-detail__pickup">
             Entrega: retirada em mãos combinada com o vendedor.
           </p>
         )}
+      </div>
 
         {isSeller && buyerInfo && (
           <div className="product-detail__buyer-card">
@@ -1510,17 +1517,30 @@ export default function ProductDetail() {
           <div className="product-detail__specs">
             {specEntries.map((entry) => (
               <p key={entry.label}>
-                {entry.label}: <span className="text-gray-800">{entry.value}</span>
+                <span className="product-detail__field-label">{entry.label}</span>
+                <span className="product-detail__field-value text-gray-800">{entry.value}</span>
               </p>
             ))}
           </div>
         )}
 
         <div className="product-detail__location-grid">
-          <p>Categoria: <span>{product.category || 'Não informada'}</span></p>
-          <p>CEP: <span>{product.zip || 'Não informado'}</span></p>
-          <p>Rua: <span>{product.street || 'Não informada'}</span></p>
-          <p>Bairro: <span>{product.neighborhood || 'Não informado'}</span></p>
+          <p>
+            <span className="product-detail__field-label">Categoria</span>
+            <span className="product-detail__field-value">{product.category || 'Não informada'}</span>
+          </p>
+          <p>
+            <span className="product-detail__field-label">CEP</span>
+            <span className="product-detail__field-value">{product.zip || 'Não informado'}</span>
+          </p>
+          <p>
+            <span className="product-detail__field-label">Rua</span>
+            <span className="product-detail__field-value">{product.street || 'Não informada'}</span>
+          </p>
+          <p>
+            <span className="product-detail__field-label">Bairro</span>
+            <span className="product-detail__field-value">{product.neighborhood || 'Não informado'}</span>
+          </p>
         </div>
 
         {(hasMapLocation || mapLoading) && (

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@500;700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Sora:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;700;800&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Sora:wght@600;700;800&display=swap');
 @import url('https://fonts.cdnfonts.com/css/prime');
 @tailwind base;
 @tailwind components;
@@ -23,7 +23,14 @@
   --templesale-ice-2: #eef2f7;
   --templesale-ice-3: #e7edf4;
   --templesale-accent: #d4e363;
-  --home-title-font: 'Prime', 'Oswald', 'Montserrat', 'Sora', 'Bebas Neue', 'Playfair Display', sans-serif;
+  --home-title-font: 'Cinzel', 'Playfair Display', serif;
+  --ts-bg: #0E1116;
+  --ts-gold: #C8B26A;
+  --ts-surface: #F5F6F7;
+  --ts-card: #FFFFFF;
+  --ts-text: #1A1D21;
+  --ts-muted: #6E7278;
+  --ts-cta: #1F8F5F;
 }
 
 body {
@@ -168,16 +175,9 @@ button {
   height: 64px;
   min-height: 64px;
 
-  background: linear-gradient(
-    180deg,
-    var(--templesale-ink),
-    rgba(11, 18, 32, 0.9)
-  );
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-
-  border-bottom: 1px solid rgba(209, 215, 222, 0.18);
-  box-shadow: 0 18px 40px -34px rgba(0, 0, 0, 0.85);
+  background: #0e1116;
+  border-bottom: 1px solid rgba(200, 178, 106, 0.35);
+  box-shadow: 0 10px 24px -20px rgba(0, 0, 0, 0.75);
 
   box-sizing: border-box;
 }
@@ -189,12 +189,7 @@ button {
   right: 0;
   bottom: -1px;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(59, 130, 246, 0.28),
-    transparent
-  );
+  background: rgba(200, 178, 106, 0.45);
   pointer-events: none;
 }
 
@@ -342,8 +337,7 @@ button {
   display: block;
   height: 64px;
   width: auto;
-  filter: drop-shadow(0 0 46px rgb(150, 130, 58))
-    drop-shadow(0 0 2px rgba(189, 193, 79, 0.89));
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
 }
 
 .app-menu-toggle {
@@ -598,9 +592,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: clamp(1.5rem, 1.8vw, 2.5rem);
-  padding: 0 clamp(1.5rem, 1.6vw + 1rem, 2.8rem) clamp(1.5rem, 1.6vw + 1rem, 2.8rem);
-  color: #0f172a;
-  background: linear-gradient(180deg, var(--templesale-ice) 0%, #ffffff 40%, var(--templesale-ice-3) 100%);
+  padding: 0 clamp(1.5rem, 1.6vw + 1rem, 2.8rem) calc(clamp(1.5rem, 1.6vw + 1rem, 2.8rem) + 5rem);
+  color: var(--ts-surface);
+  background: var(--ts-bg);
   min-height: calc(100vh - 80px);
 }
 
@@ -621,8 +615,8 @@ button {
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: #1d4ed8;
-  background: rgba(37, 99, 235, 0.12);
+  color: var(--ts-gold);
+  background: rgba(200, 178, 106, 0.12);
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   display: inline-flex;
@@ -633,12 +627,13 @@ button {
   margin: 0;
   font-size: clamp(1.8rem, 1.1rem + 1.5vw, 2.6rem);
   line-height: 1.15;
-  color: #0b1220;
+  color: var(--ts-surface);
   font-weight: 700;
+  font-family: var(--home-title-font);
 }
 
 .home-hero__subtitle {
-  color: rgba(15, 23, 42, 0.7);
+  color: rgba(245, 246, 247, 0.72);
   font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
   max-width: 36ch;
 }
@@ -652,18 +647,19 @@ button {
 
 .home-new-product-fab {
   position: fixed;
-  right: clamp(1.25rem, 2vw, 2.5rem);
-  bottom: clamp(1.25rem, 2vw, 2.5rem);
+  right: calc(clamp(2.5rem, 3.2vw, 4rem) + env(safe-area-inset-right));
+  bottom: calc(clamp(3rem, 3.5vw, 4.5rem) + env(safe-area-inset-bottom));
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 999px;
-  background: linear-gradient(5deg, #2d0808, #102f0a);
+  background: var(--ts-cta);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
-  z-index: 40;
+  box-shadow: 0 8px 18px rgba(31, 143, 95, 0.22);
+  z-index: 30;
+  opacity: 0.85;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: none;
   text-decoration: none;
@@ -671,24 +667,25 @@ button {
 
 .home-new-product-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 22px 45px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 12px 24px rgba(31, 143, 95, 0.26);
+  opacity: 0.95;
 }
 
 .home-new-product-fab__icon {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
 .home-new-product-fab__label {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   letter-spacing: 0.01em;
 }
 
 @media (max-width: 640px) {
   .home-new-product-fab {
-    right: 1rem;
-    bottom: 1rem;
-    padding: 0.65rem 0.95rem;
+    right: calc(1.75rem + env(safe-area-inset-right));
+    bottom: calc(2rem + env(safe-area-inset-bottom));
+    padding: 0.48rem 0.75rem;
     border-radius: 16px;
   }
 
@@ -701,8 +698,8 @@ button {
   min-width: 140px;
   padding: 0.9rem 1.1rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(245, 246, 247, 0.92);
+  border: 1px solid rgba(200, 178, 106, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
@@ -712,16 +709,16 @@ button {
 .home-hero__stat-value {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ts-text);
 }
 
 .home-hero__stat-value.is-highlight {
-  color: #047857;
+  color: var(--ts-cta);
 }
 
 .home-hero__stat-label {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.6);
+  color: var(--ts-muted);
 }
 
 .home-hero__quick-actions {
@@ -738,26 +735,26 @@ button {
 .home-hero__quick-button {
   padding: 0.55rem 1.1rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  background: rgba(200, 178, 106, 0.12);
+  color: var(--ts-gold);
   font-weight: 600;
   font-size: 0.85rem;
   transition: all 0.2s ease;
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(200, 178, 106, 0.28);
 }
 
 .home-hero__quick-button:hover {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(200, 178, 106, 0.2);
 }
 
 .home-hero__quick-button--primary {
-  background: #1d4ed8;
+  background: var(--ts-gold);
   color: #fff;
-  border-color: #1d4ed8;
+  border-color: var(--ts-gold);
 }
 
 .home-hero__quick-button--primary:hover {
-  background: #072798;
+  background: #b59b4f;
 }
 
 .home-hero__tools {
@@ -831,10 +828,10 @@ button {
   gap: 0.5rem;
 
   /* visual de caixinha arredondada igual ao print */
-  background: #fbfdff;
-  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(14, 17, 22, 0.92);
+  border: 1px solid rgba(200, 178, 106, 0.25);
   border-radius: 12px;
-  box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.45);
 
   padding: 0.6rem 0.75rem;
 
@@ -853,8 +850,9 @@ button {
   height: 36px;
   padding: 0 0.8rem;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
+  color: var(--ts-text);
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -875,10 +873,10 @@ button {
 
 /* estado ativo do "Todos" azul igual no print */
 .home-hero__pill.is-active {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  color: #fff;
-  box-shadow: 0 8px 16px -12px rgba(29, 78, 216, 0.55);
+  background: var(--ts-gold);
+  border-color: var(--ts-gold);
+  color: #0f172a;
+  box-shadow: 0 8px 16px -12px rgba(200, 178, 106, 0.45);
 }
 
 /* badge numérica pequena */
@@ -889,7 +887,7 @@ button {
   font-weight: 600;
   min-width: 1rem;
   text-align: center;
-  color: #1f2937;
+  color: var(--ts-muted);
 }
 
 /* coração vermelho */
@@ -1148,10 +1146,10 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.5rem;
 
-  background: #fbfdff;
-  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(14, 17, 22, 0.92);
+  border: 1px solid rgba(200, 178, 106, 0.25);
   border-radius: 12px;
-  box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.45);
 
   padding: 0.6rem 0.75rem;
 
@@ -1212,10 +1210,10 @@ body.templesale-header-search-open .home-search-bar {
   justify-content: space-between; /* separa esquerda e direita */
   padding: 0.6rem 0.75rem;
   gap: 0; /* gap fica interno aos grupos */
-  background: #fbfdff;
-  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(14, 17, 22, 0.92);
+  border: 1px solid rgba(200, 178, 106, 0.25);
   border-radius: 12px;
-  box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.45);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -1265,9 +1263,9 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.35rem;
   padding: 0.55rem 0.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  background: rgba(255, 255, 255, 0.85);
-  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
+  color: var(--ts-text);
   font-weight: 600;
   font-size: 0.82rem;
   transition: all 0.2s ease;
@@ -1278,10 +1276,10 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;      /* esquerda x direita */
-  background: #fbfdff;
-  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(14, 17, 22, 0.92);
+  border: 1px solid rgba(200, 178, 106, 0.25);
   border-radius: 12px;
-  box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.45);
   padding: 0.6rem 0.75rem;
 
   /* desktop não precisa scroll horizontal */
@@ -1348,17 +1346,17 @@ body.templesale-header-search-open .home-search-bar {
 
 
 .home-hero__filter-btn:is(:hover, :focus-visible) {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #1d4ed8;
+  background: rgba(200, 178, 106, 0.18);
+  border-color: rgba(200, 178, 106, 0.5);
+  color: var(--ts-text);
 }
 
 
 .home-hero__filter-btn.is-active {
-  background: #1d4ed8;
-  color: #fff;
-  border-color: #1d4ed8;
-  box-shadow: 0 8px 16px -12px rgba(29, 78, 216, 0.55);
+  background: var(--ts-gold);
+  color: #0f172a;
+  border-color: var(--ts-gold);
+  box-shadow: 0 8px 16px -12px rgba(200, 178, 106, 0.55);
 }
 
 .home-hero__filter-btn:disabled,
@@ -1368,9 +1366,9 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-hero__filter-btn.is-highlight {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #047857;
+  background: rgba(200, 178, 106, 0.2);
+  border-color: rgba(200, 178, 106, 0.5);
+  color: var(--ts-text);
 }
 
 .home-hero__filter-badge {
@@ -1550,10 +1548,10 @@ body.templesale-header-search-open .home-search-bar {
 .home-quick-categories {
   width: 100%;
   padding: 3.75rem 0.9rem 0.5rem;
-  background: linear-gradient(180deg, rgb(248, 248, 250), rgba(255, 255, 255, 0.9));
+  background: var(--ts-bg);
   border: 0px solid rgb(124, 150, 179);
   border-radius: 0 0 18px 18px;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.689);
+  box-shadow: none;
   margin-top: calc(-1 * var(--home-header-height, 64px) - 16px);
   position: relative;
   z-index: 5;
@@ -1572,17 +1570,18 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-quick-categories__scroll::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(200, 178, 106, 0.4);
   border-radius: 999px;
 }
 
 .home-quick-categories__chip {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.35rem;
-  min-width: 78px;
+  padding: 0.15rem 0.35rem;
+  min-width: 0;
   flex-shrink: 0;
   background: transparent;
   border: none;
@@ -1590,55 +1589,51 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-quick-categories__icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
+  width: auto;
+  height: auto;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border: 1px solid rgba(131, 156, 18, 0.86);
-  color: #000000;
-  box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.913);
+  background: transparent;
+  border: 0;
+  color: rgba(245, 246, 247, 0.75);
+  box-shadow: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .home-quick-categories__icon svg {
-  width: 26px;
-  height: 26px;
+  width: 16px;
+  height: 16px;
 }
 
 .home-quick-categories__chip:hover:not(.is-disabled) .home-quick-categories__icon {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 28px -18px rgba(15, 23, 42, 0.6);
+  transform: translateY(-1px);
 }
 
 .home-quick-categories__chip.is-active .home-quick-categories__icon {
-  border-color: rgba(37, 99, 235, 0.6);
-  color: #1d4ed8;
-  box-shadow: 0 18px 32px -20px rgba(37, 99, 235, 0.55);
+  color: var(--ts-gold);
+  box-shadow: none;
 }
 
 .home-quick-categories__label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #334155;
+  color: rgba(245, 246, 247, 0.72);
   text-align: center;
   line-height: 1.1;
-  max-width: 88px;
-  white-space: normal;
-  min-height: 1.6rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  max-width: none;
+  white-space: nowrap;
+  min-height: 0;
+  display: inline;
   overflow: hidden;
 }
 
 .home-quick-categories__badge {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #0f172a;
-  background: rgba(148, 163, 184, 0.2);
+  color: var(--ts-text);
+  background: rgba(200, 178, 106, 0.2);
   padding: 0.06rem 0.4rem;
   border-radius: 999px;
 }
@@ -1896,19 +1891,19 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.75rem;
   padding: clamp(2.8rem, 5vw, 4rem);
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(165, 179, 198, 0.8);
-  box-shadow: 0 40px 70px -50px rgba(15, 23, 42, 0.45);
+  background: var(--ts-surface);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 40px 70px -50px rgba(0, 0, 0, 0.45);
 }
 
 .home-empty-state h2 {
   font-size: clamp(1.1rem, 1rem + 0.4vw, 1.4rem);
   font-weight: 600;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
 }
 
 .home-empty-state p {
-  color: rgba(71, 85, 105, 0.9);
+  color: var(--ts-muted);
   max-width: 420px;
 }
 
@@ -1934,14 +1929,32 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 0;
-  border: 1px solid rgba(18, 42, 75, 0.5);
-  background: #f8f8f9;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--ts-card);
+  color: var(--ts-text);
   width: 100%;
   height: auto;
   box-shadow: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.home-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--ts-gold);
+  opacity: 0.55;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.home-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
 
 
 .home-card__media {
@@ -1950,8 +1963,10 @@ body.templesale-header-search-open .home-search-bar {
   position: relative;
   overflow: hidden;
   flex: 0 0 auto;
-  border: 4px solid rgba(21, 35, 60, 0.418);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+  background: var(--ts-surface);
 }
 
 @supports not (aspect-ratio: 1 / 1) {
@@ -1999,18 +2014,18 @@ body.templesale-header-search-open .home-search-bar {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: min(52px, 15%);
-  height: min(52px, 15%);
+  width: min(40px, 12%);
+  height: min(40px, 12%);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.4rem;
+  color: #ffffff;
+  font-size: 1.05rem;
   font-weight: 600;
-  text-shadow: 0 2px 12px rgba(15, 23, 42, 0.75);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.25), rgba(15, 23, 42, 0.55));
-  border: 0;
+  text-shadow: none;
+  background: rgba(14, 17, 22, 0.6);
+  border: 1px solid rgba(200, 178, 106, 0.35);
   cursor: pointer;
   pointer-events: auto;
   padding: 0;
@@ -2082,7 +2097,7 @@ body.templesale-header-search-open .home-search-bar {
   inset: 0;
   display: grid;
   place-items: center;
-  color: rgba(71, 85, 105, 0.6);
+  color: var(--ts-muted);
   font-size: 0.9rem;
 }
 
@@ -2095,9 +2110,9 @@ body.templesale-header-search-open .home-search-bar {
 
   .home-card {
     min-width: 0 !important;
-    border-radius: 0;
-    border: 1px solid rgba(226, 232, 240, 0.5);
-    background: #f8f8f9;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--ts-card);
     box-shadow: none;
     overflow: hidden;
   }
@@ -2109,35 +2124,35 @@ body.templesale-header-search-open .home-search-bar {
   }
 
   .home-card__content {
-    padding: 0.9rem;
-    border-top: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 1.05rem 1.1rem 1.45rem;
+    border-top: 0;
     background: transparent;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    gap: 0.6rem;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
   }
 
   .home-card__title {
-    font-size: 0.86rem;
-    color: #0c1b38;
-    letter-spacing: 0.06em;
-    font-weight: 800;
+    font-size: 1rem;
+    color: var(--ts-text);
+    letter-spacing: 0.02em;
+    font-weight: 600;
     font-family: var(--home-title-font);
   }
 
   .home-card__price {
-    font-size: 0.9rem;
-    color: #047857;
+    font-size: 1.375rem;
+    color: var(--ts-cta);
     font-weight: 700;
-    text-shadow: 0 1px 2px rgba(4, 120, 87, 0.4);
+    text-shadow: none;
   }
 
   .home-card__location {
-    color: rgba(15, 23, 42, 0.6);
+    color: var(--ts-muted);
     font-size: 0.75rem;
-    text-transform: capitalize;
+    text-transform: none;
   }
 
   .home-card__media-gallery {
@@ -2146,10 +2161,11 @@ body.templesale-header-search-open .home-search-bar {
   }
 
   .home-card__media-arrow {
-    width: 40px;
-    height: 40px;
-    font-size: 1.25rem;
-    background: rgba(15, 23, 42, 0.55);
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    background: rgba(14, 17, 22, 0.6);
+    border: 1px solid rgba(200, 178, 106, 0.35);
   }
 
   .home-card__media-indicator {
@@ -2161,23 +2177,24 @@ body.templesale-header-search-open .home-search-bar {
   }
 
   .home-card__contact-btn {
-    font-size: 0.65rem;
-    padding: 0.3rem 0.45rem;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+    min-height: 44px;
   }
 }
 
 .home-card__badge {
   position: absolute;
-  top: 14px;
+  top: 44px;
   left: 14px;
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.92);
-  color: white;
+  background: var(--ts-gold);
+  color: #1a1d21;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  box-shadow: 0 12px 18px -10px rgba(16, 185, 129, 0.6);
+  box-shadow: 0 12px 18px -10px rgba(200, 178, 106, 0.45);
 }
 
 .home-card__date-bar {
@@ -2186,8 +2203,8 @@ body.templesale-header-search-open .home-search-bar {
   left: 1px;
   padding: 0.2rem 0.3rem;
   border-radius: 999px;
-  background: rgba(246, 245, 247, 0.9);
-  box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.9);
+  background: rgba(245, 246, 247, 0.95);
+  box-shadow: 0 12px 20px -18px rgba(0, 0, 0, 0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2195,39 +2212,57 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__date-text {
-  color: #020202;
+  color: var(--ts-text);
   font-size: 0.65rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
+.home-card__illustrative-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(14, 17, 22, 0.38);
+  border: 1px solid rgba(200, 178, 106, 0.16);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffffff;
+  backdrop-filter: blur(2px);
+}
+
 .home-card__likes-badge {
   position: absolute;
-  bottom: 12px;
+  top: 12px;
   left: 12px;
+  bottom: auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.45rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(14, 17, 22, 0.55);
+  border: 1px solid rgba(200, 178, 106, 0.2);
+  font-size: 0.68rem;
   font-weight: 600;
-  color: #1f2937;
-  box-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.8);
+  color: #ffffff;
+  box-shadow: none;
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .home-card__likes-badge:hover:not(.is-loading) {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 34px -18px rgba(15, 23, 42, 0.9);
+  transform: none;
+  box-shadow: none;
 }
 
 .home-card__likes-badge.is-active {
-  background: rgba(254, 226, 226, 0.95);
-  box-shadow: 0 12px 24px -16px rgba(248, 113, 113, 0.7);
+  background: rgba(14, 17, 22, 0.55);
+  box-shadow: none;
 }
 
 .home-card__likes-badge.is-loading {
@@ -2240,8 +2275,8 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__likes-icon {
-  font-size: 0.85rem;
-  color: #ef4444;
+  font-size: 0.65rem;
+  color: #b91c1c;
   line-height: 1;
 }
 
@@ -2256,17 +2291,17 @@ body.templesale-header-search-open .home-search-bar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.85);
-  color: rgba(225, 29, 72, 0.35);
+  background: rgba(245, 246, 247, 0.9);
+  color: rgba(185, 28, 28, 0.35);
   font-size: 1.1rem;
   transition: background 0.24s ease, color 0.24s ease, box-shadow 0.24s ease;
   z-index: 3;
 }
 
 .home-card__favorite:hover {
-  color: rgba(225, 29, 72, 0.75);
+  color: rgba(185, 28, 28, 0.8);
   background: rgba(255, 255, 255, 1);
-  box-shadow: 0 10px 20px -12px rgba(190, 18, 60, 0.6);
+  box-shadow: 0 10px 20px -12px rgba(185, 28, 28, 0.5);
 }
 
 .home-card__favorite-icon {
@@ -2294,9 +2329,9 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__favorite.is-active {
-  color: #f87171;
-  background: rgba(254, 226, 226, 0.9);
-  box-shadow: 0 12px 18px -14px rgba(248, 113, 113, 0.6);
+  color: #b91c1c;
+  background: rgba(254, 226, 226, 0.85);
+  box-shadow: 0 12px 18px -14px rgba(185, 28, 28, 0.5);
 }
 
 .home-card__favorite.is-loading {
@@ -2305,25 +2340,25 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__content {
-  padding: 0 1.25rem 1.3rem;
+  padding: 1.1rem 1.25rem 1.6rem;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.65rem;
   min-height: 96px;
 }
 
 .home-card__facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .home-card__fact-pill {
-  font-size: 0.7rem;
-  padding: 0.45rem 0.55rem 0.4rem;
-  border-radius: 0.1rem;
-  background: rgba(255, 255, 255, 0.273);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  color: rgba(0, 0, 0, 0.85);
+  font-size: 0.75rem;
+  padding: 0.22rem 0.4rem;
+  border-radius: 12px;
+  background: var(--ts-surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--ts-text);
   text-transform: capitalize;
   letter-spacing: 0.01em;
   line-height: 1.1;
@@ -2336,8 +2371,8 @@ body.templesale-header-search-open .home-search-bar {
 
 .home-card__fact-icon {
   display: inline-flex;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 0.9rem;
+  height: 0.9rem;
   align-items: center;
   justify-content: center;
 }
@@ -2354,12 +2389,12 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__title-bar {
-  width: calc(100% + 2.5rem);
-  margin-left: -1.25rem;
-  padding: 0.45rem 0.8rem;
-  border-radius: 2.0rem 0.0rem 0 0;
-  background: #c0d37f;
-  border: 1px solid rgba(253, 249, 13, 0.862);
+  width: 100%;
+  margin-left: 0;
+  padding: 0.25rem 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
   display: flex;
   align-items: center;
   min-height: 2.25rem;
@@ -2367,14 +2402,14 @@ body.templesale-header-search-open .home-search-bar {
 
 .home-card__title {
   margin: 0;
-  font-weight: 800;
-  font-size: 0.90rem;
-  line-height: 1.15;
-  letter-spacing: 0.08em;
-  color: #000000;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: var(--ts-text);
   font-family: var(--home-title-font);
-  text-transform: uppercase;
-  text-shadow: 0 0px 0 rgb(0, 0, 0);
+  text-transform: none;
+  text-shadow: none;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2383,18 +2418,20 @@ body.templesale-header-search-open .home-search-bar {
 
 .home-card__price {
   font-weight: 700;
-  font-size: 1.25rem;
-  color: #176037;
+  font-size: 1.375rem;
+  color: var(--ts-cta);
+  margin-top: 0.2rem;
 }
 
 .home-card__price.is-free {
-  color: #0f766e;
+  color: var(--ts-cta);
 }
 
 .home-card__description {
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: rgba(15, 23, 42, 0.75);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ts-muted);
+  font-weight: 400;
   overflow-wrap: break-word;
 }
 
@@ -2408,8 +2445,8 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__description-more {
-  color: rgba(2, 132, 199, 0.9);
-  font-weight: 700;
+  color: var(--ts-gold);
+  font-weight: 600;
   margin-left: 0.2rem;
 }
 
@@ -2421,8 +2458,9 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__location {
-  font-size: 0.85rem;
-  color: rgba(71, 85, 105, 0.85);
+  font-size: 0.75rem;
+  color: var(--ts-muted);
+  font-weight: 500;
 }
 
 .home-card__contact {
@@ -2438,27 +2476,37 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.55rem;
+  padding: 0.5rem 0.9rem;
   border-radius: 999px;
-  border: none;
-  font-size: 0.72rem;
-  font-weight: 700;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-height: 44px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .home-card__contact-btn--chat {
-  background: rgba(5, 150, 105, 0.95);
+  background: var(--ts-cta);
   color: #fff;
 }
 
 .home-card__contact-btn--phone {
-  background: rgba(2, 132, 199, 0.95);
-  color: #fff;
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 .home-card__contact-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px -14px rgba(15, 23, 42, 0.6);
+  box-shadow: 0 10px 20px -14px rgba(0, 0, 0, 0.35);
+}
+
+.home-card__contact-btn--chat:hover {
+  background: #1a7a51;
+}
+
+.home-card__contact-btn--phone:hover {
+  border-color: var(--ts-gold);
 }
 
 .home-card__contact-btn:focus-visible {
@@ -2467,9 +2515,10 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__date-label {
-  font-size: 0.72rem;
-  color: rgba(75, 85, 99, 0.85);
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  color: var(--ts-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -4489,12 +4538,12 @@ body.templesale-header-search-open .home-search-bar {
   gap: 2rem;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   align-items: start;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--ts-card);
   padding: 2.5rem;
   border-radius: 24px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 40px 70px -48px rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 26px 46px -34px rgba(0, 0, 0, 0.55);
+  backdrop-filter: none;
 }
 
 .product-detail-page {
@@ -4502,16 +4551,11 @@ body.templesale-header-search-open .home-search-bar {
   width: 100%;
   margin: 0;
   padding: 1rem 0 2.5rem;
+  background: var(--ts-bg);
 }
 
 .product-detail-page::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.08), transparent 55%),
-    linear-gradient(180deg, rgba(235, 241, 243, 0.8), rgba(255, 255, 255, 0.95));
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 @media (max-width: 640px) {
@@ -4526,12 +4570,16 @@ body.templesale-header-search-open .home-search-bar {
   width: min(1100px, 100%);
   max-width: 100%;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--ts-card);
   border-radius: 28px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 40px 70px -48px rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 28px 50px -40px rgba(0, 0, 0, 0.55);
+  backdrop-filter: none;
   padding-top: calc(1rem + 2.5rem);
+}
+
+.product-detail-card > * + * {
+  margin-top: 1rem;
 }
 
 .product-detail__back {
@@ -4543,27 +4591,26 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.45rem;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.25);
-  background: #ffffff;
-  padding: 0.45rem 1rem;
-  font-size: 0.7rem;
+  border: 1px solid rgba(200, 178, 106, 0.25);
+  background: rgba(245, 246, 247, 0.8);
+  padding: 0.3rem 0.75rem;
+  font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: #1f2933;
-  box-shadow: 0 14px 28px -10px rgba(15, 23, 42, 0.75),
-    0 24px 36px -12px rgba(15, 23, 42, 0.8);
+  color: rgba(26, 29, 33, 0.8);
+  box-shadow: 0 8px 16px -14px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .product-detail__back:hover {
   transform: translateY(-1px);
-  border-color: rgba(15, 23, 42, 0.32);
-  box-shadow: 0 18px 36px -20px rgba(15, 23, 42, 0.6);
+  border-color: rgba(200, 178, 106, 0.45);
+  box-shadow: 0 12px 20px -16px rgba(0, 0, 0, 0.5);
 }
 
 .product-detail__back:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.45);
+  outline: 2px solid rgba(200, 178, 106, 0.55);
   outline-offset: 2px;
 }
 
@@ -4589,7 +4636,7 @@ body.templesale-header-search-open .home-search-bar {
   flex-direction: column;
   gap: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 @media (min-width: 768px) {
@@ -4603,8 +4650,9 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__title {
   font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.3rem);
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ts-text);
   line-height: 1.25;
+  font-family: var(--home-title-font);
   margin: 0;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -4631,13 +4679,13 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__tag--sold {
-  background: rgba(15, 23, 42, 0.12);
-  color: rgba(15, 23, 42, 0.85);
+  background: rgba(14, 17, 22, 0.08);
+  color: var(--ts-text);
 }
 
 .product-detail__tag--free {
-  background: rgba(16, 185, 129, 0.16);
-  color: #0f766e;
+  background: rgba(200, 178, 106, 0.2);
+  color: var(--ts-text);
 }
 
 .product-detail__location {
@@ -4646,7 +4694,7 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.35rem;
   margin-top: 0.4rem;
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.65);
+  color: var(--ts-muted);
 }
 
 .product-detail__header-actions {
@@ -4668,17 +4716,17 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.85rem;
   position: relative;
   overflow: hidden;
-  background: transparent;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 28px;
-  padding: 1rem 1.1rem;
+  background: var(--ts-surface);
+  border: 1px solid rgba(200, 178, 106, 0.22);
+  border-radius: 18px;
+  padding: 0.85rem 1rem;
   min-width: 220px;
   width: min(360px, 100%);
   align-self: stretch;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 22px 50px -30px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 16px 30px -24px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -5123,26 +5171,24 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__seller-card:hover,
 .product-detail__seller-card:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(37, 99, 235, 0.22);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 28px 60px -34px rgba(15, 23, 42, 0.6);
+  border-color: rgba(200, 178, 106, 0.45);
+  background: var(--ts-surface);
+  box-shadow: 0 22px 40px -30px rgba(0, 0, 0, 0.55);
 }
 
 .product-detail__seller-avatar {
   width: 56px;
   height: 56px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(191, 219, 254, 0.7), rgba(30, 64, 175, 0.25));
-  border: 3px solid rgba(255, 255, 255, 0.95);
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.18),
-    0 16px 30px -16px rgba(15, 23, 42, 0.45);
+  background: var(--ts-card);
+  border: 2px solid rgba(200, 178, 106, 0.35);
+  box-shadow: 0 10px 18px -16px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #1e3a8a;
-  font-size: 0.95rem;
+  color: var(--ts-text);
+  font-size: 0.9rem;
   overflow: hidden;
 }
 
@@ -5158,20 +5204,28 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.25rem;
 }
 
+.product-detail__seller-info .text-yellow-500 {
+  color: var(--ts-gold);
+}
+
+.product-detail__seller-info .text-gray-500 {
+  color: var(--ts-muted);
+}
+
 .product-detail__seller-label {
   margin: 0;
-  font-size: 0.58rem;
-  font-weight: 800;
+  font-size: 0.6rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgba(15, 23, 42, 0.5);
+  letter-spacing: 0.12em;
+  color: var(--ts-muted);
 }
 
 .product-detail__seller-name {
   margin: 0;
-  font-weight: 800;
-  color: #0f172a;
-  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ts-text);
+  font-size: 0.98rem;
 }
 
 .product-detail__backlink {
@@ -5179,21 +5233,21 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.5rem;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.18);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
   padding: 0.5rem 1rem;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: #1f2933;
+  color: var(--ts-text);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .product-detail__backlink:hover {
   transform: translateY(-1px);
-  border-color: rgba(15, 23, 42, 0.3);
-  box-shadow: 0 16px 30px -22px rgba(15, 23, 42, 0.6);
+  border-color: rgba(200, 178, 106, 0.45);
+  box-shadow: 0 16px 26px -22px rgba(0, 0, 0, 0.6);
 }
 
 @keyframes product-detail-seller-glow {
@@ -5220,30 +5274,30 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.3rem;
 }
 
 .product-detail__metric {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.85);
-  padding: 0.35rem 0.85rem;
-  font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.7);
-  box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
+  padding: 0.16rem 0.45rem;
+  font-size: 0.64rem;
+  color: var(--ts-muted);
+  box-shadow: none;
   cursor: default;
 }
 
 .product-detail__metric-icon {
-  color: rgba(15, 23, 42, 0.5);
+  color: var(--ts-muted);
 }
 
 .product-detail__metric-count {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--ts-text);
 }
 
 .product-detail__metric--favorite {
@@ -5257,13 +5311,13 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__metric--favorite.is-active {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(254, 226, 226, 0.7);
-  color: #b91c1c;
+  border-color: rgba(200, 178, 106, 0.4);
+  background: rgba(200, 178, 106, 0.18);
+  color: var(--ts-text);
 }
 
 .product-detail__metric--favorite.is-active .product-detail__metric-icon {
-  color: #dc2626;
+  color: var(--ts-gold);
 }
 
 .product-detail__gallery {
@@ -5271,9 +5325,10 @@ body.templesale-header-search-open .home-search-bar {
   width: 100%;
   border-radius: 24px;
   overflow: hidden;
-  background: #f8fafc;
-  border: 4px solid rgba(21, 35, 60, 0.18);
-  box-shadow: 0 30px 60px -50px rgba(15, 23, 42, 0.7);
+  background: var(--ts-surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 20px 34px -30px rgba(0, 0, 0, 0.6);
+  margin-bottom: 0.2rem;
 }
 
 .product-detail__gallery-image {
@@ -5294,7 +5349,7 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(71, 85, 105, 0.6);
+  color: var(--ts-muted);
 }
 
 .product-detail__badge {
@@ -5308,33 +5363,38 @@ body.templesale-header-search-open .home-search-bar {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #fff;
-  box-shadow: 0 16px 32px -14px rgba(15, 23, 42, 0.5);
+  background: rgba(14, 17, 22, 0.6);
+  border: 1px solid rgba(200, 178, 106, 0.3);
+  box-shadow: none;
 }
 
 .product-detail__badge--free {
-  background: rgba(16, 185, 129, 0.9);
+  background: var(--ts-gold);
+  color: #1a1d21;
+  border-color: rgba(200, 178, 106, 0.6);
 }
 
 .product-detail__badge--illustrative {
   left: auto;
   right: 12px;
-  background: rgba(245, 158, 11, 0.9);
+  background: rgba(14, 17, 22, 0.45);
+  border-color: rgba(200, 178, 106, 0.2);
 }
 
 .product-detail__gallery-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.65));
+  background: rgba(14, 17, 22, 0.6);
   color: rgba(255, 255, 255, 0.95);
-  font-size: 1.4rem;
-  border: 0;
+  font-size: 1.1rem;
+  border: 1px solid rgba(200, 178, 106, 0.35);
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -5351,6 +5411,53 @@ body.templesale-header-search-open .home-search-bar {
   right: 12px;
 }
 
+.product-detail__viewer-badge {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 20;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(14, 17, 22, 0.6);
+  border: 1px solid rgba(200, 178, 106, 0.35);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  backdrop-filter: blur(2px);
+}
+
+.product-detail__viewer-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 17, 22, 0.6);
+  color: #ffffff;
+  font-size: 1.2rem;
+  border: 1px solid rgba(200, 178, 106, 0.35);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.product-detail__viewer-arrow:hover {
+  background: rgba(14, 17, 22, 0.75);
+}
+
+.product-detail__viewer-arrow--left {
+  left: 16px;
+}
+
+.product-detail__viewer-arrow--right {
+  right: 16px;
+}
+
 .product-detail__thumbs {
   display: flex;
   flex-wrap: wrap;
@@ -5364,22 +5471,99 @@ body.templesale-header-search-open .home-search-bar {
   height: 68px;
   border-radius: 14px;
   overflow: hidden;
-  border: 2px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.4);
-  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 20px -16px rgba(0, 0, 0, 0.4);
+  background: var(--ts-card);
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .product-detail__thumb.is-active {
-  border-color: rgba(16, 185, 129, 0.7);
-  box-shadow: 0 16px 28px -18px rgba(16, 185, 129, 0.5);
+  border-color: rgba(200, 178, 106, 0.6);
+  box-shadow: 0 16px 24px -18px rgba(200, 178, 106, 0.5);
   transform: translateY(-1px);
 }
 
 .product-detail__actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  display: flex;
+  align-items: center;
   gap: 0.6rem;
+}
+
+.product-detail__more-actions {
+  position: relative;
+}
+
+.product-detail__more-actions summary {
+  list-style: none;
+}
+
+.product-detail__more-actions summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-detail__more-actions-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
+  padding: 0.18rem 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ts-text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+  min-width: 26px;
+  height: 26px;
+}
+
+.product-detail__more-actions[open] .product-detail__more-actions-toggle {
+  border-color: rgba(200, 178, 106, 0.5);
+}
+
+.product-detail__more-actions-panel {
+  margin-top: 0.3rem;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--ts-surface);
+  box-shadow: 0 8px 16px -18px rgba(0, 0, 0, 0.32);
+}
+
+.product-detail__more-actions--inline {
+  margin-left: auto;
+}
+
+.product-detail__more-actions--inline .product-detail__more-actions-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.3rem);
+  min-width: 180px;
+  z-index: 5;
+}
+
+.product-detail__more-actions-panel .product-detail__action {
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 0.28rem 0.4rem;
+  font-size: 0.66rem;
+  min-height: 28px;
+  gap: 0.2rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.product-detail__more-actions-panel .product-detail__action svg {
+  width: 11px;
+  height: 11px;
+}
+
+.product-detail__more-actions-panel .product-detail__action--tertiary {
+  font-size: 0.64rem;
+  opacity: 0.55;
 }
 
 .product-detail__action {
@@ -5387,15 +5571,15 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   flex-direction: column;
   gap: 0.35rem;
-  border-radius: 10px;
-  padding: 0.7rem 1.1rem;
-  font-size: 0.85rem;
-  font-weight: 800;
-  border: none;
+  border-radius: 12px;
+  padding: 0.65rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   justify-content: center;
   min-height: 48px;
-  background: transparent;
-  color: #2563eb;
+  background: var(--ts-surface);
+  color: var(--ts-text);
   box-shadow: none;
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
@@ -5408,50 +5592,68 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__action--primary {
-  background: transparent;
-  color: #2563eb;
+  background: var(--ts-cta);
+  color: #fff;
+  border-color: transparent;
+}
+
+.product-detail__action--secondary {
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.product-detail__action--tertiary {
+  background: var(--ts-surface);
+  color: var(--ts-muted);
+  border-color: rgba(0, 0, 0, 0.06);
+  opacity: 0.6;
+}
+
+.product-detail__action--tertiary svg {
+  opacity: 0.5;
 }
 
 .product-detail__action--primary:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.08);
+  background: #1a7a51;
   transform: translateY(-1px);
 }
 
 .product-detail__action--accent {
-  background: transparent;
-  color: #2563eb;
+  background: var(--ts-surface);
+  color: var(--ts-text);
 }
 
 .product-detail__action--accent:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(200, 178, 106, 0.12);
   transform: translateY(-1px);
 }
 
 .product-detail__action--info {
-  background: transparent;
-  color: #2563eb;
+  background: var(--ts-surface);
+  color: var(--ts-text);
 }
 
 .product-detail__action--info:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(200, 178, 106, 0.12);
   transform: translateY(-1px);
 }
 
 .product-detail__action--ghost {
-  background: transparent;
-  color: #2563eb;
+  background: var(--ts-surface);
+  color: var(--ts-text);
 }
 
 .product-detail__action--ghost:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(200, 178, 106, 0.12);
   transform: translateY(-1px);
 }
 
 .product-detail__action--dark {
-  background: #0f172a;
+  background: #111418;
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 12px 20px -18px rgba(15, 23, 42, 0.6);
+  box-shadow: 0 12px 20px -18px rgba(0, 0, 0, 0.6);
 }
 
 .product-detail__action--dark:hover:not(:disabled) {
@@ -5460,59 +5662,105 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__action svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 @media (max-width: 640px) {
   .product-detail__actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
-.product-detail__section {
-  border-top: 1px solid rgba(15, 23, 42, 0.12);
-  padding-top: 1.1rem;
+.product-detail__price-card {
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: var(--ts-surface);
+  padding: 1.05rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
+}
+
+.product-detail__cta {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.48rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-height: 40px;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.product-detail__cta--primary {
+  background: var(--ts-cta);
+  color: #fff;
+}
+
+.product-detail__cta--primary:hover {
+  background: #1a7a51;
+}
+
+.product-detail__cta--secondary {
+  background: transparent;
+  color: var(--ts-text);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.product-detail__cta--secondary:hover {
+  border-color: rgba(200, 178, 106, 0.5);
+  background: rgba(200, 178, 106, 0.12);
+}
+
+.product-detail__section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .product-detail__price {
   font-size: clamp(1.6rem, 1.4rem + 1vw, 2.2rem);
   font-weight: 800;
-  color: #000;
+  color: var(--ts-cta);
   text-shadow: none;
 }
 
 .product-detail__price.is-free {
-  color: #0f766e;
+  color: var(--ts-cta);
 }
 
 .product-detail__pickup {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #0f766e;
+  color: var(--ts-muted);
 }
 
 .product-detail__buyer-card {
   padding: 0.85rem 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
 }
 
 .product-detail__description {
   font-size: 0.95rem;
   line-height: 1.7;
-  color: rgba(15, 23, 42, 0.75);
+  color: var(--ts-muted);
   white-space: pre-line;
 }
 
 .product-detail__links {
-  border-top: 1px solid rgba(15, 23, 42, 0.12);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   padding-top: 1rem;
   display: flex;
   flex-direction: column;
@@ -5522,7 +5770,7 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__links-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.75);
+  color: var(--ts-text);
 }
 
 .product-detail__links-grid {
@@ -5535,58 +5783,99 @@ body.templesale-header-search-open .home-search-bar {
   flex-direction: column;
   gap: 0.2rem;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
   padding: 0.7rem 0.9rem;
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .product-detail__link:hover {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 16px 26px -20px rgba(16, 185, 129, 0.45);
+  border-color: rgba(200, 178, 106, 0.45);
+  box-shadow: 0 16px 26px -20px rgba(200, 178, 106, 0.45);
 }
 
 .product-detail__link-label {
   font-weight: 700;
-  color: #0f766e;
+  color: var(--ts-text);
 }
 
 .product-detail__link-url {
   font-size: 0.75rem;
-  color: rgba(71, 85, 105, 0.8);
+  color: var(--ts-muted);
   word-break: break-all;
 }
 
 .product-detail__specs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.4rem 1.4rem;
-  font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.7);
+  gap: 0.6rem 1.4rem;
+  font-size: 0.8rem;
+  color: var(--ts-muted);
+}
+
+.product-detail__specs p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.product-detail__specs .product-detail__field-value {
+  font-weight: 600;
+  color: var(--ts-text);
+}
+
+.product-detail__specs .text-gray-800 {
+  color: var(--ts-text);
+  font-weight: 600;
+}
+
+.product-detail__field-label {
+  font-size: 0.66rem;
+  color: var(--ts-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-detail__field-label::after {
+  content: ":";
+}
+
+.product-detail__field-value {
+  font-weight: 600;
+  color: var(--ts-text);
+  font-size: 0.8rem;
 }
 
 .product-detail__location-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.4rem 1.4rem;
-  font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.65);
+  gap: 0.6rem 1.4rem;
+  font-size: 0.8rem;
+  color: var(--ts-muted);
 }
 
-.product-detail__location-grid span {
+.product-detail__location-grid p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.product-detail__location-grid .product-detail__field-value {
   font-weight: 600;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
 }
 
 .product-detail__map-card {
   margin-top: 0.75rem;
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
   padding: 1rem;
-  box-shadow: 0 18px 32px -26px rgba(15, 23, 42, 0.4);
+  box-shadow: 0 18px 32px -26px rgba(0, 0, 0, 0.4);
 }
 
 .product-detail__map-header {
@@ -5606,12 +5895,12 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__map-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
 }
 
 .product-detail__map-subtitle {
   font-size: 0.75rem;
-  color: rgba(71, 85, 105, 0.7);
+  color: var(--ts-muted);
 }
 
 .product-detail__map-link {
@@ -5619,26 +5908,26 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(200, 178, 106, 0.35);
+  background: var(--ts-surface);
   padding: 0.35rem 0.9rem;
   font-size: 0.7rem;
   font-weight: 700;
-  color: #0f766e;
+  color: var(--ts-text);
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .product-detail__map-link:hover {
-  border-color: rgba(16, 185, 129, 0.6);
-  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(200, 178, 106, 0.6);
+  background: rgba(200, 178, 106, 0.12);
 }
 
 .product-detail__map-frame {
   margin-top: 0.75rem;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
 }
 
 .product-detail__map-embed {
@@ -5653,25 +5942,25 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
-  color: rgba(71, 85, 105, 0.6);
+  color: var(--ts-muted);
 }
 
 .product-detail__image-stack {
   margin-top: 0.75rem;
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-surface);
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  box-shadow: 0 18px 32px -26px rgba(15, 23, 42, 0.4);
+  box-shadow: 0 18px 32px -26px rgba(0, 0, 0, 0.4);
 }
 
 .product-detail__image-stack-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
 }
 
 .product-detail__image-stack-list {
@@ -5683,8 +5972,8 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__image-stack-item {
   width: 100%;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 16px 26px -22px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 26px -22px rgba(0, 0, 0, 0.35);
   object-fit: cover;
   max-height: 420px;
 }
@@ -5695,9 +5984,9 @@ body.templesale-header-search-open .home-search-bar {
   justify-content: center;
   min-height: 120px;
   border-radius: 16px;
-  border: 1px dashed rgba(15, 23, 42, 0.2);
-  background: rgba(248, 250, 252, 0.9);
-  color: #1d4ed8;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  background: var(--ts-surface);
+  color: var(--ts-text);
   font-weight: 700;
   font-size: 0.85rem;
   text-decoration: none;
@@ -5717,8 +6006,10 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__qa {
-  border-top: 1px solid rgba(15, 23, 42, 0.12);
-  padding-top: 1.1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 1.1rem;
+  border-radius: 20px;
+  background: var(--ts-surface);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -5741,18 +6032,18 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__qa-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
 }
 
 .product-detail__qa-subtitle {
   font-size: 0.75rem;
-  color: rgba(71, 85, 105, 0.7);
+  color: var(--ts-muted);
 }
 
 .product-detail__qa-count {
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgba(71, 85, 105, 0.8);
+  color: var(--ts-muted);
 }
 
 .product-detail__qa-form {
@@ -5766,17 +6057,17 @@ body.templesale-header-search-open .home-search-bar {
   min-height: 120px;
   resize: none;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--ts-card);
   padding: 0.75rem 1rem;
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
 }
 
 .product-detail__qa-textarea:focus {
   outline: none;
-  border-color: rgba(37, 99, 235, 0.5);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: rgba(200, 178, 106, 0.5);
+  box-shadow: 0 0 0 3px rgba(200, 178, 106, 0.15);
 }
 
 .product-detail__qa-submit {
@@ -5784,17 +6075,17 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.4rem;
   border-radius: 999px;
-  background: #2563eb;
-  color: #fff;
-  border: 0;
-  padding: 0.45rem 1rem;
-  font-size: 0.8rem;
+  background: var(--ts-surface);
+  color: var(--ts-text);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
   font-weight: 700;
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .product-detail__qa-submit:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: rgba(200, 178, 106, 0.12);
   transform: translateY(-1px);
 }
 
@@ -5811,7 +6102,7 @@ body.templesale-header-search-open .home-search-bar {
 
 .product-detail__qa-empty {
   font-size: 0.8rem;
-  color: rgba(71, 85, 105, 0.7);
+  color: var(--ts-muted);
   text-align: center;
 }
 
@@ -5822,19 +6113,19 @@ body.templesale-header-search-open .home-search-bar {
 
 .product-detail__qa-card {
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--ts-card);
   padding: 1rem 1.2rem;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 16px 32px -24px rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 32px -24px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
 .product-detail__qa-card.is-highlighted {
-  border-color: rgba(14, 165, 233, 0.45);
-  background: rgba(224, 242, 254, 0.6);
-  box-shadow: 0 20px 40px -28px rgba(14, 165, 233, 0.6);
+  border-color: rgba(200, 178, 106, 0.45);
+  background: rgba(245, 246, 247, 0.95);
+  box-shadow: 0 20px 40px -28px rgba(200, 178, 106, 0.55);
 }
 
 .product-detail__qa-meta {
@@ -5842,26 +6133,26 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   justify-content: space-between;
   font-size: 0.7rem;
-  color: rgba(71, 85, 105, 0.8);
+  color: var(--ts-muted);
   font-weight: 600;
 }
 
 .product-detail__qa-text {
   font-size: 0.9rem;
-  color: #0f172a;
+  color: var(--ts-text);
   line-height: 1.6;
 }
 
 .product-detail__qa-author {
   font-size: 0.7rem;
-  color: rgba(71, 85, 105, 0.7);
+  color: var(--ts-muted);
 }
 
 .product-detail__qa-response {
   border-radius: 16px;
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(200, 178, 106, 0.12);
   padding: 0.6rem 0.8rem;
-  color: #0f766e;
+  color: var(--ts-text);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -5873,7 +6164,7 @@ body.templesale-header-search-open .home-search-bar {
   justify-content: space-between;
   font-size: 0.65rem;
   font-weight: 700;
-  color: rgba(15, 118, 110, 0.85);
+  color: var(--ts-muted);
 }
 
 .product-detail__qa-response-text {
@@ -5883,7 +6174,7 @@ body.templesale-header-search-open .home-search-bar {
 
 .product-detail__qa-response-author {
   font-size: 0.65rem;
-  color: rgba(15, 118, 110, 0.75);
+  color: var(--ts-muted);
 }
 
 .product-detail__qa-reply {
@@ -5895,7 +6186,7 @@ body.templesale-header-search-open .home-search-bar {
 .product-detail__qa-reply-toggle {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #1d4ed8;
+  color: var(--ts-text);
 }
 
 .product-detail__qa-reply-form {
@@ -5908,16 +6199,16 @@ body.templesale-header-search-open .home-search-bar {
   width: 100%;
   resize: none;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 0.65rem 0.9rem;
   font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
 }
 
 .product-detail__qa-reply-textarea:focus {
   outline: none;
-  border-color: rgba(37, 99, 235, 0.55);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: rgba(200, 178, 106, 0.55);
+  box-shadow: 0 0 0 3px rgba(200, 178, 106, 0.15);
 }
 
 .product-detail__qa-reply-submit {
@@ -5925,7 +6216,7 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.4rem;
   border-radius: 999px;
-  background: #1d4ed8;
+  background: var(--ts-cta);
   color: #fff;
   border: 0;
   padding: 0.35rem 0.9rem;
@@ -5935,23 +6226,23 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .product-detail__qa-reply-submit:hover:not(:disabled) {
-  background: #1e40af;
+  background: #1a7a51;
   transform: translateY(-1px);
 }
 
 .product-detail__qa-more {
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.2);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
   padding: 0.35rem 0.9rem;
   font-size: 0.7rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .product-detail__qa-more:hover {
-  border-color: rgba(15, 23, 42, 0.4);
+  border-color: rgba(200, 178, 106, 0.5);
   transform: translateY(-1px);
 }
 
@@ -5962,15 +6253,15 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(14, 17, 22, 0.75);
 }
 
 .product-detail__share-sheet {
   width: min(420px, 100%);
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--ts-card);
   border-radius: 20px 20px 0 0;
   padding: 1.1rem;
-  box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.8);
+  box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.8);
 }
 
 @media (min-width: 768px) {
@@ -5992,19 +6283,19 @@ body.templesale-header-search-open .home-search-bar {
   margin-bottom: 0.8rem;
   font-size: 0.9rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.85);
+  color: var(--ts-text);
 }
 
 .product-detail__share-close {
   border-radius: 999px;
   border: 0;
   padding: 0.3rem;
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(0, 0, 0, 0.06);
   transition: background 0.2s ease;
 }
 
 .product-detail__share-close:hover {
-  background: rgba(15, 23, 42, 0.12);
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .product-detail__share-grid {
@@ -6016,7 +6307,7 @@ body.templesale-header-search-open .home-search-bar {
 
 .product-detail__share-item {
   font-size: 0.75rem;
-  color: rgba(15, 23, 42, 0.7);
+  color: var(--ts-muted);
   transition: opacity 0.2s ease;
 }
 
@@ -6036,23 +6327,23 @@ body.templesale-header-search-open .home-search-bar {
   align-items: center;
   gap: 0.4rem;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.18);
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
   padding: 0.45rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgba(15, 23, 42, 0.8);
+  color: var(--ts-text);
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .product-detail__share-button:hover {
-  border-color: rgba(15, 23, 42, 0.35);
+  border-color: rgba(200, 178, 106, 0.45);
   transform: translateY(-1px);
 }
 
 .product-detail__share-button--dark {
   margin-left: auto;
-  background: #0f172a;
+  background: #111418;
   color: #fff;
   border-color: transparent;
 }
@@ -7492,9 +7783,9 @@ body.templesale-header-search-open .home-search-bar {
   gap: 0.55rem;
   padding: 0.45rem;
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 16px 34px -28px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(200, 178, 106, 0.25);
+  background: rgba(14, 17, 22, 0.92);
+  box-shadow: 0 16px 34px -28px rgba(0, 0, 0, 0.55);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -7507,9 +7798,9 @@ body.templesale-header-search-open .home-search-bar {
   height: 42px;
   padding: 0;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 12px 20px -18px rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--ts-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 12px 20px -18px rgba(0, 0, 0, 0.45);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7519,14 +7810,14 @@ body.templesale-header-search-open .home-search-bar {
 .home-search-toolbtn svg {
   width: 18px;
   height: 18px;
-  color: rgba(15, 23, 42, 0.72);
+  color: var(--ts-text);
 }
 
 .home-search-toolbtn:hover {
   transform: translateY(-1px);
   background: #ffffff;
-  border-color: rgba(148, 163, 184, 0.35);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 16px 26px -20px rgba(15, 23, 42, 0.6);
+  border-color: var(--ts-gold);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 16px 26px -20px rgba(0, 0, 0, 0.6);
 }
 
 .home-search-toolbtn:active {
@@ -7539,7 +7830,7 @@ body.templesale-header-search-open .home-search-bar {
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1f2937;
+  color: var(--ts-text);
 }
 
 .nav-side-backdrop {
@@ -7559,12 +7850,12 @@ body.templesale-header-search-open .home-search-bar {
   border-radius: 10px;
   border: 0;
   background: transparent;
-  color: #334155;
+  color: rgba(245, 246, 247, 0.8);
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .home-search-toolbar__close:hover {
-  color: #0f172a;
+  color: var(--ts-gold);
 }
 
 body.templesale-panel-open .home-search-toolbar {
@@ -7578,9 +7869,9 @@ body.templesale-panel-open .home-search-toolbar {
   transform: none;
   padding: 0.85rem 0.8rem;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.92));
-  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(200, 178, 106, 0.25);
+  background: rgba(14, 17, 22, 0.95);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.4);
   z-index: 40000;
   align-items: stretch;
   width: min(260px, 86vw);
@@ -7599,7 +7890,7 @@ body.templesale-panel-open .home-search-toolbar__profile {
   align-items: center;
   width: 100%;
   padding: 0.4rem 0.35rem 0.6rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  border-bottom: 1px solid rgba(200, 178, 106, 0.2);
   margin-bottom: 0.2rem;
 }
 
@@ -7607,12 +7898,12 @@ body.templesale-panel-open .home-search-toolbar__profile {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
+  border: 1px solid rgba(200, 178, 106, 0.35);
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: rgba(248, 250, 252, 0.95);
-  color: #0f172a;
+  background: rgba(245, 246, 247, 0.95);
+  color: var(--ts-text);
   font-weight: 700;
 }
 
@@ -7633,20 +7924,20 @@ body.templesale-panel-open .home-search-toolbar__profile {
   font-size: 0.85rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #0f172a;
+  color: var(--ts-surface);
 }
 
 .home-search-toolbar__profile-meta {
   margin: 0;
   font-size: 0.75rem;
-  color: #64748b;
+  color: rgba(245, 246, 247, 0.7);
 }
 
 .home-search-toolbar__profile-link {
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1d4ed8;
+  color: var(--ts-gold);
 }
 
 body.templesale-panel-open .home-search-toolbar > * {

@@ -1236,7 +1236,7 @@ const ProductImageGallery = ({ images = [], imageKinds = [], alt = '', productId
         }}
       />
       {currentKind === IMAGE_KIND.ILLUSTRATIVE && (
-        <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+        <span className="home-card__illustrative-badge">
           {IMAGE_KIND_BADGE_LABEL}
         </span>
       )}
