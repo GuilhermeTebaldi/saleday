@@ -10,7 +10,7 @@ import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import { resolveCurrencyFromCountry } from '../utils/currency.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
-import { getProductPriceLabel } from '../utils/product.js';
+import { getProductPriceLabel, normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 import { buildProductImageEntries, parseImageList } from '../utils/images.js';
@@ -63,8 +63,6 @@ const initialFormState = {
   isFree: false,
   pickupOnly: false
 };
-
-const sanitizeYear = (value) => value.replace(/\D/g, '').slice(0, 4);
 
 const normalizeFieldValue = (value) =>
   value === undefined || value === null ? '' : String(value);
@@ -283,7 +281,7 @@ export default function EditProduct() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     if (name === 'year') {
-      setForm((prev) => ({ ...prev, year: sanitizeYear(value) }));
+      setForm((prev) => ({ ...prev, year: sanitizeProductYearInput(value) }));
       return;
     }
     if (name === 'price') {
@@ -445,6 +443,7 @@ export default function EditProduct() {
     const lngNum = form.lng === '' ? null : Number(form.lng);
     const lat = Number.isFinite(latNum) ? latNum : null;
     const lng = Number.isFinite(lngNum) ? lngNum : null;
+    const normalizedYear = normalizeProductYear(form.year);
 
     const payload = {
       title: form.title?.trim() || '',
@@ -461,7 +460,7 @@ export default function EditProduct() {
       brand: form.brand?.trim() || null,
       model: form.model?.trim() || null,
       color: form.color?.trim() || null,
-      year: form.year?.trim() || null,
+      year: normalizedYear,
       propertyType: form.propertyType?.trim() || null,
       area: form.area?.trim() || null,
       bedrooms: form.bedrooms?.trim() || null,
@@ -543,6 +542,11 @@ export default function EditProduct() {
     }
     if (newImages.some((image) => !image.kind)) {
       toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
+      return;
+    }
+    const normalizedYear = normalizeProductYear(form.year);
+    if (form.year?.trim() && !normalizedYear) {
+      toast.error('Ano inválido. Use 4 dígitos entre 1900 e o ano atual.');
       return;
     }
 

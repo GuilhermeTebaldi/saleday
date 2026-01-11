@@ -9,6 +9,7 @@ import { formatProductPrice, getCurrencySettings, resolveCurrencyFromCountry } f
 import { COUNTRY_OPTIONS, normalizeCountryCode } from '../data/countries.js';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
+import { normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
@@ -723,7 +724,7 @@ export default function NewProduct() {
     }
 
     if (name === 'year') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 4);
+      const cleaned = sanitizeProductYearInput(value);
       setForm((prev) => ({ ...prev, year: cleaned }));
       return;
     }
@@ -1206,7 +1207,7 @@ export default function NewProduct() {
       brand: base.brand?.trim() || null,
       model: base.model?.trim() || null,
       color: base.color?.trim() || null,
-      year: base.year?.trim() || null,
+      year: normalizeProductYear(base.year),
       propertyType: base.propertyType?.trim() || null,
       area: base.area?.trim() || null,
       bedrooms: base.bedrooms?.trim() || null,
@@ -1257,6 +1258,12 @@ export default function NewProduct() {
     }
     if (images.some((image) => !image.kind)) {
       toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
+      return;
+    }
+    const normalizedYear = normalizeProductYear(form.year);
+    if (form.year?.trim() && !normalizedYear) {
+      toast.error('Ano inválido. Use 4 dígitos entre 1900 e o ano atual.');
+      scrollToField('year');
       return;
     }
     const zipToastId = toast.loading('Validando CEP... só um segundo.');

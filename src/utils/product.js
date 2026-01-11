@@ -1,5 +1,20 @@
 import formatProductPrice from './currency.js';
 
+const MIN_PRODUCT_YEAR = 1900;
+
+export const sanitizeProductYearInput = (value) =>
+  String(value ?? '').replace(/\D/g, '').slice(0, 4);
+
+// Keep year values compatible with DB constraints (4 digits, valid range).
+export const normalizeProductYear = (value, currentYear = new Date().getFullYear()) => {
+  const sanitized = sanitizeProductYearInput(value);
+  if (!sanitized || sanitized.length !== 4) return null;
+  const numeric = Number(sanitized);
+  if (!Number.isFinite(numeric)) return null;
+  if (numeric < MIN_PRODUCT_YEAR || numeric > currentYear) return null;
+  return sanitized;
+};
+
 export const isProductFree = (product) => {
   if (!product) return false;
   if (product.is_free) return true;
@@ -38,6 +53,8 @@ export const getProductPriceLabel = (product, fallbackLabel = 'Valor a negociar'
 };
 
 export default {
+  sanitizeProductYearInput,
+  normalizeProductYear,
   isProductFree,
   hasProductPriceValue,
   getProductPriceLabel
