@@ -7975,6 +7975,28 @@ body.templesale-panel-open .nav-side-backdrop {
   pointer-events: auto;
 }
 
+.home-search-floating-panel {
+  position: fixed;
+  top: calc(var(--home-header-height, 64px) + 0.85rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 520px);
+  max-height: min(70vh, 540px);
+  overflow: hidden;
+  z-index: 45000;
+  background: var(--ts-card);
+  border: 1px solid rgba(200, 178, 106, 0.18);
+  box-shadow: 0 28px 50px -30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: none;
+}
+
+@media (max-width: 640px) {
+  .home-search-floating-panel {
+    top: calc(var(--home-header-height, 64px) + 0.65rem);
+    width: min(94vw, 520px);
+  }
+}
+
 @media (min-width: 641px) {
   .home-search-toolbar {
     justify-content: flex-start;
@@ -8028,7 +8050,7 @@ body.templesale-panel-open .nav-side-backdrop {
   }
 }
 
-.home-search-country-dropdown {
+.home-search-country-dropdown:not(.home-search-floating-panel) {
   position: absolute;
   z-index: 50;
   width: min(260px, 85vw);

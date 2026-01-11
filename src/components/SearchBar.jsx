@@ -792,7 +792,7 @@ export default function SearchBar({
       )}
 
       {panel === 'seller' && (
-        <div className="home-search-seller-panel absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
+        <div className="home-search-seller-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">Buscar vendedores</p>
             <button
@@ -833,7 +833,7 @@ export default function SearchBar({
       )}
 
       {categoryPanelOpen && (
-        <div className="home-search-seller-panel home-search-category-panel absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
+        <div className="home-search-seller-panel home-search-category-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
           <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
             <div>
               <p className="text-sm font-semibold text-slate-900">
@@ -892,7 +892,7 @@ export default function SearchBar({
         <div
           role="dialog"
           aria-label="Lista de países disponíveis"
-          className="home-search-seller-panel home-search-country-dropdown absolute z-[99999] mt-2 w-full max-w-xl left-0 rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
+          className="home-search-seller-panel home-search-country-dropdown home-search-floating-panel z-[99999] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
         >
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div>
