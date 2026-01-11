@@ -1411,6 +1411,7 @@ export default function Home() {
 
   // produtos / favoritos (já existia)
   const [products, setProducts] = useState(() => initialHomeSnapshot?.products ?? []);
+  const [productsLoading, setProductsLoading] = useState(() => !initialHomeSnapshot);
   const [lastMapCenter, setLastMapCenter] = useState(() => readStoredMapCenter());
   const productsRef = useRef([]);
   const [viewMode, setViewMode] = useState(() => initialHomeSnapshot?.viewMode ?? 'all'); // 'all' | 'free'
@@ -1554,6 +1555,7 @@ export default function Home() {
       const prioritized = prioritizeProducts(merged, priorityKeys);
       observedRef.current.clear();
       setProducts(prioritized);
+      setProductsLoading(false);
       setViewMode('all');
       if (!preserveCategories) {
         setCategoryFilter(null);
@@ -1634,6 +1636,7 @@ export default function Home() {
       // Aguarda detecção automática para evitar mostrar país errado a visitantes.
       return;
     }
+    setProductsLoading(true);
     const scope = { type: 'country', country: preferredCountry };
     try {
       const { data } = await api.get('/products', {
@@ -1658,6 +1661,8 @@ export default function Home() {
       
     } catch {
       /* silencioso */
+    } finally {
+      setProductsLoading(false);
     }
   }, [preferredCountry, handleProductsLoaded, geoReady, storedPreferredCountry, token, user?.country]);
 
@@ -1918,6 +1923,7 @@ export default function Home() {
       if (!normalized) return;
       const isRemoving = categoryFilter && categoryFilter === normalized;
       setCategoryLoading(true);
+      setProductsLoading(true);
       try {
         const params = {
           sort: 'rank',
@@ -1985,6 +1991,7 @@ export default function Home() {
         toast.error('Erro ao filtrar por categoria.');
       } finally {
         setCategoryLoading(false);
+        setProductsLoading(false);
       }
     },
     [categoryFilter, categoryLoading, geoScope, preferredCountry, handleProductsLoaded, searchSummary]
@@ -1995,6 +2002,7 @@ export default function Home() {
       const normalized = String(code || '').trim().toUpperCase();
       if (!normalized) return;
       setCountryShortcutApplying(true);
+      setProductsLoading(true);
       try {
         const { data } = await api.get('/products', {
           params: { sort: 'rank', country: normalized }
@@ -2014,6 +2022,7 @@ export default function Home() {
         toast.error('Erro ao filtrar por país.');
       } finally {
         setCountryShortcutApplying(false);
+        setProductsLoading(false);
       }
     },
     [handleProductsLoaded]
@@ -2397,7 +2406,12 @@ export default function Home() {
       {/* grade de produtos pública */}
       <section id="feed" className="home-grid-section mt-2 px-0 sm:px-0">
 
-        {displayedProducts.length === 0 ? (
+        {productsLoading && displayedProducts.length === 0 ? (
+          <div className="home-empty-state">
+            <h2>Carregando produtos...</h2>
+            <p>Estamos preparando os melhores anúncios para você.</p>
+          </div>
+        ) : displayedProducts.length === 0 ? (
           <div className="home-empty-state">
             <h2>
               {viewMode === 'free'

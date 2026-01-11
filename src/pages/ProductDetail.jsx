@@ -1387,7 +1387,7 @@ export default function ProductDetail() {
               aria-label="Mais ações"
               title="Mais ações"
             >
-              ...
+              ⋯
             </summary>
             <div className="product-detail__more-actions-panel">
               <button
