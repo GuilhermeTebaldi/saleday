@@ -151,6 +151,7 @@ const PROCESSING_STEPS = [
 
 const UPLOAD_PHASE_WEIGHT = 0.7;
 const SERVER_PHASE_WEIGHT = 1 - UPLOAD_PHASE_WEIGHT;
+const TITLE_MAX_LENGTH = 30; // limite do titulo no cadastro
 
 const inBounds = (code, lat, lng) => {
   const b = BOUNDS[code];
@@ -616,6 +617,8 @@ export default function NewProduct() {
     if (parsedExample === '') return `${currencyInfo.symbol} 0,00`;
     return formatProductPrice(parsedExample, form.country, { respectPreference: false });
   }, [currencyInfo.example, currencyInfo.symbol, form.country, form.isFree]);
+  const titleLength = form.title?.length ?? 0;
+  const titleRemaining = Math.max(0, TITLE_MAX_LENGTH - titleLength);
 
   const missingFields = useMemo(() => {
     const missing = [];
@@ -712,6 +715,12 @@ export default function NewProduct() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === 'title') {
+      const nextTitle = value.slice(0, TITLE_MAX_LENGTH);
+      setForm((prev) => ({ ...prev, title: nextTitle }));
+      return;
+    }
 
     if (name === 'year') {
       const cleaned = value.replace(/\D/g, '').slice(0, 4);
@@ -1000,7 +1009,6 @@ export default function NewProduct() {
       const a = data.data;
       const resolvedCountry = normalizeCountryCode(a.country) || form.country || country;
       const next = {
-        ...form,
         country: resolvedCountry,
         state: a.state || '',
         city: normalizeCityName(a.city) || '',
@@ -1032,7 +1040,7 @@ export default function NewProduct() {
       }
       next.lat = latNum;
       next.lng = lngNum;
-      setForm(next);
+      setForm((prev) => ({ ...prev, ...next }));
       if (showSuccessToast) {
         toast.success('Endereço preenchido pelo CEP.');
       }
@@ -1398,6 +1406,7 @@ export default function NewProduct() {
                 value={form.title}
                 onChange={handleChange}
                 required
+                maxLength={TITLE_MAX_LENGTH}
                 className={`${FIELD_BASE_CLASS} ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
                 data-new-product-field="title"
                 id={FIELD_SCROLL_IDS.title}
@@ -1405,6 +1414,9 @@ export default function NewProduct() {
               {hasFieldError('title') && (
                 <span className="text-xs text-red-600">Informe um título.</span>
               )}
+              <span className="text-[10px] text-gray-500 mt-1">
+                {titleLength}/{TITLE_MAX_LENGTH} | restam {titleRemaining} letras
+              </span>
             </label>
 
             <label className={`${FIELD_LABEL_CLASS} ${form.isFree ? 'opacity-60' : ''}`.trim()}>
