@@ -37,8 +37,8 @@ const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2048;
 const MIN_COMPRESS_QUALITY = 0.6;
 const FIELD_BASE_CLASS =
-  'w-full border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-blue-500';
-const FIELD_LABEL_CLASS = 'block text-sm font-medium text-gray-700 mt-3';
+  'w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm placeholder:text-[var(--ts-muted)] focus:border-[rgba(200,178,106,0.6)] focus:ring-2 focus:ring-[rgba(200,178,106,0.35)]';
+const FIELD_LABEL_CLASS = 'block text-sm font-medium text-[var(--ts-text)] mt-3';
 const WATERMARK_TEXT = 'templesale.com';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
@@ -1367,12 +1367,14 @@ export default function NewProduct() {
   };
 
   return (
-    <section className="bg-gray-100 min-h-screen py-10 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6">
+    <section className="bg-[var(--ts-bg)] min-h-screen py-12 px-4 text-[var(--ts-surface)]">
+      <div className="max-w-4xl mx-auto rounded-3xl border border-[rgba(200,178,106,0.18)] bg-[var(--ts-card)] p-6 shadow-[0_40px_80px_-55px_rgba(0,0,0,0.7)]">
         <CloseBackButton />
         <header className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-blue-700">Publicar novo produto</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="font-['Cinzel'] text-2xl sm:text-[28px] font-semibold text-[var(--ts-text)]">
+            Publicar novo produto
+          </h1>
+          <p className="text-sm font-medium text-[var(--ts-muted)] mt-1">
             Compartilhe seu produto com a comunidade TempleSale em poucos passos.
           </p>
         </header>
@@ -1414,14 +1416,14 @@ export default function NewProduct() {
                 onChange={handleChange}
                 required
                 maxLength={TITLE_MAX_LENGTH}
-                className={`${FIELD_BASE_CLASS} ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
+                className={`${FIELD_BASE_CLASS} bg-[var(--ts-surface)] text-base font-semibold shadow-[0_12px_22px_-18px_rgba(0,0,0,0.25)] ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
                 data-new-product-field="title"
                 id={FIELD_SCROLL_IDS.title}
               />
               {hasFieldError('title') && (
                 <span className="text-xs text-red-600">Informe um título.</span>
               )}
-              <span className="text-[10px] text-gray-500 mt-1">
+              <span className="text-[10px] text-[var(--ts-muted)] mt-1">
                 {titleLength}/{TITLE_MAX_LENGTH} | restam {titleRemaining} letras
               </span>
             </label>
@@ -1438,17 +1440,17 @@ export default function NewProduct() {
                 }}
                 disabled={form.isFree}
                 inputMode="decimal"
-                className={FIELD_BASE_CLASS}
+                className={`${FIELD_BASE_CLASS} text-lg font-semibold shadow-[0_14px_26px_-20px_rgba(0,0,0,0.3)]`}
                 data-new-product-field="price"
                 id={FIELD_SCROLL_IDS.price}
               />
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-[var(--ts-muted)]">
                 {form.isFree ? (
                   'Este anúncio será exibido como “Grátis” em destaque.'
                 ) : (
                   <>
                     Será exibido como:{' '}
-                    <span className="text-yellow-500 font-semibold">
+                    <span className="text-[var(--ts-gold)] font-semibold">
                       {pricePreview || previewFallback}
                     </span>
                   </>
@@ -1457,15 +1459,18 @@ export default function NewProduct() {
             </label>
 
             <div className="md:col-span-2 mt-2">
-              <div className="flex w-full flex-col gap-2" ref={freeHelpRef}>
-                <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex w-full flex-col gap-2 rounded-2xl border border-black/5 bg-[var(--ts-surface)] p-4"
+                ref={freeHelpRef}
+              >
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => handleFreeToggle(!form.isFree)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-emerald-300 ${
+                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-[rgba(200,178,106,0.4)] ${
                       form.isFree
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'bg-white border-emerald-200 text-emerald-700'
+                        ? 'bg-[var(--ts-cta)] border-[var(--ts-cta)] text-white'
+                        : 'bg-white border-[rgba(31,143,95,0.35)] text-[var(--ts-cta)]'
                     }`}
                     aria-pressed={form.isFree}
                   >
@@ -1474,28 +1479,30 @@ export default function NewProduct() {
                   <button
                     type="button"
                     onClick={() => setFreeHelpVisible((prev) => !prev)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 text-emerald-700"
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(200,178,106,0.45)] text-[var(--ts-gold)]"
                     aria-label={FREE_HELP_TITLE}
                     aria-expanded={freeHelpVisible}
                   >
                     ?
                   </button>
-                  <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
+                  <span className="rounded-full border border-[rgba(31,143,95,0.35)] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--ts-cta)]">
+                    {form.isFree ? 'Ativado' : 'Desativado'}
+                  </span>
                 </div>
                 {freeHelpVisible && (
-                  <div className="mt-1 w-full max-w-sm rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
-                    <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
+                  <div className="mt-1 w-full max-w-sm rounded-xl border border-[rgba(200,178,106,0.35)] bg-white p-3 text-xs text-[var(--ts-text)] shadow-lg">
+                    <p className="font-semibold text-[var(--ts-text)]">{FREE_HELP_TITLE}</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-4 text-[var(--ts-muted)]">
                       {FREE_HELP_LINES.map((line) => (
                         <li key={line}>{line}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-                <label className="flex items-center gap-2 text-xs text-emerald-700">
+                <label className="flex items-center gap-2 text-xs text-[var(--ts-muted)]">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 accent-emerald-600"
+                    className="h-4 w-4 accent-[var(--ts-cta)]"
                     checked={form.pickupOnly}
                     onChange={handlePickupToggle}
                     disabled={form.isFree}
@@ -1529,18 +1536,18 @@ export default function NewProduct() {
             </label>
             <div className="flex flex-col gap-2 my-2">
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">Detectar localização automática:</span>
+                <span className="text-sm text-[var(--ts-muted)]">Detectar localização automática:</span>
                 <button
                   type="button"
                   onClick={handleDetectLocation}
                   disabled={loadingLocation}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/40 transition hover:from-blue-500 hover:to-blue-400 disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(31,143,95,0.55)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--ts-cta)] shadow-none transition hover:bg-[rgba(31,143,95,0.08)] disabled:opacity-60"
                 >
                   <span aria-hidden="true">📍</span>
                   {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
                 </button>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[var(--ts-muted)]">
                 País e cidade são obrigatórios; use o botão acima para preencher estes campos automaticamente e acelerar a publicação.
               </p>
             </div>
@@ -1575,7 +1582,7 @@ export default function NewProduct() {
               <button
                 type="button"
                 onClick={handleFillByZip}
-                className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
+                className="px-3 py-2 rounded bg-[var(--ts-cta)] text-white shadow-[0_10px_18px_-12px_rgba(31,143,95,0.55)] disabled:opacity-60"
                 disabled={loadingZip}
                 data-zip-autofill="true"
               >
@@ -1583,11 +1590,11 @@ export default function NewProduct() {
               </button>
             </div>
             {loadingZip && (
-              <div className="mt-2 h-1 w-full overflow-hidden rounded bg-blue-100">
-                <div className="h-full w-full animate-pulse bg-blue-500" />
+              <div className="mt-2 h-1 w-full overflow-hidden rounded bg-[rgba(200,178,106,0.2)]">
+                <div className="h-full w-full animate-pulse bg-[var(--ts-gold)]" />
               </div>
             )}
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[var(--ts-muted)] mt-1">
               Dica: use “Preencher pelo CEP/ZIP” para localizar automaticamente.
             </p>
             {hasFieldError('zip') && (
@@ -1599,7 +1606,7 @@ export default function NewProduct() {
           <div className="grid grid-cols-2 gap-4">
             {/* País como SELECT com siglas */}
             <label className="flex flex-col">
-              <span className="text-sm font-medium text-gray-700 mb-1">Cidade</span>
+              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Cidade</span>
               <input
                 className={FIELD_BASE_CLASS}
                 placeholder="Localização do produto"
@@ -1611,7 +1618,7 @@ export default function NewProduct() {
             </label>
 
             <label className="flex flex-col">
-              <span className="text-sm font-medium text-gray-700 mb-1">Estado/UF</span>
+              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Estado/UF</span>
               <input
                 className={FIELD_BASE_CLASS}
                 placeholder={form.country === 'US' ? 'Ex: CA' : 'Ex: SP'}
@@ -1623,7 +1630,7 @@ export default function NewProduct() {
             </label>
 
             <label className="flex flex-col">
-              <span className="text-sm font-medium text-gray-700 mb-1">Bairro</span>
+              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Bairro</span>
               <input
               className={FIELD_BASE_CLASS}
               placeholder="Bairro"
@@ -1634,7 +1641,7 @@ export default function NewProduct() {
             />
               </label>
               <label className="flex flex-col">
-              <span className="text-sm font-medium text-gray-700 mb-1">Rua</span>
+              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Rua</span>
               
             <input
               className={FIELD_BASE_CLASS}
@@ -1648,11 +1655,13 @@ export default function NewProduct() {
           </div>
 
           <div className="mt-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-2">Detalhes do produto</h2>
-            <div className="grid gap-2 md:grid-cols-2">
+            <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)] mb-2">
+              Detalhes do produto
+            </h2>
+            <div className="new-product__details-grid grid gap-2 md:grid-cols-2">
               {categoryDetails.map((field) => (
                 <label key={field.name} className="flex flex-col">
-                  <span className="text-xs text-gray-600 mb-1">{field.label}</span>
+                  <span className="text-xs text-[var(--ts-muted)] mb-1">{field.label}</span>
                   <input
                     className={FIELD_BASE_CLASS}
                     name={field.name}
@@ -1668,34 +1677,34 @@ export default function NewProduct() {
 
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">Fotos do produto</h2>
-              <span className="text-xs text-gray-500">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
+              <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Fotos do produto</h2>
+              <span className="text-xs text-[var(--ts-muted)]">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-2">
               {images.map((image) => (
                 <div
                   key={image.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden border border-gray-300 shadow-md"
+                  className="relative group aspect-square rounded-lg overflow-hidden border border-[rgba(200,178,106,0.18)] shadow-[0_18px_30px_-18px_rgba(0,0,0,0.5)]"
                 >
                   <img src={image.preview} alt="Pré-visualização da foto" className="h-full w-full object-cover" />
                   {image.kind === IMAGE_KIND.ILLUSTRATIVE && (
-                    <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                    <span className="absolute left-2 top-2 rounded-full border border-[rgba(200,178,106,0.5)] bg-[rgba(14,17,22,0.6)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
                       {IMAGE_KIND_BADGE_LABEL}
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(image.id)}
-                    className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
+                    className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
                   >
                     remover
                   </button>
                 </div>
               ))}
               {images.length < MAX_PRODUCT_PHOTOS && (
-                <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 text-xs text-gray-500 cursor-pointer hover:border-emerald-400 hover:text-emerald-600 transition bg-gray-50">
+                <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-[rgba(200,178,106,0.35)] text-xs text-[var(--ts-muted)] cursor-pointer hover:border-[rgba(200,178,106,0.6)] hover:text-[var(--ts-text)] transition bg-[var(--ts-card)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                   <span>Adicionar fotos</span>
-                  <span className="mt-1 text-[10px] text-gray-400">Máx. {MAX_PRODUCT_PHOTOS} imagens</span>
+                  <span className="mt-1 text-[10px] text-[var(--ts-muted)]">Máx. {MAX_PRODUCT_PHOTOS} imagens</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1706,17 +1715,17 @@ export default function NewProduct() {
                 </label>
               )}
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[var(--ts-muted)]">
               Use fotos reais, bem iluminadas e mostre detalhes importantes. Aceitamos até {MAX_PRODUCT_PHOTOS} imagens (5MB cada).
             </p>
-            <p className="text-xs text-gray-500">{IMAGE_KIND_HELP_TEXT}</p>
+            <p className="text-xs text-[var(--ts-muted)]">{IMAGE_KIND_HELP_TEXT}</p>
           </div>
 
           {isFloorplanCategory && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">Planta do ambiente</h2>
-                <span className="text-xs text-gray-500">
+                <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Planta do ambiente</h2>
+                <span className="text-xs text-[var(--ts-muted)]">
                   {floorplanFiles.length}/{MAX_FLOORPLAN_FILES}
                 </span>
               </div>
@@ -1724,7 +1733,7 @@ export default function NewProduct() {
                 {floorplanFiles.map((item) => (
                   <div
                     key={item.id}
-                    className="relative group aspect-square rounded-lg overflow-hidden border border-gray-300 shadow-md"
+                    className="relative group aspect-square rounded-lg overflow-hidden border border-black/10 shadow-[0_14px_24px_-16px_rgba(0,0,0,0.45)]"
                   >
                     {item.isImage ? (
                       <img
@@ -1733,23 +1742,23 @@ export default function NewProduct() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-slate-100 text-xs text-slate-600 px-2 text-center">
+                      <div className="h-full w-full flex items-center justify-center bg-[var(--ts-surface)] text-xs text-[var(--ts-muted)] px-2 text-center">
                         {item.name || 'Arquivo'}
                       </div>
                     )}
                     <button
                       type="button"
                       onClick={() => handleRemoveFloorplan(item.id)}
-                      className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
+                      className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
                     >
                       remover
                     </button>
                   </div>
                 ))}
                 {floorplanFiles.length < MAX_FLOORPLAN_FILES && (
-                  <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-gray-300 text-xs text-gray-500 cursor-pointer hover:border-emerald-400 hover:text-emerald-600 transition bg-gray-50">
+                  <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-black/10 text-xs text-[var(--ts-muted)] cursor-pointer hover:border-[rgba(200,178,106,0.5)] hover:text-[var(--ts-text)] transition bg-[var(--ts-surface)]">
                     <span>Adicionar planta</span>
-                    <span className="mt-1 text-[10px] text-gray-400">
+                    <span className="mt-1 text-[10px] text-[var(--ts-muted)]">
                       Máx. {MAX_FLOORPLAN_FILES} arquivos
                     </span>
                     <input
@@ -1762,7 +1771,7 @@ export default function NewProduct() {
                   </label>
                 )}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[var(--ts-muted)]">
                 Você pode enviar até {MAX_FLOORPLAN_FILES} arquivos (imagem ou PDF) com a planta do ambiente.
               </p>
             </div>
@@ -1781,7 +1790,7 @@ export default function NewProduct() {
               onChange={handleChange}
               rows={5}
               required
-              className={`${FIELD_BASE_CLASS} resize-none ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
+              className={`${FIELD_BASE_CLASS} resize-none bg-[var(--ts-surface)] text-base leading-relaxed ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
             />
             {hasFieldError('description') && (
               <span className="text-xs text-red-600">Informe uma descrição.</span>
@@ -1791,7 +1800,7 @@ export default function NewProduct() {
           <footer className="flex justify-end gap-4 mt-6">
             <button
               type="button"
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+              className="bg-transparent text-[var(--ts-muted)] font-semibold py-2 px-4 rounded-lg border border-black/10 hover:bg-[var(--ts-surface)] disabled:opacity-50"
               onClick={() => {
                 suppressFloorplanToastRef.current = true;
                 resetImagePreviews();
@@ -1804,7 +1813,7 @@ export default function NewProduct() {
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md disabled:opacity-70"
+              className="bg-[var(--ts-cta)] hover:bg-[#1a7a51] text-white font-bold py-2.5 px-5 rounded-lg shadow-[0_18px_32px_-20px_rgba(31,143,95,0.65)] disabled:opacity-70"
               disabled={sending}
             >
               {sending ? 'Publicando...' : 'Publicar produto'}
@@ -1819,25 +1828,25 @@ export default function NewProduct() {
           aria-live="polite"
         >
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md text-center">
-            <p className="text-lg font-semibold text-blue-700">{stageTitle}</p>
-            <p key={stageDetail} className="text-sm text-gray-600 mt-2">
+            <p className="text-lg font-semibold text-[var(--ts-text)]">{stageTitle}</p>
+            <p key={stageDetail} className="text-sm text-[var(--ts-muted)] mt-2">
               {stageDetail}
             </p>
             {(publishStage === 'uploading' && !hasUploadProgress) ||
             publishStage === 'processing' ? (
               <div className="new-product-publish-spinner" aria-hidden="true" />
             ) : null}
-            <div className="h-2 rounded-full bg-blue-200 overflow-hidden mt-4">
+            <div className="h-2 rounded-full bg-[rgba(200,178,106,0.2)] overflow-hidden mt-4">
               <div
-                className="h-full bg-blue-500 transition-all duration-500"
+                className="h-full bg-[var(--ts-cta)] transition-all duration-500"
                 style={{ width: `${progressWidth}%` }}
               />
             </div>
             {publishStage === 'processing' && (
               <>
-                <div className="h-2 rounded-full bg-blue-200 overflow-hidden mt-4">
+                <div className="h-2 rounded-full bg-[rgba(200,178,106,0.2)] overflow-hidden mt-4">
                   <div
-                    className="h-full bg-blue-500 transition-all duration-500"
+                    className="h-full bg-[var(--ts-cta)] transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, serverProgress))}%` }}
                   />
                 </div>
@@ -1867,9 +1876,9 @@ export default function NewProduct() {
       {activeImage && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
-            <p className="text-sm font-semibold text-gray-800">{IMAGE_KIND_PROMPT}</p>
+            <p className="text-sm font-semibold text-[var(--ts-text)]">{IMAGE_KIND_PROMPT}</p>
             <div className="mt-4 flex items-center gap-4">
-              <div className="h-20 w-20 overflow-hidden rounded-xl border border-gray-200">
+              <div className="h-20 w-20 overflow-hidden rounded-xl border border-black/10">
                 <img
                   src={activeImage.preview}
                   alt="Pré-visualização da foto"
@@ -1880,20 +1889,20 @@ export default function NewProduct() {
                 <button
                   type="button"
                   onClick={() => setImageKind(activeImage.id, IMAGE_KIND.REAL)}
-                  className="w-full rounded-lg border border-emerald-200 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+                  className="w-full rounded-lg border border-[var(--ts-cta)] bg-[var(--ts-cta)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1a7a51]"
                 >
                   {IMAGE_KIND_LABELS[IMAGE_KIND.REAL]}
                 </button>
                 <button
                   type="button"
                   onClick={() => setImageKind(activeImage.id, IMAGE_KIND.ILLUSTRATIVE)}
-                  className="w-full rounded-lg border border-amber-200 bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-amber-400"
+                  className="w-full rounded-lg border border-[rgba(200,178,106,0.6)] bg-[var(--ts-gold)] px-3 py-2 text-xs font-semibold text-[#1a1d21] shadow-sm transition hover:bg-[#d1bd78]"
                 >
                   {IMAGE_KIND_LABELS[IMAGE_KIND.ILLUSTRATIVE]}
                 </button>
               </div>
             </div>
-            <p className="mt-3 text-[11px] text-gray-500">
+            <p className="mt-3 text-[11px] text-[var(--ts-muted)]">
               {IMAGE_KIND_HELP_TEXT}
             </p>
           </div>

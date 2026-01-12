@@ -232,16 +232,16 @@ const PrimaryButton = ({
 }) => {
   const variants = {
     primary:
-      'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-lg shadow-blue-500/30 hover:from-blue-500 hover:to-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400',
+      'bg-[var(--ts-cta)] text-white shadow-[0_16px_28px_-20px_rgba(31,143,95,0.65)] hover:bg-[#1a7a51] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(31,143,95,0.6)]',
     secondary:
-      'bg-white text-slate-900 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm',
+      'bg-[var(--ts-surface)] text-[var(--ts-text)] border border-black/10 hover:border-[rgba(200,178,106,0.45)] hover:bg-white shadow-sm',
     muted:
-      'bg-slate-900/5 text-slate-900 hover:bg-slate-900/10 shadow-none border border-transparent',
+      'bg-transparent text-[var(--ts-text)] hover:bg-[var(--ts-surface)] shadow-none border border-black/10',
     accent:
-      'bg-amber-400/90 text-slate-900 shadow-lg shadow-amber-400/40 hover:bg-amber-300 focus-visible:outline-amber-300'
+      'bg-[var(--ts-gold)] text-[#1a1d21] shadow-[0_16px_28px_-20px_rgba(200,178,106,0.6)] hover:bg-[#d1bd78] focus-visible:outline-[rgba(200,178,106,0.6)]'
   };
   const baseStyles =
-    'inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition duration-150 focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-blue-300 focus-visible:outline-none';
+    'inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition duration-150 focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-[rgba(200,178,106,0.45)] focus-visible:outline-none';
   const ComponentProps = {
     ...props,
     className: `${baseStyles} ${variants[variant] ?? variants.primary} ${className}`.trim()
@@ -286,7 +286,7 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
         aria-expanded={Boolean(avatarMenuOpen)}
         onClick={onAvatarToggle}
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-semibold text-slate-600 shadow-inner shadow-slate-200">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[rgba(200,178,106,0.4)] bg-[var(--ts-surface)] text-xl font-semibold text-[var(--ts-text)] shadow-inner shadow-black/5">
           {userAvatar ? (
             <img
               src={userAvatar}
@@ -306,7 +306,7 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
             to="/edit-profile"
             variant="secondary"
             className="min-w-[150px]"
-            icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+            icon={<ShieldIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
           >
             Editar perfil
           </PrimaryButton>
@@ -314,9 +314,11 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
       )}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Painel do usuário</p>
-      <h1 className="mt-1 text-2xl font-semibold text-slate-900 truncate">{user?.username || user?.email}</h1>
-      <p className="text-sm text-slate-500 truncate">{user?.email}</p>
+      <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Painel do usuário</p>
+      <h1 className="dashboard-title mt-1 text-2xl font-semibold text-[var(--ts-text)] truncate">
+        {user?.username || user?.email}
+      </h1>
+      <p className="text-sm text-[var(--ts-muted)] truncate">{user?.email}</p>
     </div>
   </div>
 );
@@ -331,7 +333,7 @@ const ActionCard = forwardRef(
   ({ title, description, icon, to, onClick, badge, className = '' }, ref) => {
     const Element = to ? Link : 'button';
     const elementProps = {
-      className: `group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/70 px-4 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 ${className}`,
+      className: `group flex flex-col gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-5 shadow-[0_14px_28px_-24px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_40px_-28px_rgba(0,0,0,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)] ${className}`,
       onClick,
       ...(to ? { to } : { type: 'button' })
     };
@@ -340,18 +342,18 @@ const ActionCard = forwardRef(
     return (
       <Element {...elementProps}>
         <div className="flex items-center justify-between">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 shadow-inner">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-muted)] shadow-inner shadow-black/5">
             {icon}
           </span>
           {badge && (
-            <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--ts-muted)]">
               {badge}
             </span>
           )}
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="text-xs text-slate-500">{description}</p>
+          <p className="text-sm font-semibold text-[var(--ts-text)]">{title}</p>
+          <p className="text-xs text-[var(--ts-muted)]">{description}</p>
         </div>
       </Element>
     );
@@ -801,7 +803,7 @@ export default function Dashboard() {
 
 
   return (
-    <section className="dashboard min-h-screen bg-slate-50 px-4 pb-16 pt-2 sm:px-6 lg:px-8">
+    <section className="dashboard min-h-screen bg-[var(--ts-bg)] px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <CloseBackButton />
         <div className="space-y-3">
@@ -832,7 +834,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="relative overflow-visible rounded-[42px] border border-slate-200 bg-gradient-to-br from-white via-white/80 to-slate-50/70 p-6 shadow-[0_30px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="relative overflow-visible rounded-[36px] border border-black/5 bg-white p-6 shadow-[0_24px_50px_-34px_rgba(0,0,0,0.55)]">
           <img
             src={watermarkLogoSrc}
             alt="TempleSale logo"
@@ -880,12 +882,12 @@ export default function Dashboard() {
 
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-[var(--ts-muted)]">
             <span>Pedidos totais: {orderSummary.total}</span>
             <span>Pendentes: {orderSummary.pending}</span>
             <span>Confirmados: {orderSummary.confirmed}</span>
             {newOrderIds.length > 0 && (
-              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              <span className="rounded-full border border-[rgba(200,178,106,0.45)] bg-[rgba(200,178,106,0.18)] px-2 py-0.5 text-xs font-semibold text-[var(--ts-text)]">
                 +{newOrderIds.length} novas solicitações
               </span>
             )}
@@ -896,42 +898,42 @@ export default function Dashboard() {
               type="button"
               onClick={openFavoritesPanel}
               aria-label="Abrir curtidas"
-              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
+              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-3 text-left shadow-[0_12px_22px_-18px_rgba(0,0,0,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(0,0,0,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)]"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 shadow-inner">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-gold)] shadow-inner shadow-black/5">
                   <HeartIcon className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400">Coleção</p>
-                  <p className="text-sm font-semibold text-slate-900">Curtidas</p>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--ts-muted)]">Coleção</p>
+                  <p className="text-sm font-semibold text-[var(--ts-text)]">Curtidas</p>
                 </div>
               </div>
-              <ArrowRightIcon className="h-4 w-4 text-slate-400" />
+              <ArrowRightIcon className="h-4 w-4 text-[var(--ts-muted)]" />
             </button>
             <button
               type="button"
               onClick={openOrdersPanel}
               aria-label="Abrir vendas confirmadas"
-              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
+              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-3 text-left shadow-[0_12px_22px_-18px_rgba(0,0,0,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(0,0,0,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)]"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-inner">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-cta)] shadow-inner shadow-black/5">
                   <CheckIcon className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400">Vendas</p>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--ts-muted)]">Vendas</p>
+                  <p className="text-sm font-semibold text-[var(--ts-text)]">
                     {newOrderIds.length ? 'Pedidos com novidades' : 'Painel de vendas'}
                   </p>
                 </div>
               </div>
               {newOrderIds.length > 0 ? (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                <span className="rounded-full border border-[rgba(200,178,106,0.45)] bg-[rgba(200,178,106,0.18)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ts-text)]">
                   +{newOrderIds.length}
                 </span>
               ) : (
-                <ArrowRightIcon className="h-4 w-4 text-slate-400" />
+                <ArrowRightIcon className="h-4 w-4 text-[var(--ts-muted)]" />
               )}
             </button>
           </QuickAccessBar>
@@ -952,13 +954,13 @@ export default function Dashboard() {
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-6">
             
-            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Atalhos rápidos</p>
-                  <h2 className="text-xl font-semibold text-slate-900">Organize seu ritmo</h2>
+                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Atalhos rápidos</p>
+                  <h2 className="dashboard-title text-xl font-semibold text-[var(--ts-text)]">Organize seu ritmo</h2>
                 </div>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--ts-muted)]">
                   Atualização automática
                 </span>
               </div>
@@ -966,21 +968,21 @@ export default function Dashboard() {
                 <ActionCard
                   title="Meus anúncios"
                   description="Revise estoque, preços e histórico de exibição."
-                  icon={<ShopIcon className="h-5 w-5 text-slate-500" />}
+                  icon={<ShopIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
                   to="/my-products"
                   className="h-full min-h-[140px]"
                 />
                 <ActionCard
                   title="Mensagens"
                   description="Responda compradores e acompanhe conversas ativas."
-                  icon={<MessageIcon className="h-5 w-5 text-slate-500" />}
+                  icon={<MessageIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
                   to="/messages"
                   className="h-full min-h-[140px]"
                 />
                 <ActionCard
                   title="Novo produto"
                   description="Publique rapidamente com fotos, descrições e preços."
-                  icon={<PlusIcon className="h-5 w-5 text-slate-500" />}
+                  icon={<PlusIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
                   to="/new-product"
                   className="h-full min-h-[140px]"
                 />
@@ -988,7 +990,7 @@ export default function Dashboard() {
                   ref={purchaseActionRef}
                   title="Minhas compras"
                   description="Reveja pedidos confirmados, acompanhe o contato e avalie vendedores."
-                  icon={<BagIcon className="h-5 w-5 text-slate-500" />}
+                  icon={<BagIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
                   to="/buyer-purchases"
                   badge={purchaseBadge}
                   className={purchaseActionClasses}
@@ -999,25 +1001,25 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Suporte</p>
-                  <h3 className="text-lg font-semibold text-slate-900">Tem dúvidas?</h3>
+                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Suporte</p>
+                  <h3 className="dashboard-title text-lg font-semibold text-[var(--ts-text)]">Tem dúvidas?</h3>
                 </div>
-                <MessageIcon className="h-6 w-6 text-slate-400" />
+                <MessageIcon className="h-6 w-6 text-[var(--ts-muted)]" />
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-[var(--ts-muted)]">
                 Converse com o time operacional e acompanhe o histórico em tempo real.
               </p>
               {supportAlert && (
-                <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                <p className="mt-3 rounded-2xl border border-[rgba(31,143,95,0.25)] bg-[rgba(31,143,95,0.12)] px-3 py-2 text-xs font-semibold text-[var(--ts-text)]">
                   {supportAlert.message}
                 </p>
               )}
               <PrimaryButton
                 variant="secondary"
-                icon={<MessageIcon className="h-4 w-4 text-slate-500" />}
+                icon={<MessageIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
                 className="min-w-[180px]"
                 onClick={() => openSupportChat()}
               >
@@ -1025,22 +1027,22 @@ export default function Dashboard() {
               </PrimaryButton>
             </div>
 
-            <div className="rounded-[32px] border border-slate-200 bg-white/80 p-6 shadow-xl">
+            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Conta & privacidade</p>
-                  <h3 className="text-lg font-semibold text-slate-900">Ajustes essenciais</h3>
+                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Conta & privacidade</p>
+                  <h3 className="dashboard-title text-lg font-semibold text-[var(--ts-text)]">Ajustes essenciais</h3>
                 </div>
-                <CogIcon className="h-6 w-6 text-slate-400" />
+                <CogIcon className="h-6 w-6 text-[var(--ts-muted)]" />
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-[var(--ts-muted)]">
                 Mantenha a segurança em dia, sincronize termos aceitos e revise permissões.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton
                   variant="muted"
                   className="px-3 py-1 text-[10px] uppercase tracking-[0.3em]"
-                  icon={<CogIcon className="h-3 w-3 text-slate-500" />}
+                  icon={<CogIcon className="h-3 w-3 text-[var(--ts-muted)]" />}
                   onClick={() => setIsConfigPanelOpen(true)}
                 >
                   Painel lateral
@@ -1050,14 +1052,14 @@ export default function Dashboard() {
                   to="/edit-profile"
                   variant="secondary"
                   className="flex-1 min-w-[130px]"
-                  icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+                  icon={<ShieldIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
                 >
                   Editar perfil
                 </PrimaryButton>
                 <PrimaryButton
                   variant="secondary"
                   className="flex-1 min-w-[130px]"
-                  icon={<ShieldIcon className="h-4 w-4 text-slate-500" />}
+                  icon={<ShieldIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
                   onClick={() => {
                     setPasswords(getInitialSecurityPasswords());
                     setIsSecurityModalOpen(true);
@@ -1068,7 +1070,7 @@ export default function Dashboard() {
                 <PrimaryButton
                   variant="secondary"
                   className="flex-1 min-w-[130px]"
-                  icon={<CogIcon className="h-4 w-4 text-slate-500" />}
+                  icon={<CogIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
                   onClick={() => setIsTermsPanelOpen(true)}
                 >
                   Termos
@@ -1076,7 +1078,7 @@ export default function Dashboard() {
                 <PrimaryButton
                   variant="secondary"
                   className="flex-1 min-w-[130px]"
-                  icon={<CogIcon className="h-4 w-4 text-slate-500" />}
+                  icon={<CogIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
                   onClick={() => setIsPrivacyPanelOpen(true)}
                 >
                   Privacidade
@@ -1084,7 +1086,7 @@ export default function Dashboard() {
                 <PrimaryButton
                   variant="accent"
                   className="flex-1 min-w-[130px]"
-                  icon={<ArrowRightIcon className="h-4 w-4 text-slate-900" />}
+                  icon={<ArrowRightIcon className="h-4 w-4 text-[#1a1d21]" />}
                   onClick={logout}
                 >
                   Sair
@@ -1094,7 +1096,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-500">
+        <p className="text-center text-xs text-[var(--ts-muted)]">
           Acompanhe suas métricas principais, organize anúncios e mantenha a segurança em dia.
         </p>
       </div>
