@@ -1727,7 +1727,7 @@ export default function NewProduct() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3" style={{ display: 'none' }}>
             <div className="flex items-center justify-between">
               <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">
                 Imagem principal (opcional)
