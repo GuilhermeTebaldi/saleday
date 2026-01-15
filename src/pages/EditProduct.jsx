@@ -27,6 +27,7 @@ import {
 const MAX_PRODUCT_PHOTOS = 10;
 const MAX_FLOORPLAN_FILES = 4;
 const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const initialFormState = {
   title: '',
@@ -61,7 +62,8 @@ const initialFormState = {
   jobRequirements: '',
   links: [],
   isFree: false,
-  pickupOnly: false
+  pickupOnly: false,
+  image_url: ''
 };
 
 const normalizeFieldValue = (value) =>
@@ -90,6 +92,7 @@ export default function EditProduct() {
   const [newImages, setNewImages] = useState([]);
   const [existingFloorplans, setExistingFloorplans] = useState([]);
   const [newFloorplans, setNewFloorplans] = useState([]);
+  const [mainImageUploading, setMainImageUploading] = useState(false);
   const previewsRef = useRef(new Set());
   const floorplanPreviewsRef = useRef(new Set());
   const isMountedRef = useRef(true);
@@ -189,7 +192,8 @@ export default function EditProduct() {
           jobRequirements: normalizeFieldValue(data.jobRequirements ?? data.job_requirements),
           links: mapStoredLinksToForm(data.links),
           isFree,
-          pickupOnly: isFree ? true : Boolean(data.pickup_only)
+          pickupOnly: isFree ? true : Boolean(data.pickup_only),
+          image_url: data.image_url ?? data.imageUrl ?? ''
         });
       })
       .catch(() => toast.error('Erro ao carregar produto.'))
@@ -438,6 +442,47 @@ export default function EditProduct() {
     });
   };
 
+  const handleMainImageFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione apenas arquivos de imagem.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      toast.error('A imagem principal deve ter no máximo 5MB.');
+      return;
+    }
+    if (!token) {
+      toast.error('Faça login para enviar imagens.');
+      return;
+    }
+
+    setMainImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await api.post('/uploads/image', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const uploadedUrl = response?.data?.url;
+      if (!uploadedUrl) {
+        throw new Error('URL da imagem não foi retornada.');
+      }
+
+      setForm((prev) => ({ ...prev, image_url: uploadedUrl }));
+      toast.success('Imagem principal atualizada.');
+    } catch (error) {
+      console.error('Erro ao enviar a imagem principal:', error);
+      const message = error?.response?.data?.message;
+      toast.error(message || 'Não foi possível enviar a imagem principal.');
+    } finally {
+      setMainImageUploading(false);
+    }
+  };
+
   const buildPayload = () => {
     const latNum = form.lat === '' ? null : Number(form.lat);
     const lngNum = form.lng === '' ? null : Number(form.lng);
@@ -488,6 +533,8 @@ export default function EditProduct() {
 
     const normalizedLinks = buildLinkPayloadEntries(form.links);
     payload.links = JSON.stringify(normalizedLinks);
+    const mainImageUrl = form.image_url?.trim();
+    payload.image_url = mainImageUrl || null;
 
     return payload;
   };
@@ -764,6 +811,67 @@ export default function EditProduct() {
           onChange={handleChange}
           placeholder="Descrição"
         />
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-700">Imagem principal (opcional)</span>
+            {mainImageUploading && (
+              <span className="text-xs text-gray-500">Enviando...</span>
+            )}
+          </div>
+          <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm md:flex-row">
+            <div className="h-32 w-full overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50 md:w-32">
+              {form.image_url ? (
+                <img
+                  src={form.image_url}
+                  alt="Imagem principal atual"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[11px] uppercase tracking-[0.3em] text-gray-400">
+                  Sem imagem principal
+                </div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 text-sm text-gray-500">
+              <label className="flex flex-col gap-1 text-[11px]">
+                <span>Envie um arquivo</span>
+                <span className="inline-flex w-full cursor-pointer items-center justify-between rounded-full border border-gray-300 px-3 py-1 text-[11px] font-semibold text-gray-700 transition hover:border-gray-400">
+                  Selecionar imagem
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMainImageFile}
+                    disabled={mainImageUploading}
+                  />
+                </span>
+              </label>
+              <p className="text-[10px] text-gray-400">Máx. 5MB, apenas imagens.</p>
+              <label className="flex flex-col gap-1 text-[11px]">
+                <span>Ou cole uma URL</span>
+                <input
+                  type="url"
+                  name="image_url"
+                  value={form.image_url}
+                  onChange={handleChange}
+                  disabled={mainImageUploading}
+                  placeholder="https://exemplo.com/minha-imagem.jpg"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
+                />
+              </label>
+              {form.image_url && (
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
+                  className="text-[11px] font-semibold text-gray-700 underline-offset-2 hover:underline"
+                >
+                  Remover imagem principal
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">

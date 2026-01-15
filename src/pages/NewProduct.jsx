@@ -193,7 +193,8 @@ const initialFormState = {
   jobRequirements: '',
   links: [],
   isFree: false,
-  pickupOnly: false
+  pickupOnly: false,
+  image_url: ''
 };
 
 const normalizeCategoryLabel = (value) =>
@@ -403,6 +404,7 @@ export default function NewProduct() {
   const [form, setForm] = useState(baseForm);
   const [images, setImages] = useState([]);
   const [floorplanFiles, setFloorplanFiles] = useState([]);
+  const [mainImageUploading, setMainImageUploading] = useState(false);
   const previewsRef = useRef(new Set());
   const floorplanPreviewsRef = useRef(new Set());
   const [sending, setSending] = useState(false);
@@ -713,6 +715,54 @@ export default function NewProduct() {
     }
     return processed;
   }, []);
+
+  const handleMainImageFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione apenas arquivos de imagem.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      toast.error('A imagem principal deve ter no máximo 5MB.');
+      return;
+    }
+    if (!token) {
+      toast.error('Faça login para enviar imagens.');
+      return;
+    }
+
+    setMainImageUploading(true);
+    try {
+      let uploadFile = file;
+      try {
+        uploadFile = await createWatermarkedFile(file);
+      } catch (processingError) {
+        console.error('Erro ao ajustar a imagem principal:', processingError);
+      }
+
+      const formData = new FormData();
+      formData.append('image', uploadFile);
+
+      const response = await api.post('/uploads/image', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const uploadedUrl = response?.data?.url;
+      if (!uploadedUrl) {
+        throw new Error('URL da imagem não foi retornada.');
+      }
+
+      setForm((prev) => ({ ...prev, image_url: uploadedUrl }));
+      toast.success('Imagem principal enviada para a nuvem.');
+    } catch (error) {
+      console.error('Erro ao enviar a imagem principal:', error);
+      const message = error?.response?.data?.message?.toString?.() || '';
+      toast.error(message || 'Não foi possível enviar a imagem principal.');
+    } finally {
+      setMainImageUploading(false);
+    }
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -1233,9 +1283,11 @@ export default function NewProduct() {
       }
     }
 
+    const mainImageUrl = base.image_url?.trim();
     const normalizedLinks = buildLinkPayloadEntries(base.links);
     payload.links = JSON.stringify(normalizedLinks);
     payload.image_kinds = JSON.stringify(images.map((image) => image.kind));
+    payload.image_url = mainImageUrl || null;
 
     return payload;
   }
@@ -1672,6 +1724,67 @@ export default function NewProduct() {
                   />
                 </label>
               ))}
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">
+                Imagem principal (opcional)
+              </h2>
+              {mainImageUploading && (
+                <span className="text-[10px] text-[var(--ts-muted)]">Enviando...</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-[rgba(200,178,106,0.25)] bg-[var(--ts-card)] p-4 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.7)] md:flex-row">
+              <div className="h-32 w-full overflow-hidden rounded-xl border border-[rgba(200,178,106,0.35)] bg-[var(--ts-surface)] text-[10px] text-[var(--ts-muted)] md:w-32">
+                {form.image_url ? (
+                  <img
+                    src={form.image_url}
+                    alt="Prévia da imagem principal"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center px-2 text-center text-xs uppercase tracking-[0.2em]">
+                    Nenhuma imagem principal definida
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 text-xs text-[var(--ts-muted)]">
+                <span>Envie um arquivo para o Cloudinary ou cole uma URL manual.</span>
+                <label className="inline-flex w-full items-center justify-between rounded-full border border-[rgba(200,178,106,0.4)] bg-white pl-4 pr-2 text-[12px] font-semibold text-[var(--ts-cta)] shadow-sm transition hover:border-[rgba(200,178,106,0.6)]">
+                  Selecionar imagem
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMainImageFile}
+                    disabled={mainImageUploading}
+                  />
+                </label>
+                <p className="text-[10px] text-[var(--ts-muted)]">Máx. 5MB, apenas imagens.</p>
+                <label className="flex flex-col gap-1 text-[11px]">
+                  <span>Ou cole uma URL</span>
+                  <input
+                    type="url"
+                    name="image_url"
+                    value={form.image_url}
+                    onChange={handleChange}
+                    disabled={mainImageUploading}
+                    placeholder="https://exemplo.com/minha-img.jpg"
+                    className="w-full rounded-lg border border-[rgba(200,178,106,0.35)] bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm focus:border-[rgba(200,178,106,0.7)] focus:outline-none focus:ring-2 focus:ring-[rgba(200,178,106,0.35)]"
+                  />
+                </label>
+                {form.image_url && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
+                    className="inline-flex items-center text-[11px] font-semibold text-[var(--ts-cta)] underline-offset-2 hover:underline"
+                  >
+                    Remover imagem principal
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
