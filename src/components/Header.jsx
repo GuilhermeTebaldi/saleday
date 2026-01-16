@@ -1016,13 +1016,13 @@ export default function Header() {
           >
             <div className="relative flex items-center justify-center gap-3">
               <img src="/mira.png" alt="Templesale" className="app-logo__mark" />
-              <div className="relative">
-                <img
-                  src="/templesale.com.jpg"
-                  alt=""
-                  aria-hidden="true"
-                  className="app-logo__word app-logo__word-image animate-logoEntry"
-                />
+              <div className="relative app-logo__word-wrap">
+                <span className="app-logo__word animate-logoEntry" aria-hidden="true">
+                  <span className="app-logo__word-main">
+                    <span className="app-logo__word-temple">Temple</span>
+                    <span className="app-logo__word-sale">Sale</span>
+                  </span>
+                </span>
               </div>
             </div>
           </a>
