@@ -94,7 +94,7 @@ export default function App() {
                   className={`splash-screen ${splashVisible ? 'is-active' : 'is-fading'}`}
                   role="presentation"
                 >
-                  <img src="/mira.png" alt="Mira" className="splash-screen__logo" />
+                  <img src="/mira2.png" alt="Mira" className="splash-screen__logo" />
                 </div>
               )}
               <AutoI18n />
