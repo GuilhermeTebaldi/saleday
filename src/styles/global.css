@@ -326,6 +326,15 @@ button {
   display: inline-block;
 }
 
+.app-logo__word-image {
+  display: block;
+  height: clamp(28px, 4.8vw + 8px, 44px);
+  width: auto;
+  max-width: min(320px, 65vw);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+}
+
 .app-shell {
   display: flex;
   align-items: center;
