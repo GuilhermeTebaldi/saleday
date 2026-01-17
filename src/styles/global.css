@@ -329,7 +329,7 @@ button {
 .app-logo__word-wrap {
   display: inline-flex;
   align-items: center;
-  transform: scale(1.35);
+  transform: scale(0.87);
   transform-origin: left center;
   will-change: transform;
 }
