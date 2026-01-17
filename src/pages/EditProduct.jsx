@@ -812,7 +812,7 @@ export default function EditProduct() {
           placeholder="Descrição"
         />
 
-        <div className="space-y-2">
+<div className="mt-4 space-y-3" style={{ display: 'none' }}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-700">Imagem principal (opcional)</span>
             {mainImageUploading && (
