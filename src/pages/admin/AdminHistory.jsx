@@ -46,96 +46,137 @@ export default function AdminHistory() {
   }, []);
 
   const rows = useMemo(() => logs, [logs]);
+  const totalLabel = rows.length.toLocaleString('pt-BR');
 
   return (
-    <div className="admin-panel">
+    <div className="admin-panel admin-panel--ledger">
       <header className="admin-panel__header">
-        <h1 className="admin-panel__title">Histórico de atividades</h1>
-        <p className="admin-panel__subtitle">
-          Registra vendas confirmadas e mensagens para auditoria.
-        </p>
+        <div className="admin-panel__headline">
+          <span className="admin-panel__eyebrow">Painel de auditoria</span>
+          <h1 className="admin-panel__title">Histórico de atividades</h1>
+          <p className="admin-panel__subtitle">
+            Registra vendas confirmadas e mensagens para auditoria.
+          </p>
+        </div>
+        <div className="admin-panel__summary">
+          <span className="admin-panel__summary-value">{totalLabel}</span>
+          <span className="admin-panel__summary-label">registros</span>
+          <span className={`admin-panel__summary-pill ${loading ? 'is-loading' : ''}`}>
+            {loading ? 'Atualizando...' : 'Atualizado'}
+          </span>
+        </div>
       </header>
-      <form className="admin-panel__filters" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="ID do usuário"
-          value={filters.userId}
-          onChange={(event) => setFilters((prev) => ({ ...prev, userId: event.target.value }))}
-        />
-        <select
-          value={filters.eventType}
-          onChange={(event) => setFilters((prev) => ({ ...prev, eventType: event.target.value }))}
-        >
-          <option value="">Tipo de evento (todos)</option>
-          {Object.entries(EVENT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={filters.from}
-          onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
-          title="A partir de"
-        />
-        <input
-          type="date"
-          value={filters.to}
-          onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
-          title="Até"
-        />
-        <input
-          type="text"
-          placeholder="Busca (nome, descrição)"
-          value={filters.search}
-          onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Buscando...' : 'Filtrar'}
-        </button>
-      </form>
-      <div className="admin-panel__table-wrapper">
-          <table className="admin-panel__table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Usuário</th>
-                <th>Destino</th>
-                <th>Evento</th>
-                <th>Descrição</th>
-                <th>Produto</th>
-                <th>Detalhes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 && (
-              <tr>
-                <td colSpan="6" className="admin-panel__empty">
-                  Nenhum registro encontrado.
-                </td>
-              </tr>
-            )}
-            {rows.map((log) => {
-              const details =
-                log.metadata?.content ||
-                log.metadata?.productId ||
-                log.metadata?.message ||
-                JSON.stringify(log.metadata || {});
-              return (
-                <tr key={log.id}>
-                  <td>{new Date(log.created_at).toLocaleString('pt-BR')}</td>
-                <td>{log.user_name || `ID ${log.user_id ?? '—'}`}</td>
-                <td>{log.target_user_name || `ID ${log.target_user_id ?? '—'}`}</td>
-                <td>{EVENT_LABELS[log.event_type] || log.event_type}</td>
-                <td>{log.description || '—'}</td>
-                <td>{log.target_product_id || '—'}</td>
-                <td className="whitespace-pre-wrap text-[0.725rem]">{details}</td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="admin-panel__layout">
+        <form className="admin-panel__filters" onSubmit={handleSubmit}>
+          <div className="admin-panel__filters-heading">
+            <h2>Filtros</h2>
+            <p>Refine o histórico por usuário, data ou tipo de evento.</p>
+          </div>
+          <div className="admin-panel__filters-grid">
+            <label className="admin-panel__field">
+              <span>Busca rápida</span>
+              <input
+                type="text"
+                placeholder="Nome, descrição ou produto"
+                value={filters.search}
+                onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+              />
+            </label>
+            <label className="admin-panel__field">
+              <span>ID do usuário</span>
+              <input
+                type="text"
+                placeholder="Ex: 1024"
+                value={filters.userId}
+                onChange={(event) => setFilters((prev) => ({ ...prev, userId: event.target.value }))}
+              />
+            </label>
+            <label className="admin-panel__field">
+              <span>Tipo de evento</span>
+              <select
+                value={filters.eventType}
+                onChange={(event) => setFilters((prev) => ({ ...prev, eventType: event.target.value }))}
+              >
+                <option value="">Todos os eventos</option>
+                {Object.entries(EVENT_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-panel__field">
+              <span>A partir</span>
+              <input
+                type="date"
+                value={filters.from}
+                onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
+              />
+            </label>
+            <label className="admin-panel__field">
+              <span>Até</span>
+              <input
+                type="date"
+                value={filters.to}
+                onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="admin-panel__filters-actions">
+            <button type="submit" className="admin-panel__filters-submit" disabled={loading}>
+              {loading ? 'Buscando...' : 'Filtrar'}
+            </button>
+          </div>
+        </form>
+        <section className="admin-panel__feed" aria-live="polite">
+          {rows.length === 0 && (
+            <div className="admin-panel__empty">Nenhum registro encontrado.</div>
+          )}
+          {rows.map((log, index) => {
+            const details =
+              log.metadata?.content ||
+              log.metadata?.productId ||
+              log.metadata?.message ||
+              JSON.stringify(log.metadata || {});
+            const title =
+              log.description || EVENT_LABELS[log.event_type] || 'Atividade registrada';
+            return (
+              <article
+                key={log.id}
+                className="admin-panel__entry"
+                data-event={log.event_type}
+                style={{ '--entry-delay': `${Math.min(index, 7) * 70}ms` }}
+              >
+                <div className="admin-panel__entry-card">
+                  <div className="admin-panel__entry-header">
+                    <span className="admin-panel__entry-date">
+                      {new Date(log.created_at).toLocaleString('pt-BR')}
+                    </span>
+                    <span className="admin-panel__badge" data-event={log.event_type}>
+                      {EVENT_LABELS[log.event_type] || log.event_type}
+                    </span>
+                  </div>
+                  <h3 className="admin-panel__entry-title">{title}</h3>
+                  <div className="admin-panel__entry-meta">
+                    <span>
+                      <strong>Usuário</strong>
+                      {log.user_name || `ID ${log.user_id ?? '—'}`}
+                    </span>
+                    <span>
+                      <strong>Destino</strong>
+                      {log.target_user_name || `ID ${log.target_user_id ?? '—'}`}
+                    </span>
+                    <span>
+                      <strong>Produto</strong>
+                      {log.target_product_id || '—'}
+                    </span>
+                  </div>
+                  <div className="admin-panel__details">{details}</div>
+                </div>
+              </article>
+            );
+          })}
+        </section>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ export default function Register() {
         email: email.trim(),
         password,
         country,
-        acceptLegal: true
+        acceptLegal
       });
   
       const logRes = await api.post('/auth/login', {
@@ -69,7 +69,19 @@ export default function Register() {
       if (!data?.token || !data?.user) {
         throw new Error('Resposta de login inválida.');
       }
-  
+
+      if (acceptLegal) {
+        try {
+          await api.post(
+            '/auth/accept-legal',
+            { acceptLegal: true, source: 'register' },
+            { headers: { Authorization: `Bearer ${data.token}` } }
+          );
+        } catch (acceptErr) {
+          console.warn('Não foi possível registrar o aceite legal no cadastro.', acceptErr);
+        }
+      }
+
       login(data);
       localStorage.setItem('templesale.locale', localeFromCountry(country)); // <- aqui
       navigate('/');                                                     // <- aqui
