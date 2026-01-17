@@ -1015,14 +1015,15 @@ export default function Header() {
             aria-label="Ir para a página inicial e recarregar"
           >
             <div className="relative flex items-center justify-center gap-3">
-              <img src="/mira.png" alt="Templesale" className="app-logo__mark" />
+              
               <div className="relative app-logo__word-wrap">
                 <span className="app-logo__word animate-logoEntry" aria-hidden="true">
                   <span className="app-logo__word-main">
                     <span className="app-logo__word-temple">Temple</span>
                     <span className="app-logo__word-sale">Sale</span>
+                    
                   </span>
-                </span>
+                </span><img src="/mira.png" alt="Templesale" className="app-logo__mark" />
               </div>
             </div>
           </a>

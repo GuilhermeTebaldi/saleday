@@ -316,7 +316,7 @@ export default function MapSearch({
           maxLng: lng + delta
         };
         applyBoundsFromPoint(lat, lng, delta);
-        await fetchProductsByBbox(bounds, {
+        const applied = await fetchProductsByBbox(bounds, {
           keepExisting: false,
           centerOverride: { lat, lng, zoom: zoomTarget }
         });
@@ -324,10 +324,10 @@ export default function MapSearch({
         if (updateInput && formattedLabel) {
           setLocationQuery(formattedLabel);
         }
-        if (showSuccessToast) {
+        if (showSuccessToast && applied) {
           toast.success('Localização aplicada no mapa.');
         }
-        return true;
+        return applied;
       } catch (err) {
         console.error(err);
         if (showErrors) {
@@ -393,6 +393,10 @@ export default function MapSearch({
     setLoading(true);
     const normalizedBounds = normalizeBounds(bounds);
     const locationPromise = resolveBoundsLocation(normalizedBounds || bounds);
+    const notifyNoProducts = () => {
+      toast.error('Nenhum produto encontrado.');
+      return false;
+    };
     try {
       const params = {
         minLat: normalizedBounds?.minLat ?? bounds?.minLat,
@@ -403,11 +407,14 @@ export default function MapSearch({
       };
       const { data } = await api.get('/products', { params });
       if (!data.success) {
-        toast.error('Nenhum produto encontrado.');
-        return;
+        return notifyNoProducts();
       }
 
       const regionProducts = Array.isArray(data?.data) ? data.data.slice() : [];
+      if (!regionProducts.length) {
+        // Sem resultados: não altera a grade atual.
+        return notifyNoProducts();
+      }
       const priorityKeys = regionProducts.map(getProductKey).filter(Boolean);
       let nextList = regionProducts;
       const locationInfo = await locationPromise;
@@ -431,9 +438,11 @@ export default function MapSearch({
           : null
       };
       onRegionApplied?.(applied);
+      return true;
     } catch (err) {
       console.error(err);
       toast.error('Erro ao carregar produtos.');
+      return false;
     } finally {
       setLoading(false);
     }

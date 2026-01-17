@@ -416,6 +416,25 @@ button {
   height: 64px;
   width: auto;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+  animation: logoFloat 6.5s ease-in-out infinite;
+  transform-origin: 50% 60%;
+  will-change: transform;
+}
+
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.8deg) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -3px, 0) rotate(0.8deg) scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-logo__mark {
+    animation: none;
+  }
 }
 
 .app-menu-toggle {

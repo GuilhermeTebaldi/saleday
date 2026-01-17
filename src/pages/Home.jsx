@@ -2405,7 +2405,6 @@ export default function Home() {
 
       {/* grade de produtos pública */}
       <section id="feed" className="home-grid-section mt-2 px-0 sm:px-0">
-
         {productsLoading && displayedProducts.length === 0 ? (
           <div className="home-empty-state">
             <h2>Carregando produtos...</h2>

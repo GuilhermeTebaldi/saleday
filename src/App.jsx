@@ -1,7 +1,7 @@
 //frontend/src/App.jsx
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GeoProvider } from './context/GeoContext.jsx';
 import Auth0ProviderWrapper from './context/Auth0Provider.jsx';
@@ -220,7 +220,28 @@ export default function App() {
                 position="top-right"
                 containerStyle={{ zIndex: 10000 }}
                 toastOptions={{ duration: 6500, style: { zIndex: 10000 } }}
-              />
+              >
+                {(t) =>
+                  t.type === 'custom' ? (
+                    t.message
+                  ) : (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer"
+                      onClick={() => toast.dismiss(t.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          toast.dismiss(t.id);
+                        }
+                      }}
+                    >
+                      <ToastBar toast={t} />
+                    </div>
+                  )
+                }
+              </Toaster>
             </BrowserRouter>
           </GeoProvider>
         </PurchaseNotificationsProvider>

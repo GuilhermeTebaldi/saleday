@@ -632,9 +632,13 @@ body.templesale-dropdown-open .home-search-seller-panel {
   border: 1px solid rgba(214, 182, 118, 0.25);
 }
 
-.home-search-address-panel input,
-.home-search-seller-panel input {
+.home-search-address-panel input {
   color: var(--temple-text) !important;
+}
+
+.home-search-seller-panel input {
+  color: #0f172a !important;
+  caret-color: #0f172a;
 }
 
 .home-search-address-panel .border,

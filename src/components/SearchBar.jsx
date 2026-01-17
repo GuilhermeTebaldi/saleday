@@ -328,16 +328,10 @@ export default function SearchBar({
       const primary = await api.get('/products', {
         params: { q: trimmed, sort: 'rank', ...geoParams }
       });
-      let results = [];
-      if (primary.data?.success) {
-        results = primary.data.data ?? [];
-      }
-
-      let enriched = results;
-      if (trimmed.length > 0) {
-        const filteredPrimary = filterProductsByQuery(results, trimmed);
-        enriched = filteredPrimary.length ? filteredPrimary : results;
-      }
+      const primaryResults = primary.data?.success
+        ? (Array.isArray(primary.data.data) ? primary.data.data : [])
+        : [];
+      let enriched = filterProductsByQuery(primaryResults, trimmed);
 
       if (!enriched.length) {
         const fallback = await api.get('/products', {
@@ -360,6 +354,7 @@ export default function SearchBar({
         onProductsLoaded?.(enriched);
         onFiltersChange?.({ type: 'search', value: trimmed });
       } else {
+        // Sem correspondências: mantém a grade atual e apenas alerta.
         toast.error('Nenhum produto corresponde à sua busca.');
       }
       setPanel(null);
@@ -807,7 +802,7 @@ export default function SearchBar({
           <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-inner">
             <User size={18} className="text-slate-500" />
             <input
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              className="flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-gray-400"
               placeholder="Nome do vendedor ou empresa"
               value={sellerName}
               onChange={(e) => setSellerName(e.target.value)}
