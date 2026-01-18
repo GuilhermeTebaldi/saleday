@@ -44,6 +44,8 @@ function Auth0SessionSync({
     }
     if (auth0Loading || syncAttemptedRef.current) return;
     if (user && token) return;
+    // Se Auth0 autenticou, não bloqueie a UI por depender do backend.
+    // Preenche user/token diretamente do Auth0 e evita "voltar deslogado".
 
     let isActive = true;
     syncAttemptedRef.current = true;
@@ -56,9 +58,17 @@ function Auth0SessionSync({
         if (!idToken) {
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
-        const response = await api.post('/auth/auth0', { idToken });
         if (!isActive) return;
-        login(response.data?.data);
+        // Usa Auth0 como fonte principal. Mantém compatibilidade salvando algo em token.
+        login({
+          user: {
+            id: claims?.sub,
+            email: claims?.email,
+            username: claims?.nickname || claims?.name || claims?.email,
+            name: claims?.name
+          },
+          token: idToken
+        });
       } catch (err) {
         if (isActive) {
           console.error('auth0 session sync failed:', err);
