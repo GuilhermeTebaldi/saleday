@@ -1023,7 +1023,8 @@ export default function Header() {
                     <span className="app-logo__word-sale">Sale</span>
                     
                   </span>
-                </span><img src="/mira.png" alt="Templesale" className="app-logo__mark" />
+                </span>
+               
               </div>
             </div>
           </a>

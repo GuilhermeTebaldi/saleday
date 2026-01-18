@@ -4818,6 +4818,316 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   display: none;
 }
 
+.auth-page--choice {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(1200px 600px at 15% -20%, rgba(242, 216, 184, 0.6), rgba(255, 255, 255, 0)),
+    radial-gradient(900px 520px at 110% 10%, rgba(190, 218, 236, 0.35), rgba(255, 255, 255, 0)),
+    linear-gradient(180deg, #fdf7f0 0%, #f6f8fb 100%);
+}
+
+.auth-page--choice::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.auth-card--choice {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  border-radius: 32px;
+  padding: 3rem;
+  background: #fffdf9;
+  border: 1.5px solid rgba(17, 24, 39, 0.12);
+  box-shadow: 0 34px 80px rgba(15, 23, 42, 0.14);
+  font-family: 'Sora', 'Montserrat', sans-serif;
+  gap: 1.5rem;
+  animation: loginCardRise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.login-choice__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.login-choice__title {
+  margin: 0;
+  font-size: clamp(2rem, 2vw + 1.3rem, 2.6rem);
+  line-height: 1.15;
+  font-weight: 700;
+  color: #111827;
+}
+
+.login-choice__title span {
+  color: #1f8f5f;
+}
+
+.login-choice__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #5f6b73;
+  line-height: 1.6;
+}
+
+.login-choice__auth0 {
+  margin-top: 0.2rem;
+}
+
+.login-choice__social {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.login-choice__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.95rem 1.1rem;
+  border-radius: 18px;
+  border: 1.5px solid rgba(17, 24, 39, 0.18);
+  background: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2933;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: loginFadeUp 0.5s ease both;
+}
+
+.login-choice__btn:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.login-choice__btn:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.login-choice__btn:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.login-choice__btn:hover,
+.login-choice__btn:focus-visible {
+  border-color: rgba(31, 143, 95, 0.45);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.login-choice__btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.login-choice__icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+}
+
+.login-choice__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.login-choice__divider {
+  position: relative;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #7a8590;
+  margin: 0.3rem 0 0.1rem;
+}
+
+.login-choice__divider::before,
+.login-choice__divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 36%;
+  height: 1px;
+  background: rgba(122, 133, 144, 0.4);
+}
+
+.login-choice__divider::before {
+  left: 0;
+}
+
+.login-choice__divider::after {
+  right: 0;
+}
+
+.login-choice__email {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.login-choice__email-trigger {
+  border: none;
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  background: #2b2d33;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  animation: loginFadeUp 0.5s ease both;
+  animation-delay: 0.25s;
+}
+
+.login-choice__email-trigger:hover,
+.login-choice__email-trigger:focus-visible {
+  background: #22242a;
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(17, 24, 39, 0.18);
+}
+
+.login-choice__email-trigger.is-open {
+  background: #1f2228;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.login-choice__form {
+  display: grid;
+  gap: 1rem;
+  animation: loginPanelIn 0.35s ease both;
+}
+
+.auth-card--choice .form-control {
+  background: #f7f4ee;
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.auth-card--choice .form-control:focus {
+  border-color: #1f8f5f;
+  box-shadow: 0 0 0 3px rgba(31, 143, 95, 0.18);
+  background: #ffffff;
+}
+
+.auth-card--choice .input-action {
+  color: #1f8f5f;
+}
+
+.auth-card--choice .auth-form__remember {
+  color: #5f6b73;
+}
+
+.login-choice__error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #c1342f;
+  text-align: left;
+}
+
+.login-choice__signup {
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #5f6b73;
+}
+
+.login-choice__signup a {
+  color: #1f8f5f;
+  font-weight: 600;
+}
+
+.login-choice__terms {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #7a8590;
+  line-height: 1.5;
+}
+
+.login-choice__terms a {
+  color: #1f8f5f;
+  font-weight: 600;
+}
+
+@keyframes loginCardRise {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes loginFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loginPanelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 540px) {
+  .auth-card--choice {
+    padding: 2.4rem 2rem;
+    border-radius: 26px;
+  }
+
+  .login-choice__divider::before,
+  .login-choice__divider::after {
+    width: 30%;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-card--choice {
+    padding: 2rem 1.5rem;
+  }
+
+  .login-choice__btn {
+    font-size: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card--choice,
+  .login-choice__btn,
+  .login-choice__email-trigger,
+  .login-choice__form {
+    animation: none;
+  }
+
+  .login-choice__btn:hover,
+  .login-choice__btn:focus-visible,
+  .login-choice__email-trigger:hover,
+  .login-choice__email-trigger:focus-visible {
+    transform: none;
+  }
+}
+
 @keyframes auth-spin {
   to {
     transform: rotate(360deg);
