@@ -2,6 +2,8 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
 import { AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
+import { normalizeCountryCode } from '../data/countries.js';
+import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 
 const REMEMBER_TOKEN_KEY = 'templesale.rememberToken';
 
@@ -11,6 +13,58 @@ const sanitizeUser = (rawUser) => {
   if (!rawUser) return null;
   const { password, ...safeUser } = rawUser;
   return safeUser;
+};
+
+const isBlank = (value) => value === undefined || value === null || value === '';
+
+const extractRegionFromLocale = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const match = value.match(/[-_](\w{2})/);
+  return match ? match[1].toUpperCase() : '';
+};
+
+const resolveCountryFromLocale = (value) => {
+  if (!value) return '';
+  const region = extractRegionFromLocale(value);
+  if (region) return normalizeCountryCode(region);
+  return normalizeCountryCode(value);
+};
+
+const resolveTimezoneCountry = () => {
+  if (typeof window === 'undefined' || typeof Intl === 'undefined') return '';
+  const timezone = Intl.DateTimeFormat().resolvedOptions?.().timeZone;
+  return normalizeCountryCode(detectCountryFromTimezone(timezone));
+};
+
+const buildAuth0FallbackUser = (claims) => ({
+  id: claims?.sub,
+  email: claims?.email,
+  username: claims?.nickname || claims?.name || claims?.email,
+  name: claims?.name || claims?.given_name,
+  profile_image_url: typeof claims?.picture === 'string' ? claims.picture : undefined
+});
+
+const mergeAuth0Profile = (baseUser, fallbackUser, extras) => {
+  if (!baseUser) return null;
+  const next = { ...baseUser };
+  let changed = false;
+
+  const assignIfMissing = (key, value) => {
+    if (isBlank(next[key]) && !isBlank(value)) {
+      next[key] = value;
+      changed = true;
+    }
+  };
+
+  assignIfMissing('email', fallbackUser?.email);
+  assignIfMissing('username', fallbackUser?.username);
+  assignIfMissing('name', fallbackUser?.name);
+  assignIfMissing('profile_image_url', extras?.profileImageUrl || fallbackUser?.profile_image_url);
+  assignIfMissing('country', extras?.country);
+  assignIfMissing('state', extras?.state);
+  assignIfMissing('city', extras?.city);
+
+  return changed ? next : null;
 };
 
 function Auth0SessionSync({
@@ -43,19 +97,15 @@ function Auth0SessionSync({
       return;
     }
     if (auth0Loading || syncAttemptedRef.current) return;
-    const hasProfileData = Boolean(
-      user?.phone ||
-        user?.country ||
-        user?.state ||
-        user?.city ||
-        user?.district ||
-        user?.street ||
-        user?.zip ||
-        user?.profile_image_url
-    );
     const shouldBootstrap = !user || !token;
-    const shouldFetchProfile = !hasProfileData;
-    if (!shouldBootstrap && !shouldFetchProfile) return;
+    const missingCountry = isBlank(user?.country);
+    const missingState = isBlank(user?.state);
+    const missingCity = isBlank(user?.city);
+    const missingAvatar = isBlank(user?.profile_image_url);
+    const shouldSync = shouldBootstrap || missingCountry || missingState || missingCity || missingAvatar;
+    if (!shouldSync) return;
+
+    const shouldFetchProfile = !user || missingCountry || missingState || missingCity || missingAvatar;
 
     let isActive = true;
     syncAttemptedRef.current = true;
@@ -71,35 +121,58 @@ function Auth0SessionSync({
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
         if (!isActive) return;
-        const fallbackUser = {
-          id: claims?.sub,
-          email: claims?.email,
-          username: claims?.nickname || claims?.name || claims?.email,
-          name: claims?.name
-        };
+        const fallbackUser = buildAuth0FallbackUser(claims);
         if (shouldBootstrap) {
           login({ user: fallbackUser, token: idToken });
         }
+        let profile = null;
         if (shouldFetchProfile) {
           try {
             const response = await api.get('/auth/me', {
               headers: { Authorization: `Bearer ${idToken}` }
             });
             if (!isActive) return;
-            const profile = response.data?.data;
+            profile = response.data?.data || null;
             if (profile) {
               login({ user: profile, token: idToken });
-            } else if (shouldBootstrap) {
-              login({ user: fallbackUser, token: idToken });
             }
           } catch (profileErr) {
-            if (shouldBootstrap) {
-              login({ user: fallbackUser, token: idToken });
-            }
             if (isActive) {
               console.warn('auth0 profile sync failed:', profileErr);
             }
           }
+        }
+        if (!isActive) return;
+
+        const baseUser = profile || user || fallbackUser;
+        const localeCountry = resolveCountryFromLocale(claims?.locale);
+        const timezoneCountry = resolveTimezoneCountry();
+        let geo = null;
+        const needsGeoLookup =
+          isBlank(baseUser?.city) ||
+          isBlank(baseUser?.state) ||
+          (isBlank(baseUser?.country) && !localeCountry && !timezoneCountry);
+        if (needsGeoLookup) {
+          try {
+            const response = await api.get('/geo/ip');
+            if (!isActive) return;
+            geo = response.data?.data || null;
+          } catch (geoErr) {
+            if (isActive) {
+              console.warn('auth0 geo lookup failed:', geoErr);
+            }
+          }
+        }
+
+        const geoCountry = normalizeCountryCode(geo?.country) || resolveCountryFromLocale(geo?.locale);
+        const mergedUser = mergeAuth0Profile(baseUser, fallbackUser, {
+          profileImageUrl: typeof claims?.picture === 'string' ? claims.picture : undefined,
+          country: localeCountry || geoCountry || timezoneCountry,
+          state: geo?.region,
+          city: geo?.city
+        });
+        if (mergedUser) {
+          login({ user: mergedUser, token: idToken });
         }
       } catch (err) {
         if (isActive) {
