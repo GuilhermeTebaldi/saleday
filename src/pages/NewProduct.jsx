@@ -40,6 +40,11 @@ const MIN_COMPRESS_QUALITY = 0.6;
 const FIELD_BASE_CLASS =
   'w-full rounded-lg border border-[rgba(200,178,106,0.28)] bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm placeholder:text-[var(--ts-muted)] focus:border-[var(--ts-cta)] focus:ring-2 focus:ring-[rgba(31,143,95,0.25)] transition';
 const FIELD_LABEL_CLASS = 'block text-sm font-semibold text-[var(--ts-text)] mt-3';
+const STEP_CARD_CLASS =
+  'rounded-3xl border border-[rgba(200,178,106,0.22)] bg-white p-4 shadow-[0_20px_45px_-32px_rgba(0,0,0,0.35)] sm:p-5';
+const STEP_CARD_SOFT_CLASS =
+  'rounded-3xl border border-[rgba(200,178,106,0.18)] bg-[rgba(14,17,22,0.02)] p-4 shadow-[0_18px_35px_-28px_rgba(0,0,0,0.4)] sm:p-5';
+const STEP_SECTION_TITLE_CLASS = 'text-xs font-semibold uppercase tracking-[0.24em] text-[var(--ts-muted)]';
 const WATERMARK_TEXT = 'templesale.com';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
@@ -291,10 +296,67 @@ const ADDRESS_FIELDS = new Set(['city', 'state', 'neighborhood', 'street', 'zip'
 const FIELD_SCROLL_IDS = {
   title: 'new-product-field-title',
   price: 'new-product-field-price',
-  category: 'new-product-field-category'
+  category: 'new-product-field-category',
+  images: 'new-product-field-images'
 };
 
 const NEW_PRODUCT_ADDRESS_STORAGE_KEY = 'newProductAddress';
+
+// Step metadata keeps the wizard flow in a single page without duplicating form logic.
+const PUBLISH_STEPS = [
+  {
+    id: 'category',
+    label: 'Categoria',
+    title: 'Escolha a categoria',
+    subtitle: 'Toque na opção que melhor descreve o seu anúncio.',
+    image: '/imagensnewproduto/pagina1.png',
+    requiredFields: ['category']
+  },
+  {
+    id: 'title-price',
+    label: 'Título e preço',
+    title: 'Título e preço',
+    subtitle: 'Defina um título claro e o valor.',
+    image: '/imagensnewproduto/pagina2.png',
+    requiredFields: ['title']
+  },
+  {
+    id: 'description-details',
+    label: 'Descrição e Detalhes',
+    title: 'Descrição e detalhes',
+    subtitle: 'Conte os detalhes mais importantes do produto.',
+    image: '/imagensnewproduto/pagina3.png',
+    requiredFields: ['description']
+  },
+  {
+    id: 'images',
+    label: 'Imagens',
+    title: 'Fotos do produto',
+    subtitle: 'Adicione fotos reais e bem iluminadas.',
+    image: '/imagensnewproduto/pagina4.png',
+    requiredFields: []
+  },
+  {
+    id: 'location',
+    label: 'Localização',
+    title: 'Localização do anúncio',
+    subtitle: 'Informe onde o produto está.',
+    image: '/imagensnewproduto/pagina5.png',
+    requiredFields: ['country', 'zip', 'city']
+  }
+];
+
+const STEP_FIELD_INDEX = {
+  ...PUBLISH_STEPS.reduce((acc, step, index) => {
+    (step.requiredFields || []).forEach((field) => {
+      acc[field] = index;
+    });
+    return acc;
+  }, {}),
+  year: 2
+};
+
+const TOTAL_PUBLISH_STEPS = PUBLISH_STEPS.length;
 
 const safeTrim = (value) => (typeof value === 'string' ? value.trim() : '');
 
@@ -389,6 +451,92 @@ const scrollToField = (field) => {
   });
 };
 
+const StepHero = ({ stepIndex, totalSteps, title, subtitle, image, alt }) => (
+  <div className="relative overflow-hidden rounded-3xl border border-[rgba(200,178,106,0.28)] bg-white shadow-[0_28px_55px_-38px_rgba(0,0,0,0.7)]">
+    <div className="absolute -left-10 top-10 h-32 w-32 rounded-full border-2 border-[rgba(200,178,106,0.45)]" />
+    <div className="absolute -right-14 top-16 h-40 w-40 rounded-full border-2 border-[rgba(31,143,95,0.25)]" />
+    <div className="relative flex flex-col items-center gap-4 p-4 sm:gap-5 sm:p-6">
+      <div className="relative flex w-full items-center justify-center overflow-hidden rounded-3xl bg-[rgba(14,17,22,0.04)] p-2 sm:p-3 lg:p-4">
+        <div className="absolute -left-10 -top-10 h-28 w-28 rounded-full bg-[rgba(31,143,95,0.12)] blur-2xl" />
+        <div className="absolute -right-6 bottom-0 h-24 w-24 rounded-full bg-[rgba(200,178,106,0.2)] blur-2xl" />
+        <img
+          src={image}
+          alt={alt || title}
+          className="relative mx-auto h-[210px] w-auto object-contain sm:h-[300px] lg:h-[360px]"
+          loading="lazy"
+        />
+      </div>
+      <div className="w-full text-center sm:text-left">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[var(--ts-muted)]">
+          Etapa {stepIndex + 1} de {totalSteps}
+        </p>
+        <h2 className="mt-2 font-['Cinzel'] text-2xl font-semibold text-[var(--ts-text)] sm:text-[30px]">
+          {title}
+        </h2>
+        {subtitle ? <p className="mt-2 text-sm text-[var(--ts-muted)]">{subtitle}</p> : null}
+      </div>
+    </div>
+  </div>
+);
+
+const StepFooter = ({
+  onClear,
+  onBack,
+  onNext,
+  nextLabel,
+  nextLabelLoading,
+  isSubmit = false,
+  showBack = true,
+  showNext = true,
+  disabled = false,
+  loading = false
+}) => {
+  const primaryLabel = loading && nextLabelLoading ? nextLabelLoading : nextLabel;
+  return (
+    <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-white/80 p-3 shadow-[0_14px_30px_-25px_rgba(0,0,0,0.25)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      <button
+        type="button"
+        className="w-full rounded-2xl border border-[rgba(200,178,106,0.35)] bg-white px-5 py-3 text-sm font-semibold text-[var(--ts-text)] transition hover:bg-[rgba(200,178,106,0.08)] disabled:opacity-50 sm:w-auto"
+        onClick={onClear}
+        disabled={disabled}
+      >
+        Limpar
+      </button>
+      <div className="flex w-full flex-col-reverse gap-3 sm:w-auto sm:flex-row sm:justify-end">
+        {showBack && (
+          <button
+            type="button"
+            className="w-full rounded-2xl border border-[rgba(200,178,106,0.35)] bg-white px-5 py-3 text-sm font-semibold text-[var(--ts-text)] transition hover:bg-[rgba(200,178,106,0.08)] disabled:opacity-50 sm:w-auto"
+            onClick={onBack}
+            disabled={disabled}
+          >
+            Voltar
+          </button>
+        )}
+        {showNext &&
+          (isSubmit ? (
+            <button
+              type="submit"
+              className="w-full rounded-2xl border border-[rgba(31,143,95,0.65)] bg-[var(--ts-cta)] px-6 py-3 text-sm font-bold text-white shadow-[0_20px_36px_-24px_rgba(31,143,95,0.65)] transition hover:bg-[#1a7a51] disabled:opacity-70 sm:w-auto"
+              disabled={disabled}
+            >
+              {primaryLabel}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="w-full rounded-2xl border border-[rgba(31,143,95,0.65)] bg-[var(--ts-cta)] px-6 py-3 text-sm font-bold text-white shadow-[0_20px_36px_-24px_rgba(31,143,95,0.65)] transition hover:bg-[#1a7a51] disabled:opacity-70 sm:w-auto"
+              onClick={onNext}
+              disabled={disabled}
+            >
+              {primaryLabel}
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+};
+
 export default function NewProduct() {
   const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -422,6 +570,7 @@ export default function NewProduct() {
   const [showMissingSummary, setShowMissingSummary] = useState(false);
   const [freeHelpVisible, setFreeHelpVisible] = useState(false);
   const freeHelpRef = useRef(null);
+  const formTopRef = useRef(null);
   const zipInputRef = useRef(null);
   const geocodeTimeoutRef = useRef(null);
   const geocodeInFlightRef = useRef(false);
@@ -430,6 +579,8 @@ export default function NewProduct() {
   const autoZipTriggeredRef = useRef(false);
   const initialZipRef = useRef(baseForm.zip);
   const [activeImageKindId, setActiveImageKindId] = useState(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
   const isFloorplanCategory = useMemo(() => {
     const normalized = normalizeCategoryLabel(form.category);
     return normalized.includes('moveis') || normalized.includes('imovel');
@@ -455,6 +606,8 @@ export default function NewProduct() {
     setShowFieldErrors(false);
     initialZipRef.current = baseForm.zip;
     autoZipTriggeredRef.current = false;
+    setCurrentStep(0);
+    setMaxStepReached(0);
   }, [baseForm]);
 
   useEffect(() => {
@@ -521,6 +674,15 @@ export default function NewProduct() {
     floorplanPreviewsRef.current.clear();
     setFloorplanFiles([]);
   }, []);
+
+  const handleClearForm = useCallback(() => {
+    suppressFloorplanToastRef.current = true;
+    resetImagePreviews();
+    setForm(baseForm);
+    setShowFieldErrors(false);
+    setCurrentStep(0);
+    setMaxStepReached(0);
+  }, [baseForm, resetImagePreviews]);
 
   useEffect(() => () => {
     resetImagePreviews();
@@ -637,6 +799,100 @@ export default function NewProduct() {
 
   const hasFieldError = (field) =>
     showFieldErrors && missingFields.some((item) => item.name === field);
+
+  const stepCompletion = useMemo(
+    () =>
+      PUBLISH_STEPS.map((step) =>
+        (step.requiredFields || []).every((field) => {
+          const value = form[field];
+          return typeof value === 'string' ? value.trim() !== '' : Boolean(value);
+        })
+      ),
+    [form]
+  );
+
+  const advanceToStep = useCallback((targetStep) => {
+    const next = Math.max(0, Math.min(PUBLISH_STEPS.length - 1, targetStep));
+    setCurrentStep(next);
+    setMaxStepReached((prev) => Math.max(prev, next));
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const target = formTopRef.current;
+    if (target?.scrollIntoView) {
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const getStepMissingFields = useCallback(
+    (stepIndex) => {
+      const required = PUBLISH_STEPS[stepIndex]?.requiredFields || [];
+      return missingFields.filter((item) => required.includes(item.name));
+    },
+    [missingFields]
+  );
+
+  const focusMissingField = useCallback((fieldName) => {
+    if (!fieldName) return;
+    const targetStep = STEP_FIELD_INDEX[fieldName];
+    if (typeof targetStep === 'number') {
+      setCurrentStep(targetStep);
+      setMaxStepReached((prev) => Math.max(prev, targetStep));
+      setTimeout(() => scrollToField(fieldName), 120);
+      return;
+    }
+    scrollToField(fieldName);
+  }, []);
+
+  const handleStepNext = useCallback(() => {
+    if (currentStep === 3 && images.length === 0) {
+      toast.error('Adicione ao menos uma foto para continuar.');
+      scrollToField('images');
+      return;
+    }
+    const stepMissing = getStepMissingFields(currentStep);
+    if (stepMissing.length) {
+      setShowFieldErrors(true);
+      const labels = stepMissing.map((item) => item.label).join(', ');
+      toast.error(`Preencha: ${labels}.`);
+      focusMissingField(stepMissing[0]?.name);
+      return;
+    }
+    advanceToStep(currentStep + 1);
+    scrollToTop();
+  }, [advanceToStep, currentStep, focusMissingField, getStepMissingFields, images.length, scrollToTop]);
+
+  const handleStepBack = useCallback(() => {
+    advanceToStep(currentStep - 1);
+  }, [advanceToStep, currentStep]);
+
+  const handleStepJump = useCallback(
+    (stepIndex) => {
+      if (sending) return;
+      if (stepIndex > maxStepReached) return;
+      setCurrentStep(stepIndex);
+    },
+    [maxStepReached, sending]
+  );
+
+  const handleCategorySelect = useCallback(
+    (category) => {
+      if (sending) return;
+      setForm((prev) => ({ ...prev, category }));
+      setShowFieldErrors(false);
+      advanceToStep(1);
+      scrollToTop();
+    },
+    [advanceToStep, scrollToTop, sending]
+  );
+
+  const activeStep = PUBLISH_STEPS[currentStep] || PUBLISH_STEPS[0];
+  const stepProgress = Math.round(((currentStep + 1) / TOTAL_PUBLISH_STEPS) * 100);
 
   const pendingImage = useMemo(
     () => images.find((image) => !image.kind),
@@ -1300,7 +1556,7 @@ export default function NewProduct() {
       if (missingFields.length) {
         const labels = missingFields.map((item) => item.label).join(', ');
         toast.error(`Preencha: ${labels}.`);
-        scrollToField(missingFields[0]?.name);
+        focusMissingField(missingFields[0]?.name);
       }
       return;
     }
@@ -1316,7 +1572,7 @@ export default function NewProduct() {
     const normalizedYear = normalizeProductYear(form.year);
     if (form.year?.trim() && !normalizedYear) {
       toast.error('Ano inválido. Use 4 dígitos entre 1900 e o ano atual.');
-      scrollToField('year');
+      focusMissingField('year');
       return;
     }
     const zipToastId = toast.loading('Validando CEP... só um segundo.');
@@ -1324,6 +1580,7 @@ export default function NewProduct() {
     toast.dismiss(zipToastId);
     if (!zipCheck.success) {
       setShowFieldErrors(true);
+      focusMissingField('zip');
       return;
     }
 
@@ -1420,12 +1677,12 @@ export default function NewProduct() {
   };
 
   return (
-    <section className="relative min-h-screen bg-[var(--ts-bg)] py-10 px-4 text-[var(--ts-surface)]">
+    <section className="relative min-h-screen bg-[var(--ts-bg)] py-10 px-0 text-[var(--ts-surface)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-[rgba(31,143,95,0.18)] blur-3xl" />
         <div className="absolute -bottom-36 -left-24 h-72 w-72 rounded-full bg-[rgba(200,178,106,0.2)] blur-3xl" />
       </div>
-      <div className="relative mx-auto max-w-5xl">
+      <div className="relative mx-auto w-full max-w-none">
         <div className="relative overflow-hidden rounded-[28px] border border-[rgba(200,178,106,0.35)] bg-white text-[var(--ts-text)] shadow-[0_45px_90px_-60px_rgba(0,0,0,0.85)]">
           <div
             className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,rgba(200,178,106,0.1),rgba(31,143,95,0.5),rgba(200,178,106,0.1))]"
@@ -1446,512 +1703,736 @@ export default function NewProduct() {
               </p>
             </header>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6"
-          noValidate
-          onInvalid={(event) => {
-            event.preventDefault();
-          }}
-        >
-          {showMissingSummary && showFieldErrors && missingFields.length > 0 && (
-            <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
-              <p className="font-semibold">Complete os campos obrigatórios:</p>
-              <p className="text-xs text-red-600">Clique no campo para ir direto ao local destacado.</p>
-              <ul className="list-disc list-inside text-red-600 text-xs space-y-1">
-                {missingFields.map((item) => (
-                  <li key={item.name}>
-                    <button
-                      type="button"
-                      onClick={() => scrollToField(item.name)}
-                      className="text-red-700 underline-offset-2 hover:text-red-500 underline"
-                    >
-                      {item.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="mt-4 rounded-2xl border border-[rgba(200,178,106,0.18)] bg-[rgba(14,17,22,0.02)] p-5 shadow-[0_18px_35px_-28px_rgba(0,0,0,0.4)]">
-            <div className="grid md:grid-cols-2 gap-4">
-            <label className={FIELD_LABEL_CLASS}>
-              <span>Título*</span>
-              <input
-                name="title"
-                placeholder="Ex: Notebook Dell XPS 13"
-                value={form.title}
-                onChange={handleChange}
-                required
-                maxLength={TITLE_MAX_LENGTH}
-                className={`${FIELD_BASE_CLASS} bg-[var(--ts-surface)] text-base font-semibold shadow-[0_12px_22px_-18px_rgba(0,0,0,0.25)] ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
-                data-new-product-field="title"
-                id={FIELD_SCROLL_IDS.title}
-              />
-              {hasFieldError('title') && (
-                <span className="text-xs text-red-600">Informe um título.</span>
-              )}
-              <span className="text-[10px] text-[var(--ts-muted)] mt-1">
-                {titleLength}/{TITLE_MAX_LENGTH} | restam {titleRemaining} letras
-              </span>
-            </label>
-
-            <label className={`${FIELD_LABEL_CLASS} ${form.isFree ? 'opacity-60' : ''}`.trim()}>
-              <span>Preço ({currencyInfo.symbol})</span>
-              <input
-                name="price"
-                placeholder={form.isFree ? 'Anúncio marcado como grátis' : `Ex: ${currencyInfo.example}`}
-                value={form.price}
-                onChange={(e) => {
-                  const sanitized = sanitizePriceInput(e.target.value, currencyCode);
-                  setForm((prev) => ({ ...prev, price: sanitized }));
-                }}
-                disabled={form.isFree}
-                inputMode="decimal"
-                className={`${FIELD_BASE_CLASS} text-lg font-semibold shadow-[0_14px_26px_-20px_rgba(0,0,0,0.3)]`}
-                data-new-product-field="price"
-                id={FIELD_SCROLL_IDS.price}
-              />
-              <span className="text-xs text-[var(--ts-muted)]">
-                {form.isFree ? (
-                  'Este anúncio será exibido como “Grátis” em destaque.'
-                ) : (
-                  <>
-                    Será exibido como:{' '}
-                    <span className="text-[var(--ts-gold)] font-semibold">
-                      {pricePreview || previewFallback}
-                    </span>
-                  </>
-                )}
-              </span>
-            </label>
-
-            <div className="md:col-span-2 mt-2">
-              <div
-                className="flex w-full flex-col gap-2 rounded-2xl border border-black/5 bg-[var(--ts-surface)] p-4"
-                ref={freeHelpRef}
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleFreeToggle(!form.isFree)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-[rgba(200,178,106,0.4)] ${
-                      form.isFree
-                        ? 'bg-[var(--ts-cta)] border-[var(--ts-cta)] text-white'
-                        : 'bg-white border-[rgba(31,143,95,0.35)] text-[var(--ts-cta)]'
-                    }`}
-                    aria-pressed={form.isFree}
-                  >
-                    Zona Free
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFreeHelpVisible((prev) => !prev)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(200,178,106,0.45)] text-[var(--ts-gold)]"
-                    aria-label={FREE_HELP_TITLE}
-                    aria-expanded={freeHelpVisible}
-                  >
-                    ?
-                  </button>
-                  <span className="rounded-full border border-[rgba(31,143,95,0.35)] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--ts-cta)]">
-                    {form.isFree ? 'Ativado' : 'Desativado'}
-                  </span>
-                </div>
-                {freeHelpVisible && (
-                  <div className="mt-1 w-full max-w-sm rounded-xl border border-[rgba(200,178,106,0.35)] bg-white p-3 text-xs text-[var(--ts-text)] shadow-lg">
-                    <p className="font-semibold text-[var(--ts-text)]">{FREE_HELP_TITLE}</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-4 text-[var(--ts-muted)]">
-                      {FREE_HELP_LINES.map((line) => (
-                        <li key={line}>{line}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <label className="flex items-center gap-2 text-xs text-[var(--ts-muted)]">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[var(--ts-cta)]"
-                    checked={form.pickupOnly}
-                    onChange={handlePickupToggle}
-                    disabled={form.isFree}
-                  />
-                  Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
-                </label>
-              </div>
-            </div>
-
-            <label className={FIELD_LABEL_CLASS}>
-              <span>Categoria</span>
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                required
-                className={`${FIELD_BASE_CLASS} ${hasFieldError('category') ? 'ring-2 ring-red-400' : ''}`}
-                data-new-product-field="category"
-                id={FIELD_SCROLL_IDS.category}
-              >
-                <option value="">Selecione uma categoria</option>
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              {hasFieldError('category') && (
-                <span className="text-xs text-red-600">Selecione uma categoria.</span>
-              )}
-            </label>
-            <div className="flex flex-col gap-2 my-2">
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-[var(--ts-muted)]">Detectar localização automática:</span>
-                <button
-                  type="button"
-                  onClick={handleDetectLocation}
-                  disabled={loadingLocation}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(31,143,95,0.55)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--ts-cta)] shadow-none transition hover:bg-[rgba(31,143,95,0.08)] disabled:opacity-60"
-                >
-                  <span aria-hidden="true">📍</span>
-                  {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
-                </button>
-              </div>
-              <p className="text-xs text-[var(--ts-muted)]">
-                País e cidade são obrigatórios; use o botão acima para preencher estes campos automaticamente e acelerar a publicação.
-              </p>
-            </div>
-              <label className={FIELD_LABEL_CLASS}>
-                <span>País (sigla)</span>
-                <select name="country" value={form.country} onChange={handleChange} className={FIELD_BASE_CLASS}>
-                  {COUNTRY_OPTIONS.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.label} ({c.code})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-
-          {/* CEP/ZIP primeiro */}
-          <div className="my-2 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-            <div className="flex gap-2">
-              <input
-                ref={zipInputRef}
-                className={`flex-1 ${FIELD_BASE_CLASS} ${hasFieldError('zip') ? 'ring-2 ring-red-400' : ''}`}
-                placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
-                name="zip"
-                value={form.zip}
-                onChange={(e) => {
-                  const cleaned = cleanZip(e.target.value, (form.country || 'BR').toUpperCase());
-                  setForm((prev) => ({ ...prev, zip: cleaned, lat: '', lng: '' }));
-                }}
-                onBlur={handleZipBlur}
-                required
-              />
-              <button
-                type="button"
-                onClick={handleFillByZip}
-                className="px-3 py-2 rounded bg-[var(--ts-cta)] text-white shadow-[0_10px_18px_-12px_rgba(31,143,95,0.55)] disabled:opacity-60"
-                disabled={loadingZip}
-                data-zip-autofill="true"
-              >
-                {loadingZip ? 'Buscando...' : 'Preencher pelo CEP'}
-              </button>
-            </div>
-            {loadingZip && (
-              <div className="mt-2 h-1 w-full overflow-hidden rounded bg-[rgba(200,178,106,0.2)]">
-                <div className="h-full w-full animate-pulse bg-[var(--ts-gold)]" />
-              </div>
-            )}
-            <p className="text-xs text-[var(--ts-muted)] mt-1">
-              Dica: use “Preencher pelo CEP/ZIP” para localizar automaticamente.
-            </p>
-            {hasFieldError('zip') && (
-              <span className="text-xs text-red-600">Informe o CEP/ZIP.</span>
-            )}
-          </div>
-
-          {/* Endereço */}
-          <div className="mt-2 grid grid-cols-2 gap-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-            {/* País como SELECT com siglas */}
-            <label className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Cidade</span>
-              <input
-                className={FIELD_BASE_CLASS}
-                placeholder="Localização do produto"
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                onBlur={scheduleAutoGeocode}
-              />
-            </label>
-
-            <label className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Estado/UF</span>
-              <input
-                className={FIELD_BASE_CLASS}
-                placeholder={form.country === 'US' ? 'Ex: CA' : 'Ex: SP'}
-                name="state"
-                value={form.state}
-                onChange={handleChange}
-                onBlur={scheduleAutoGeocode}
-              />
-            </label>
-
-            <label className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Bairro</span>
-              <input
-              className={FIELD_BASE_CLASS}
-              placeholder="Bairro"
-              name="neighborhood"
-              value={form.neighborhood}
-              onChange={handleChange}
-              onBlur={scheduleAutoGeocode}
-            />
-              </label>
-              <label className="flex flex-col">
-              <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Rua</span>
-              
-            <input
-              className={FIELD_BASE_CLASS}
-              placeholder="Rua"
-              name="street"
-              value={form.street}
-              onChange={handleChange}
-              onBlur={scheduleAutoGeocode}
-            />
-             </label>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-            <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)] mb-2">
-              Detalhes do produto
-            </h2>
-            <div className="new-product__details-grid grid gap-2 md:grid-cols-2">
-              {categoryDetails.map((field) => (
-                <label key={field.name} className="flex flex-col">
-                  <span className="text-xs text-[var(--ts-muted)] mb-1">{field.label}</span>
-                  <input
-                    className={FIELD_BASE_CLASS}
-                    name={field.name}
-                    placeholder={field.placeholder}
-                    value={form[field.name] ?? ''}
-                    onChange={handleChange}
-                    inputMode={field.inputMode}
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-3" style={{ display: 'none' }}>
-            <div className="flex items-center justify-between">
-              <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">
-                Imagem principal (opcional)
-              </h2>
-              {mainImageUploading && (
-                <span className="text-[10px] text-[var(--ts-muted)]">Enviando...</span>
-              )}
-            </div>
-            <div className="flex flex-col gap-3 rounded-2xl border border-[rgba(200,178,106,0.25)] bg-[var(--ts-card)] p-4 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.7)] md:flex-row">
-              <div className="h-32 w-full overflow-hidden rounded-xl border border-[rgba(200,178,106,0.35)] bg-[var(--ts-surface)] text-[10px] text-[var(--ts-muted)] md:w-32">
-                {form.image_url ? (
-                  <img
-                    src={form.image_url}
-                    alt="Prévia da imagem principal"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center px-2 text-center text-xs uppercase tracking-[0.2em]">
-                    Nenhuma imagem principal definida
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 text-xs text-[var(--ts-muted)]">
-                <span>Envie um arquivo para o Cloudinary ou cole uma URL manual.</span>
-                <label className="inline-flex w-full items-center justify-between rounded-full border border-[rgba(200,178,106,0.4)] bg-white pl-4 pr-2 text-[12px] font-semibold text-[var(--ts-cta)] shadow-sm transition hover:border-[rgba(200,178,106,0.6)]">
-                  Selecionar imagem
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleMainImageFile}
-                    disabled={mainImageUploading}
-                  />
-                </label>
-                <p className="text-[10px] text-[var(--ts-muted)]">Máx. 5MB, apenas imagens.</p>
-                <label className="flex flex-col gap-1 text-[11px]">
-                  <span>Ou cole uma URL</span>
-                  <input
-                    type="url"
-                    name="image_url"
-                    value={form.image_url}
-                    onChange={handleChange}
-                    disabled={mainImageUploading}
-                    placeholder="https://exemplo.com/minha-img.jpg"
-                    className="w-full rounded-lg border border-[rgba(200,178,106,0.35)] bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm focus:border-[rgba(200,178,106,0.7)] focus:outline-none focus:ring-2 focus:ring-[rgba(200,178,106,0.35)]"
-                  />
-                </label>
-                {form.image_url && (
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
-                    className="inline-flex items-center text-[11px] font-semibold text-[var(--ts-cta)] underline-offset-2 hover:underline"
-                  >
-                    Remover imagem principal
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-3 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Fotos do produto</h2>
-              <span className="text-xs text-[var(--ts-muted)]">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-2">
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="relative group aspect-square rounded-lg overflow-hidden border border-[rgba(200,178,106,0.18)] shadow-[0_18px_30px_-18px_rgba(0,0,0,0.5)]"
-                >
-                  <img src={image.preview} alt="Pré-visualização da foto" className="h-full w-full object-cover" />
-                  {image.kind === IMAGE_KIND.ILLUSTRATIVE && (
-                    <span className="absolute left-2 top-2 rounded-full border border-[rgba(200,178,106,0.5)] bg-[rgba(14,17,22,0.6)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
-                      {IMAGE_KIND_BADGE_LABEL}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(image.id)}
-                    className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
-                  >
-                    remover
-                  </button>
-                </div>
-              ))}
-              {images.length < MAX_PRODUCT_PHOTOS && (
-                <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-[rgba(200,178,106,0.35)] text-xs text-[var(--ts-muted)] cursor-pointer hover:border-[rgba(200,178,106,0.6)] hover:text-[var(--ts-text)] transition bg-[var(--ts-card)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                  <span>Adicionar fotos</span>
-                  <span className="mt-1 text-[10px] text-[var(--ts-muted)]">Máx. {MAX_PRODUCT_PHOTOS} imagens</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageSelection}
-                  />
-                </label>
-              )}
-            </div>
-            <p className="text-xs text-[var(--ts-muted)]">
-              Use fotos reais, bem iluminadas e mostre detalhes importantes. Aceitamos até {MAX_PRODUCT_PHOTOS} imagens (5MB cada).
-            </p>
-            <p className="text-xs text-[var(--ts-muted)]">{IMAGE_KIND_HELP_TEXT}</p>
-          </div>
-
-          {isFloorplanCategory && (
-            <div className="mt-4 space-y-3 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Planta do ambiente</h2>
-                <span className="text-xs text-[var(--ts-muted)]">
-                  {floorplanFiles.length}/{MAX_FLOORPLAN_FILES}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
-                {floorplanFiles.map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative group aspect-square rounded-lg overflow-hidden border border-black/10 shadow-[0_14px_24px_-16px_rgba(0,0,0,0.45)]"
-                  >
-                    {item.isImage ? (
-                      <img
-                        src={item.preview}
-                        alt="Pré-visualização da planta"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-[var(--ts-surface)] text-xs text-[var(--ts-muted)] px-2 text-center">
-                        {item.name || 'Arquivo'}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFloorplan(item.id)}
-                      className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
-                    >
-                      remover
-                    </button>
-                  </div>
-                ))}
-                {floorplanFiles.length < MAX_FLOORPLAN_FILES && (
-                  <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-black/10 text-xs text-[var(--ts-muted)] cursor-pointer hover:border-[rgba(200,178,106,0.5)] hover:text-[var(--ts-text)] transition bg-[var(--ts-surface)]">
-                    <span>Adicionar planta</span>
-                    <span className="mt-1 text-[10px] text-[var(--ts-muted)]">
-                      Máx. {MAX_FLOORPLAN_FILES} arquivos
-                    </span>
-                    <input
-                      type="file"
-                      accept={FLOORPLAN_ACCEPT}
-                      multiple
-                      className="hidden"
-                      onChange={handleFloorplanSelection}
-                    />
-                  </label>
-                )}
-              </div>
-              <p className="text-xs text-[var(--ts-muted)]">
-                Você pode enviar até {MAX_FLOORPLAN_FILES} arquivos (imagem ou PDF) com a planta do ambiente.
-              </p>
-            </div>
-          )}
-          <div className="mt-4 space-y-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
-            <LinkListEditor
-              links={form.links}
-              onChange={(links) => setForm((prev) => ({ ...prev, links }))}
-            />
-
-            <label className={FIELD_LABEL_CLASS}>
-              <span>Descrição</span>
-              <textarea
-                name="description"
-                placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
-                value={form.description}
-                onChange={handleChange}
-                rows={5}
-                required
-                className={`${FIELD_BASE_CLASS} resize-none bg-[var(--ts-surface)] text-base leading-relaxed ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
-              />
-              {hasFieldError('description') && (
-                <span className="text-xs text-red-600">Informe uma descrição.</span>
-              )}
-            </label>
-          </div>
-
-          <footer className="mt-6 flex flex-col-reverse gap-3 border-t border-[rgba(200,178,106,0.2)] pt-4 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              className="bg-white text-[var(--ts-text)] font-semibold py-2.5 px-4 rounded-lg border border-[rgba(200,178,106,0.35)] hover:bg-[rgba(200,178,106,0.08)] disabled:opacity-50"
-              onClick={() => {
-                suppressFloorplanToastRef.current = true;
-                resetImagePreviews();
-                setForm(baseForm);
-                setShowFieldErrors(false);
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+              noValidate
+              ref={formTopRef}
+              onInvalid={(event) => {
+                event.preventDefault();
               }}
-              disabled={sending}
             >
-              Limpar
-            </button>
-            <button
-              type="submit"
-              className="bg-[var(--ts-cta)] hover:bg-[#1a7a51] text-white font-bold py-2.5 px-5 rounded-lg border border-[rgba(31,143,95,0.65)] shadow-[0_18px_32px_-20px_rgba(31,143,95,0.65)] disabled:opacity-70"
-              disabled={sending}
-            >
-              {sending ? 'Publicando...' : 'Publicar produto'}
-            </button>
-          </footer>
-        </form></div>
+              {showMissingSummary && showFieldErrors && missingFields.length > 0 && (
+                <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
+                  <p className="font-semibold">Complete os campos obrigatórios:</p>
+                  <p className="text-xs text-red-600">Clique no campo para ir direto ao local destacado.</p>
+                  <ul className="list-disc list-inside text-red-600 text-xs space-y-1">
+                    {missingFields.map((item) => (
+                      <li key={item.name}>
+                        <button
+                          type="button"
+                          onClick={() => focusMissingField(item.name)}
+                          className="text-red-700 underline-offset-2 hover:text-red-500 underline"
+                        >
+                          {item.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <nav
+                className="mx-auto w-full max-w-4xl rounded-2xl border border-[rgba(200,178,106,0.2)] bg-white/90 p-3 shadow-[0_12px_28px_-24px_rgba(0,0,0,0.35)]"
+                aria-label="Etapas de publicação"
+              >
+                <div className="flex flex-nowrap items-center justify-start gap-2 overflow-x-auto pb-1 text-xs font-semibold text-[var(--ts-muted)] sm:flex-wrap sm:justify-center sm:overflow-visible sm:pb-0">
+                  {PUBLISH_STEPS.map((step, index) => {
+                    const isActive = index === currentStep;
+                    const isEnabled = index <= maxStepReached && !sending;
+                    const isComplete = stepCompletion[index];
+                    const buttonClasses = [
+                      'inline-flex items-center gap-2 rounded-full px-3 py-1.5 transition',
+                      isActive
+                        ? 'bg-[rgba(31,143,95,0.12)] text-[var(--ts-cta)]'
+                        : 'text-[var(--ts-muted)] hover:text-[var(--ts-text)]',
+                      !isEnabled ? 'cursor-not-allowed opacity-50' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+                    const dotClasses = [
+                      'h-2.5 w-2.5 rounded-full',
+                      isActive
+                        ? 'bg-[var(--ts-cta)]'
+                        : isComplete
+                          ? 'bg-[var(--ts-gold)]'
+                          : 'bg-[rgba(200,178,106,0.35)]'
+                    ].join(' ');
+                    return (
+                      <div key={step.id} className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          className={buttonClasses}
+                          onClick={() => handleStepJump(index)}
+                          disabled={!isEnabled}
+                          aria-current={isActive ? 'step' : undefined}
+                        >
+                          <span className={dotClasses} aria-hidden="true" />
+                          <span>{step.label}</span>
+                        </button>
+                        {index < PUBLISH_STEPS.length - 1 && (
+                          <span className="text-[var(--ts-muted)]" aria-hidden="true">
+                            &gt;
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </nav>
+              <div className="mx-auto mt-4 h-1 w-full max-w-4xl overflow-hidden rounded-full bg-[rgba(200,178,106,0.2)]">
+                <div
+                  className="h-full bg-[var(--ts-cta)] transition-all duration-500"
+                  style={{ width: `${stepProgress}%` }}
+                />
+              </div>
+              <div className="mt-6 grid gap-5 lg:grid-cols-[0.95fr_1.05fr] sm:gap-6">
+                <StepHero
+                  stepIndex={currentStep}
+                  totalSteps={TOTAL_PUBLISH_STEPS}
+                  title={activeStep.title}
+                  subtitle={activeStep.subtitle}
+                  image={activeStep.image}
+                  alt={`Ilustração da etapa ${activeStep.label}`}
+                />
+                <div className="space-y-4">
+                  {currentStep === 0 && (
+                    <>
+                      <div className={STEP_CARD_CLASS}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className={STEP_SECTION_TITLE_CLASS}>
+                            Escolha a categoria
+                          </p>
+                          {form.category && (
+                            <span className="rounded-full border border-[rgba(31,143,95,0.35)] bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--ts-cta)]">
+                              {form.category}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-xs text-[var(--ts-muted)]">
+                          Toque na categoria para continuar.
+                        </p>
+                        <div
+                          id={FIELD_SCROLL_IDS.category}
+                          data-new-product-field="category"
+                          tabIndex={-1}
+                          className={`mt-4 grid gap-2 rounded-3xl border border-[rgba(200,178,106,0.2)] bg-[rgba(255,255,255,0.9)] p-3 sm:grid-cols-2 sm:gap-3 sm:p-4 lg:grid-cols-3 ${hasFieldError('category') ? 'ring-2 ring-red-400' : ''}`}
+                        >
+                          {PRODUCT_CATEGORIES.map((category) => {
+                            const isSelected = form.category === category;
+                            const categoryInitial = category.trim().charAt(0).toUpperCase();
+                            return (
+                              <button
+                                key={category}
+                                type="button"
+                                onClick={() => handleCategorySelect(category)}
+                                className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition ${
+                                  isSelected
+                                    ? 'border-[var(--ts-cta)] bg-[rgba(31,143,95,0.1)] text-[var(--ts-cta)] shadow-[0_12px_24px_-18px_rgba(31,143,95,0.55)]'
+                                    : 'border-[rgba(200,178,106,0.35)] bg-white text-[var(--ts-text)] hover:border-[rgba(31,143,95,0.45)]'
+                                }`}
+                                aria-pressed={isSelected}
+                                disabled={sending}
+                              >
+                                <span
+                                  className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${
+                                    isSelected
+                                      ? 'bg-[var(--ts-cta)] text-white'
+                                      : 'bg-[rgba(31,143,95,0.12)] text-[var(--ts-cta)]'
+                                  }`}
+                                  aria-hidden="true"
+                                >
+                                  {categoryInitial}
+                                </span>
+                                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                                  <span className="break-words leading-snug">{category}</span>
+                                  {isSelected && (
+                                    <span className="text-[10px] uppercase tracking-[0.28em] text-[var(--ts-cta)]">
+                                      Selecionada
+                                    </span>
+                                  )}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {hasFieldError('category') && (
+                          <span className="mt-2 block text-xs text-red-600">Selecione uma categoria.</span>
+                        )}
+                      </div>
+                      <StepFooter onClear={handleClearForm} showBack={false} showNext={false} disabled={sending} />
+                    </>
+                  )}
+
+                  {currentStep === 1 && (
+                    <>
+                      <div className={STEP_CARD_CLASS}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className={STEP_SECTION_TITLE_CLASS}>
+                            Título e preço
+                          </p>
+                          {form.category && (
+                            <span className="rounded-full border border-[rgba(31,143,95,0.35)] bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--ts-cta)]">
+                              {form.category}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                          <label className={`${FIELD_LABEL_CLASS} mt-0`}>
+                            <span>Título*</span>
+                            <input
+                              name="title"
+                              placeholder="Ex: Notebook Dell XPS 13"
+                              value={form.title}
+                              onChange={handleChange}
+                              required
+                              maxLength={TITLE_MAX_LENGTH}
+                              className={`${FIELD_BASE_CLASS} bg-[var(--ts-surface)] text-base font-semibold shadow-[0_12px_22px_-18px_rgba(0,0,0,0.25)] ${hasFieldError('title') ? 'ring-2 ring-red-400' : ''}`}
+                              data-new-product-field="title"
+                              id={FIELD_SCROLL_IDS.title}
+                            />
+                            {hasFieldError('title') && (
+                              <span className="text-xs text-red-600">Informe um título.</span>
+                            )}
+                            <span className="text-[10px] text-[var(--ts-muted)] mt-1">
+                              {titleLength}/{TITLE_MAX_LENGTH} | restam {titleRemaining} letras
+                            </span>
+                          </label>
+
+                          <label
+                            className={`${FIELD_LABEL_CLASS} mt-0 ${form.isFree ? 'opacity-60' : ''}`.trim()}
+                          >
+                            <span>Preço ({currencyInfo.symbol})</span>
+                            <input
+                              name="price"
+                              placeholder={form.isFree ? 'Anúncio marcado como grátis' : `Ex: ${currencyInfo.example}`}
+                              value={form.price}
+                              onChange={(e) => {
+                                const sanitized = sanitizePriceInput(e.target.value, currencyCode);
+                                setForm((prev) => ({ ...prev, price: sanitized }));
+                              }}
+                              disabled={form.isFree}
+                              inputMode="decimal"
+                              className={`${FIELD_BASE_CLASS} text-lg font-semibold shadow-[0_14px_26px_-20px_rgba(0,0,0,0.3)]`}
+                              data-new-product-field="price"
+                              id={FIELD_SCROLL_IDS.price}
+                            />
+                            <span className="text-xs text-[var(--ts-muted)]">
+                              {form.isFree ? (
+                                'Este anúncio será exibido como “Grátis” em destaque.'
+                              ) : (
+                                <>
+                                  Será exibido como:{' '}
+                                  <span className="text-[var(--ts-gold)] font-semibold">
+                                    {pricePreview || previewFallback}
+                                  </span>
+                                </>
+                              )}
+                            </span>
+                          </label>
+
+                          <div className="md:col-span-2 mt-2">
+                            <div
+                              className="flex w-full flex-col gap-2 rounded-2xl border border-black/5 bg-[var(--ts-surface)] p-4"
+                              ref={freeHelpRef}
+                            >
+                              <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleFreeToggle(!form.isFree)}
+                                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-[rgba(200,178,106,0.4)] ${
+                                    form.isFree
+                                      ? 'bg-[var(--ts-cta)] border-[var(--ts-cta)] text-white'
+                                      : 'bg-white border-[rgba(31,143,95,0.35)] text-[var(--ts-cta)]'
+                                  }`}
+                                  aria-pressed={form.isFree}
+                                >
+                                  Zona Free
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFreeHelpVisible((prev) => !prev)}
+                                  className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(200,178,106,0.45)] text-[var(--ts-gold)]"
+                                  aria-label={FREE_HELP_TITLE}
+                                  aria-expanded={freeHelpVisible}
+                                >
+                                  ?
+                                </button>
+                                <span className="rounded-full border border-[rgba(31,143,95,0.35)] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--ts-cta)]">
+                                  {form.isFree ? 'Ativado' : 'Desativado'}
+                                </span>
+                              </div>
+                              {freeHelpVisible && (
+                                <div className="mt-1 w-full max-w-sm rounded-xl border border-[rgba(200,178,106,0.35)] bg-white p-3 text-xs text-[var(--ts-text)] shadow-lg">
+                                  <p className="font-semibold text-[var(--ts-text)]">{FREE_HELP_TITLE}</p>
+                                  <ul className="mt-2 list-disc space-y-1 pl-4 text-[var(--ts-muted)]">
+                                    {FREE_HELP_LINES.map((line) => (
+                                      <li key={line}>{line}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              <label className="flex items-center gap-2 text-xs text-[var(--ts-muted)]">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 accent-[var(--ts-cta)]"
+                                  checked={form.pickupOnly}
+                                  onChange={handlePickupToggle}
+                                  disabled={form.isFree}
+                                />
+                                Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <StepFooter
+                        onClear={handleClearForm}
+                        onBack={handleStepBack}
+                        onNext={handleStepNext}
+                        nextLabel="Confirmar e continuar"
+                        disabled={sending}
+                      />
+                    </>
+                  )}
+
+                  {currentStep === 2 && (
+                    <>
+                      <div className={STEP_CARD_CLASS}>
+                        <label className={`${FIELD_LABEL_CLASS} mt-0`}>
+                          <span>Descrição</span>
+                          <textarea
+                            name="description"
+                            placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
+                            value={form.description}
+                            onChange={handleChange}
+                            rows={5}
+                            required
+                            className={`${FIELD_BASE_CLASS} resize-none bg-[var(--ts-surface)] text-base leading-relaxed ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
+                          />
+                          {hasFieldError('description') && (
+                            <span className="text-xs text-red-600">Informe uma descrição.</span>
+                          )}
+                        </label>
+                      </div>
+
+                      <LinkListEditor
+                        links={form.links}
+                        onChange={(links) => setForm((prev) => ({ ...prev, links }))}
+                      />
+
+                      <div className={STEP_CARD_SOFT_CLASS}>
+                        <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)] mb-2">
+                          Detalhes do produto
+                        </h2>
+                        <div className="new-product__details-grid grid gap-2 md:grid-cols-2">
+                          {categoryDetails.map((field) => (
+                            <label key={field.name} className="flex flex-col">
+                              <span className="text-xs text-[var(--ts-muted)] mb-1">{field.label}</span>
+                              <input
+                                className={FIELD_BASE_CLASS}
+                                name={field.name}
+                                placeholder={field.placeholder}
+                                value={form[field.name] ?? ''}
+                                onChange={handleChange}
+                                inputMode={field.inputMode}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <StepFooter
+                        onClear={handleClearForm}
+                        onBack={handleStepBack}
+                        onNext={handleStepNext}
+                        nextLabel="Confirmar e continuar"
+                        disabled={sending}
+                      />
+                    </>
+                  )}
+
+                  {currentStep === 3 && (
+                    <>
+                      <div
+                        className={`space-y-4 ${STEP_CARD_CLASS}`}
+                        id={FIELD_SCROLL_IDS.images}
+                        data-new-product-field="images"
+                        tabIndex={-1}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Fotos do produto</h2>
+                          <span className="text-xs text-[var(--ts-muted)]">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-2">
+                          {images.map((image) => (
+                            <div
+                              key={image.id}
+                              className="relative group aspect-square rounded-lg overflow-hidden border border-[rgba(200,178,106,0.18)] shadow-[0_18px_30px_-18px_rgba(0,0,0,0.5)]"
+                            >
+                              <img
+                                src={image.preview}
+                                alt="Pré-visualização da foto"
+                                className="h-full w-full object-cover"
+                              />
+                              {image.kind === IMAGE_KIND.ILLUSTRATIVE && (
+                                <span className="absolute left-2 top-2 rounded-full border border-[rgba(200,178,106,0.5)] bg-[rgba(14,17,22,0.6)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur">
+                                  {IMAGE_KIND_BADGE_LABEL}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(image.id)}
+                                className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
+                              >
+                                remover
+                              </button>
+                            </div>
+                          ))}
+                          {images.length < MAX_PRODUCT_PHOTOS && (
+                            <label className="col-span-full flex cursor-pointer flex-col gap-3 rounded-2xl border-2 border-dashed border-[rgba(200,178,106,0.35)] bg-white/90 p-3 text-left text-xs text-[var(--ts-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition hover:border-[rgba(200,178,106,0.6)] hover:text-[var(--ts-text)] sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                              <div className="flex items-center gap-3">
+                                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(31,143,95,0.12)] text-[var(--ts-cta)]">
+                                  <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden="true">
+                                    <path
+                                      d="M10 16.5h6l3-3h10l3 3h6a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4v-13a4 4 0 0 1 4-4Z"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.2"
+                                      strokeLinejoin="round"
+                                    />
+                                    <circle cx="24" cy="27" r="7" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                                    <circle cx="35" cy="22" r="2" fill="currentColor" />
+                                  </svg>
+                                </span>
+                                <div>
+                                  <p className="text-sm font-semibold text-[var(--ts-text)]">Fotos que vendem</p>
+                                  <p className="text-xs text-[var(--ts-muted)]">
+                                    Use boa luz e mostre detalhes. Isso aumenta o interesse.
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[var(--ts-muted)] sm:justify-end">
+                                <span>Clique para adicionar</span>
+                                <span className="h-1 w-1 rounded-full bg-[rgba(200,178,106,0.6)]" aria-hidden="true" />
+                                <span>Máx. {MAX_PRODUCT_PHOTOS} imagens</span>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={handleImageSelection}
+                              />
+                            </label>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--ts-muted)]">
+                          Use fotos reais, bem iluminadas e mostre detalhes importantes. Aceitamos até {MAX_PRODUCT_PHOTOS} imagens (5MB cada).
+                        </p>
+                        <p className="text-xs text-[var(--ts-muted)]">{IMAGE_KIND_HELP_TEXT}</p>
+                      </div>
+
+                      {isFloorplanCategory && (
+                        <div className={`space-y-3 ${STEP_CARD_SOFT_CLASS}`}>
+                          <div className="flex items-center justify-between">
+                            <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Planta do ambiente</h2>
+                            <span className="text-xs text-[var(--ts-muted)]">
+                              {floorplanFiles.length}/{MAX_FLOORPLAN_FILES}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                            {floorplanFiles.map((item) => (
+                              <div
+                                key={item.id}
+                                className="relative group aspect-square rounded-lg overflow-hidden border border-black/10 shadow-[0_14px_24px_-16px_rgba(0,0,0,0.45)]"
+                              >
+                                {item.isImage ? (
+                                  <img
+                                    src={item.preview}
+                                    alt="Pré-visualização da planta"
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-[var(--ts-surface)] text-xs text-[var(--ts-muted)] px-2 text-center">
+                                    {item.name || 'Arquivo'}
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFloorplan(item.id)}
+                                  className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-1 opacity-0 group-hover:opacity-100"
+                                >
+                                  remover
+                                </button>
+                              </div>
+                            ))}
+                            {floorplanFiles.length < MAX_FLOORPLAN_FILES && (
+                              <label className="flex flex-col items-center justify-center aspect-square rounded-lg border-2 border-dashed border-black/10 text-xs text-[var(--ts-muted)] cursor-pointer hover:border-[rgba(200,178,106,0.5)] hover:text-[var(--ts-text)] transition bg-[var(--ts-surface)]">
+                                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(200,178,106,0.18)] text-[var(--ts-gold)]">
+                                  <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden="true">
+                                    <rect
+                                      x="9"
+                                      y="9"
+                                      width="30"
+                                      height="30"
+                                      rx="3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.2"
+                                    />
+                                    <path
+                                      d="M18 9v30M30 9v30M9 18h30M9 30h30"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M18 30h6v9"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.2"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                </span>
+                                <span className="mt-2 text-sm font-semibold text-[var(--ts-text)]">Adicionar planta</span>
+                                <span className="mt-1 text-[10px] text-[var(--ts-muted)]">
+                                  Máx. {MAX_FLOORPLAN_FILES} arquivos
+                                </span>
+                                <input
+                                  type="file"
+                                  accept={FLOORPLAN_ACCEPT}
+                                  multiple
+                                  className="hidden"
+                                  onChange={handleFloorplanSelection}
+                                />
+                              </label>
+                            )}
+                          </div>
+                          <p className="text-xs text-[var(--ts-muted)]">
+                            Você pode enviar até {MAX_FLOORPLAN_FILES} arquivos (imagem ou PDF) com a planta do ambiente.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-3" style={{ display: 'none' }}>
+                        <div className="flex items-center justify-between">
+                          <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">
+                            Imagem principal (opcional)
+                          </h2>
+                          {mainImageUploading && (
+                            <span className="text-[10px] text-[var(--ts-muted)]">Enviando...</span>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-3 rounded-2xl border border-[rgba(200,178,106,0.25)] bg-[var(--ts-card)] p-4 shadow-[0_12px_40px_-25px_rgba(0,0,0,0.7)] md:flex-row">
+                          <div className="h-32 w-full overflow-hidden rounded-xl border border-[rgba(200,178,106,0.35)] bg-[var(--ts-surface)] text-[10px] text-[var(--ts-muted)] md:w-32">
+                            {form.image_url ? (
+                              <img
+                                src={form.image_url}
+                                alt="Prévia da imagem principal"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center px-2 text-center text-xs uppercase tracking-[0.2em]">
+                                Nenhuma imagem principal definida
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2 text-xs text-[var(--ts-muted)]">
+                            <span>Envie um arquivo para o Cloudinary ou cole uma URL manual.</span>
+                            <label className="inline-flex w-full items-center justify-between rounded-full border border-[rgba(200,178,106,0.4)] bg-white pl-4 pr-2 text-[12px] font-semibold text-[var(--ts-cta)] shadow-sm transition hover:border-[rgba(200,178,106,0.6)]">
+                              Selecionar imagem
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleMainImageFile}
+                                disabled={mainImageUploading}
+                              />
+                            </label>
+                            <p className="text-[10px] text-[var(--ts-muted)]">Máx. 5MB, apenas imagens.</p>
+                            <label className="flex flex-col gap-1 text-[11px]">
+                              <span>Ou cole uma URL</span>
+                              <input
+                                type="url"
+                                name="image_url"
+                                value={form.image_url}
+                                onChange={handleChange}
+                                disabled={mainImageUploading}
+                                placeholder="https://exemplo.com/minha-img.jpg"
+                                className="w-full rounded-lg border border-[rgba(200,178,106,0.35)] bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm focus:border-[rgba(200,178,106,0.7)] focus:outline-none focus:ring-2 focus:ring-[rgba(200,178,106,0.35)]"
+                              />
+                            </label>
+                            {form.image_url && (
+                              <button
+                                type="button"
+                                onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
+                                className="inline-flex items-center text-[11px] font-semibold text-[var(--ts-cta)] underline-offset-2 hover:underline"
+                              >
+                                Remover imagem principal
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {images.length === 0 && (
+                        <p className="text-xs text-[var(--ts-muted)]">
+                          Adicione ao menos uma foto para publicar.
+                        </p>
+                      )}
+
+                      <StepFooter
+                        onClear={handleClearForm}
+                        onBack={handleStepBack}
+                        onNext={handleStepNext}
+                        nextLabel="Continuar para localização"
+                        disabled={sending}
+                      />
+                    </>
+                  )}
+
+                  {currentStep === 4 && (
+                    <>
+                      <div className={`${STEP_CARD_CLASS} space-y-4`}>
+                        <div className="flex flex-col gap-2">
+                          <span className="text-sm font-semibold text-[var(--ts-text)]">
+                            Detectar localização automática
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleDetectLocation}
+                            disabled={loadingLocation}
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-[rgba(31,143,95,0.55)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--ts-cta)] shadow-none transition hover:bg-[rgba(31,143,95,0.08)] disabled:opacity-60"
+                          >
+                            <span aria-hidden="true">📍</span>
+                            {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+                          </button>
+                          <p className="text-xs text-[var(--ts-muted)]">
+                            País e cidade são obrigatórios; use o botão acima para preencher estes campos automaticamente.
+                          </p>
+                        </div>
+
+                        <label className={`${FIELD_LABEL_CLASS} mt-0`}>
+                          <span>País (sigla)</span>
+                          <select
+                            name="country"
+                            value={form.country}
+                            onChange={handleChange}
+                            className={`${FIELD_BASE_CLASS} ${hasFieldError('country') ? 'ring-2 ring-red-400' : ''}`}
+                          >
+                            {COUNTRY_OPTIONS.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label} ({c.code})
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div>
+                          <span className="text-sm font-semibold text-[var(--ts-text)]">CEP/ZIP</span>
+                          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                            <input
+                              ref={zipInputRef}
+                              className={`flex-1 ${FIELD_BASE_CLASS} ${hasFieldError('zip') ? 'ring-2 ring-red-400' : ''}`}
+                              placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
+                              name="zip"
+                              value={form.zip}
+                              onChange={(e) => {
+                                const cleaned = cleanZip(e.target.value, (form.country || 'BR').toUpperCase());
+                                setForm((prev) => ({ ...prev, zip: cleaned, lat: '', lng: '' }));
+                              }}
+                              onBlur={handleZipBlur}
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={handleFillByZip}
+                              className="px-3 py-2 rounded bg-[var(--ts-cta)] text-white shadow-[0_10px_18px_-12px_rgba(31,143,95,0.55)] disabled:opacity-60"
+                              disabled={loadingZip}
+                              data-zip-autofill="true"
+                            >
+                              {loadingZip ? 'Buscando...' : 'Preencher pelo CEP'}
+                            </button>
+                          </div>
+                          {loadingZip && (
+                            <div className="mt-2 h-1 w-full overflow-hidden rounded bg-[rgba(200,178,106,0.2)]">
+                              <div className="h-full w-full animate-pulse bg-[var(--ts-gold)]" />
+                            </div>
+                          )}
+                          <p className="text-xs text-[var(--ts-muted)] mt-1">
+                            Dica: use “Preencher pelo CEP/ZIP” para localizar automaticamente.
+                          </p>
+                          {hasFieldError('zip') && (
+                            <span className="text-xs text-red-600">Informe o CEP/ZIP.</span>
+                          )}
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <label className="flex flex-col">
+                            <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Cidade</span>
+                            <input
+                              className={`${FIELD_BASE_CLASS} ${hasFieldError('city') ? 'ring-2 ring-red-400' : ''}`}
+                              placeholder="Localização do produto"
+                              name="city"
+                              value={form.city}
+                              onChange={handleChange}
+                              onBlur={scheduleAutoGeocode}
+                            />
+                          </label>
+
+                          <label className="flex flex-col">
+                            <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Estado/UF</span>
+                            <input
+                              className={FIELD_BASE_CLASS}
+                              placeholder={form.country === 'US' ? 'Ex: CA' : 'Ex: SP'}
+                              name="state"
+                              value={form.state}
+                              onChange={handleChange}
+                              onBlur={scheduleAutoGeocode}
+                            />
+                          </label>
+
+                          <label className="flex flex-col">
+                            <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Bairro</span>
+                            <input
+                              className={FIELD_BASE_CLASS}
+                              placeholder="Bairro"
+                              name="neighborhood"
+                              value={form.neighborhood}
+                              onChange={handleChange}
+                              onBlur={scheduleAutoGeocode}
+                            />
+                          </label>
+
+                          <label className="flex flex-col">
+                            <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Rua</span>
+                            <input
+                              className={FIELD_BASE_CLASS}
+                              placeholder="Rua"
+                              name="street"
+                              value={form.street}
+                              onChange={handleChange}
+                              onBlur={scheduleAutoGeocode}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <StepFooter
+                        onClear={handleClearForm}
+                        onBack={handleStepBack}
+                        nextLabel="Publicar produto"
+                        nextLabelLoading="Publicando..."
+                        isSubmit
+                        disabled={sending}
+                        loading={sending}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            </form>
+          </div>
       </div>
       {isOverlayVisible && (
         <div
