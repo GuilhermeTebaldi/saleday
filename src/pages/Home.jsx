@@ -2795,7 +2795,7 @@ export default function Home() {
           <span className="home-new-product-fab__icon" aria-hidden="true">
             +
           </span>
-          <span className="home-new-product-fab__label">Nova publicação</span>
+          <span className="home-new-product-fab__label">Anuncie</span>
         </Link>
       )}
     </div>

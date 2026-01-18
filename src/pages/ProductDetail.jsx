@@ -29,6 +29,8 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import ImageViewerModal from '../components/ImageViewerModal.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
+import SellerProductGrid from '../components/SellerProductGrid.jsx';
+import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
 import { isProductFree, getProductPriceLabel } from '../utils/product.js';
@@ -154,6 +156,8 @@ const buildLocationQuery = (city, state, country) =>
 
 const QUESTION_PAGE_SIZE = 4;
 const MESSAGE_LIMIT = 200;
+const REGION_RESULT_LIMIT = 6;
+const REGION_BOUNDS_DELTA = 0.03;
 const QUICK_QUESTION_PRESETS = [
   'Eu posso visitar?',
   'Aceita permuta?',
@@ -161,6 +165,13 @@ const QUICK_QUESTION_PRESETS = [
   'Tenho interesse, está disponível?'
 ];
 const DESKTOP_LAYOUT_WIDTH = 1024;
+
+const buildRegionBounds = (lat, lng, delta = REGION_BOUNDS_DELTA) => ({
+  minLat: lat - delta,
+  maxLat: lat + delta,
+  minLng: lng - delta,
+  maxLng: lng + delta
+});
 
 const HIGHLIGHT_ICON_BY_LABEL = {
   'Tipo de imóvel': Home,
@@ -223,6 +234,9 @@ export default function ProductDetail() {
   const [buyerInfo, setBuyerInfo] = useState(null);
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
+  const [regionProducts, setRegionProducts] = useState([]);
+  const [regionLoading, setRegionLoading] = useState(false);
+  const [regionError, setRegionError] = useState('');
   const [phoneActionsOpen, setPhoneActionsOpen] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [floatingBarHeight, setFloatingBarHeight] = useState(0);
@@ -273,18 +287,48 @@ export default function ProductDetail() {
   const locCity = product?.city || product?.seller_city || '';
   const locState = product?.state || product?.seller_state || '';
   const locCountry = product?.country || product?.seller_country || '';
+  const locRegion = product?.region || product?.zone || product?.district || '';
+  const regionLabel = useMemo(() => {
+    const candidates = [product?.neighborhood, locCity, locState, locCountry];
+    const match = candidates.find((value) => typeof value === 'string' && value.trim());
+    return match ? match.trim() : '';
+  }, [product?.neighborhood, locCity, locState, locCountry]);
+  const breadcrumbItems = useMemo(() => {
+    const items = [{ label: 'Home', to: '/' }];
+    const seen = new Set();
+    const normalize = (value) => String(value || '').trim().toLowerCase();
+    const pushUnique = (label) => {
+      if (!label) return;
+      const key = normalize(label);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      items.push({ label });
+    };
+    const normalizedCountry = normalizeCountryCode(locCountry);
+    const countryLabel = getCountryLabel(normalizedCountry) || locCountry;
+    pushUnique(countryLabel);
+    pushUnique(locState);
+    pushUnique(locCity);
+    pushUnique(locRegion);
+    pushUnique(product?.neighborhood);
+    pushUnique(product?.street);
+    return items;
+  }, [locCity, locCountry, locRegion, locState, product?.neighborhood, product?.street]);
   const latValue = toFiniteNumber(
     product?.lat ?? product?.latitude ?? product?.location_lat ?? product?.location?.lat
   );
   const lngValue = toFiniteNumber(
     product?.lng ?? product?.longitude ?? product?.location_lng ?? product?.location?.lng
   );
+  const regionLat = Number.isFinite(latValue) ? latValue : mapCoords.lat;
+  const regionLng = Number.isFinite(lngValue) ? lngValue : mapCoords.lng;
   const sellerPhoneRaw = product?.seller_phone ?? product?.sellerPhone ?? '';
   const phoneActions = useMemo(
     () => getPhoneActions(sellerPhoneRaw),
     [sellerPhoneRaw]
   );
 
+  // Sugere anúncios próximos para complementar o anúncio atual.
   useEffect(() => {
     if (!phoneActions) {
       setPhoneActionsOpen(false);
@@ -415,6 +459,75 @@ export default function ProductDetail() {
       active = false;
     };
   }, [product, latValue, lngValue, locCity, locState, locCountry]);
+
+  const regionQueryParams = useMemo(() => {
+    if (!product?.id) return null;
+    const params = { sort: 'rank' };
+    if (Number.isFinite(regionLat) && Number.isFinite(regionLng)) {
+      return {
+        ...params,
+        ...buildRegionBounds(regionLat, regionLng),
+        ...(locCountry ? { country: locCountry } : {})
+      };
+    }
+    if (locCity) {
+      return {
+        ...params,
+        city: locCity,
+        ...(locCountry ? { country: locCountry } : {}),
+        ...(product?.neighborhood ? { q: product.neighborhood } : {})
+      };
+    }
+    if (locCountry) {
+      return { ...params, country: locCountry };
+    }
+    return null;
+  }, [product?.id, product?.neighborhood, regionLat, regionLng, locCity, locCountry]);
+
+  useEffect(() => {
+    if (!product?.id || !regionQueryParams) {
+      setRegionProducts([]);
+      setRegionError('');
+      setRegionLoading(false);
+      return;
+    }
+
+    let active = true;
+    setRegionLoading(true);
+
+    api
+      .get('/products', { params: regionQueryParams })
+      .then((res) => {
+        if (!active) return;
+        const data = Array.isArray(res.data?.data) ? res.data.data : [];
+        const currentId = String(product.id);
+        const seen = new Set();
+        const next = [];
+        for (const item of data) {
+          if (!item?.id) continue;
+          const itemId = String(item.id);
+          if (itemId === currentId || seen.has(itemId)) continue;
+          seen.add(itemId);
+          next.push(item);
+          if (next.length >= REGION_RESULT_LIMIT) break;
+        }
+        setRegionProducts(next);
+        setRegionError('');
+      })
+      .catch((err) => {
+        if (!active) return;
+        console.error(err);
+        setRegionError('Não foi possível carregar anúncios da região.');
+        setRegionProducts([]);
+      })
+      .finally(() => {
+        if (active) setRegionLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [product?.id, regionQueryParams]);
 
   const fetchProductQuestions = useCallback(async () => {
     if (!product?.id) return;
@@ -890,6 +1003,11 @@ export default function ProductDetail() {
     }
   };
 
+  const registerRegionClick = useCallback((productId) => {
+    if (!productId) return;
+    api.put(`/products/${productId}/click`).catch(() => {});
+  }, []);
+
   const handleOpenConversation = () => {
     if (!product?.id) return;
     if (!requireAuth('Faça login para conversar com o vendedor.')) return;
@@ -947,6 +1065,10 @@ export default function ProductDetail() {
   };
 
   const sellerName = product?.seller_name || 'Usuário TempleSale';
+  const showBreadcrumbs = breadcrumbItems.length > 1;
+  const regionTitle = regionLabel
+    ? `Anúncios na região de ${regionLabel}`
+    : 'Anúncios na sua região';
   const sellerAvatar = useMemo(
     () => toAbsoluteImageUrl(product?.seller_avatar) || '',
     [product?.seller_avatar]
@@ -1177,6 +1299,7 @@ export default function ProductDetail() {
   const facebook = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
   const xUrl = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`;
 
+
   const sellerCardContent = (
     <>
       <div
@@ -1281,6 +1404,7 @@ export default function ProductDetail() {
                 </button>
               )}
             </div>
+           
           </div>,
           viewerPortalRoot
         )
@@ -1295,11 +1419,7 @@ export default function ProductDetail() {
           responsabiliza pelas negociações feitas.
         </span>
       </summary>
-      <div className="product-detail__safety-body">
-        <p>
-          Nunca faça nenhum pagamento antecipado. O Portal serve apenas como divulgação, sendo assim não se
-          responsabiliza pelas negociações feitas.
-        </p>
+      <div className="product-detail__safety-body">    
         <p>
               Não pedimos PINs, senhas, protocolos ou códigos de confirmação. Desconfie se alguém entrar em contato em
               nome do TempleSale.
@@ -1404,6 +1524,31 @@ export default function ProductDetail() {
           {/* Layout ajustado para refletir card lateral e perguntas rápidas. */}
           <div className="product-detail__layout">
             <div className="product-detail__main">
+              {showBreadcrumbs && (
+                <nav className="product-detail__breadcrumb" aria-label="Caminho do anúncio">
+                  <ol className="product-detail__breadcrumb-list">
+                    {breadcrumbItems.map((item, index) => (
+                      <li key={`${item.label}-${index}`} className="product-detail__breadcrumb-item">
+                        {item.to ? (
+                          <Link to={item.to} className="product-detail__breadcrumb-link">
+                            {item.label}
+                          </Link>
+                        ) : (
+                          <span
+                            className="product-detail__breadcrumb-text"
+                            aria-current={index === breadcrumbItems.length - 1 ? 'page' : undefined}
+                          >
+                            {item.label}
+                          </span>
+                        )}
+                        {index < breadcrumbItems.length - 1 && (
+                          <span className="product-detail__breadcrumb-sep">{'>'}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+              )}
               {/* Cabeçalho com vendedor */}
               <header className="product-detail__header">
                 <div className="product-detail__header-actions">
@@ -1637,6 +1782,8 @@ export default function ProductDetail() {
                       </p>
                     )}
                   </div>
+              
+
                   {highlightSpecs.length > 0 && (
                     <div className="product-detail__highlights">
                       {highlightSpecs.map((entry) => {
@@ -1659,6 +1806,7 @@ export default function ProductDetail() {
                     </div>
                   )}
                 </div>
+                <hr className="divider" />
 
                 {isSeller && buyerInfo && (
                   <div className="product-detail__buyer-card">
@@ -1706,6 +1854,7 @@ export default function ProductDetail() {
                     </div>
                   </div>
                 )}
+<hr className="divider" />
 
                 {detailSpecs.length > 0 && (
                   <div className="product-detail__specs">
@@ -1736,6 +1885,7 @@ export default function ProductDetail() {
                     <span className="product-detail__field-value">{product.neighborhood || 'Não informado'}</span>
                   </p>
                 </div>
+                <hr className="divider" />
 
                 {(hasMapLocation || mapLoading) && (
                   <div className="product-detail__map-card">
@@ -1747,6 +1897,9 @@ export default function ProductDetail() {
                             ? 'Aproximação baseada na cidade informada no anúncio.'
                             : 'Aproximação baseada nas coordenadas informadas no anúncio.'}
                         </p>
+
+                       
+           
                       </div>
                       {hasMapLocation && (
                         <a
@@ -1775,7 +1928,8 @@ export default function ProductDetail() {
                       )}
                     </div>
                   </div>
-                )}
+                )}<hr className="divider" />
+
 
                 {images.length > 0 && (
                   <div className="product-detail__image-stack">
@@ -1794,6 +1948,7 @@ export default function ProductDetail() {
                     </div>
                   </div>
                 )}
+<hr className="divider" />
 
                 {floorplanUrls.length > 0 && (
                   <div className="product-detail__image-stack">
@@ -1887,6 +2042,7 @@ export default function ProductDetail() {
                       </div>
                     </div>
                   )}
+<hr className="divider" />
 
                   <div className="product-detail__qa-list">
                     <p className="product-detail__qa-list-title">Perguntas e respostas</p>
@@ -1986,8 +2142,46 @@ export default function ProductDetail() {
                   </div>
                 </section>
               )}
+              {regionQueryParams && (
+                <section className="product-detail__region">
+                  <div className="product-detail__region-header">
+                    <div>
+                      <h3 className="product-detail__region-title">{regionTitle}</h3>
+                      <p className="product-detail__region-subtitle">
+                        Mais anúncios próximos ao endereço deste anúncio.
+                      </p>
+                    </div>
+                    {regionProducts.length > 0 && !regionLoading && !regionError && (
+                      <span className="product-detail__region-count">
+                        {regionProducts.length}{' '}
+                        {regionProducts.length === 1 ? 'anúncio' : 'anúncios'}
+                      </span>
+                    )}
+                  </div>
+                  {regionLoading ? (
+                    <LoadingBar
+                      message="Carregando anúncios da região..."
+                      size="sm"
+                      className="product-detail__region-loading"
+                    />
+                  ) : regionError ? (
+                    <p className="product-detail__region-error">{regionError}</p>
+                  ) : regionProducts.length === 0 ? (
+                    <p className="product-detail__region-empty">
+                      Nenhum anúncio disponível nesta região ainda.
+                    </p>
+                  ) : (
+                    <SellerProductGrid
+                      products={regionProducts}
+                      registerClick={registerRegionClick}
+                      layout="compact"
+                    />
+                  )}
+                </section>
+              )}
             </div>
-            <aside className="product-detail__aside">
+            <aside className="product-detail__aside"><hr className="divider" />
+
               <div className="product-detail__contact-card">
                 <div className="product-detail__contact-header">
                   <p className="product-detail__contact-eyebrow">Fale com o anunciante</p>
@@ -2096,6 +2290,7 @@ export default function ProductDetail() {
               }}
             />
           )}
+<hr className="divider" />
 
           {offerOpen &&
             typeof document !== 'undefined' &&

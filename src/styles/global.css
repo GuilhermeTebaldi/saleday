@@ -4948,6 +4948,40 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.product-detail__breadcrumb {
+  font-size: 0.72rem;
+  color: var(--ts-muted);
+}
+
+.product-detail__breadcrumb-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.product-detail__breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.product-detail__breadcrumb-link,
+.product-detail__breadcrumb-text {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-detail__breadcrumb-link:hover {
+  color: var(--ts-text);
+}
+
+.product-detail__breadcrumb-sep {
+  color: rgba(0, 0, 0, 0.35);
+}
+
 @media (min-width: 768px) {
   .product-detail__header {
     flex-direction: row;
@@ -6889,6 +6923,69 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
 .product-detail__qa-more:hover {
   border-color: rgba(200, 178, 106, 0.5);
   transform: translateY(-1px);
+}
+
+.product-detail__region {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-detail__region-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@media (min-width: 768px) {
+  .product-detail__region-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.product-detail__region-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ts-text);
+}
+
+.product-detail__region-subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ts-muted);
+}
+
+.product-detail__region-count {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(31, 143, 95, 0.12);
+  color: var(--ts-cta);
+}
+
+.product-detail__region-loading {
+  color: var(--ts-muted);
+  font-size: 0.8rem;
+}
+
+.product-detail__region-empty {
+  font-size: 0.8rem;
+  color: var(--ts-muted);
+  text-align: center;
+}
+
+.product-detail__region-error {
+  font-size: 0.8rem;
+  color: #b91c1c;
 }
 
 .product-detail__share-overlay {
