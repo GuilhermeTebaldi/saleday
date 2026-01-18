@@ -16,6 +16,9 @@ import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import { makeAbsolute } from '../utils/urlHelpers.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import ImageViewerModal from '../components/ImageViewerModal.jsx';
+import useImageViewer from '../hooks/useImageViewer.js';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -68,6 +71,13 @@ export default function SellerProfile() {
   const [errMsg, setErrMsg] = useState('');
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const avatarMenuRef = useRef(null);
+  const {
+    isOpen: isAvatarViewerOpen,
+    src: avatarViewerSrc,
+    alt: avatarViewerAlt,
+    openViewer: openAvatarViewer,
+    closeViewer: closeAvatarViewer
+  } = useImageViewer();
 
   // modal avaliar
   const [rateOpen, setRateOpen] = useState(false);
@@ -355,7 +365,9 @@ export default function SellerProfile() {
   if (loading) {
     return (
       <section className="ig-wrap">
-        <div className="ig-card ig-center ig-muted">Carregando...</div>
+        <div className="ig-card ig-center ig-muted">
+          <LoadingBar message="Carregando..." className="text-slate-500" />
+        </div>
       </section>
     );
   }
@@ -384,8 +396,14 @@ export default function SellerProfile() {
   const locationStr =
     [city, state, country].filter(Boolean).join(', ') ||
     'Localização não informada';
+  const avatarLabel = sellerDisplayName ? `Foto de ${sellerDisplayName}` : 'Foto do vendedor';
   const handleAvatarClick = () => {
-    if (!isSelf) return;
+    if (!isSelf) {
+      if (avatarUrl) {
+        openAvatarViewer(avatarUrl, avatarLabel);
+      }
+      return;
+    }
     setShowAvatarMenu((prev) => !prev);
   };
   const shareLogoSrc = '/logo-templesale.png';
@@ -474,6 +492,12 @@ export default function SellerProfile() {
 
   return (
     <>
+      <ImageViewerModal
+        isOpen={isAvatarViewerOpen}
+        src={avatarViewerSrc}
+        alt={avatarViewerAlt}
+        onClose={closeAvatarViewer}
+      />
       <section className="ig-wrap ig-wrap--wide min-h-[calc(100vh-64px)] bg-gradient-to-b from-slate-50 to-slate-100 py-6 px-3">
         <CloseBackButton />
         <div className="max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -815,7 +839,11 @@ export default function SellerProfile() {
                   )}
                 </div>
                 {loadingReviews ? (
-                  <p className="text-sm text-slate-500 py-6 text-center">Carregando comentários...</p>
+                  <LoadingBar
+                    message="Carregando comentários..."
+                    className="text-sm text-slate-500 py-6 text-center"
+                    size="sm"
+                  />
                 ) : reviews.length === 0 ? (
                   <p className="text-sm text-slate-500 py-6 text-center">
                     {isSelf

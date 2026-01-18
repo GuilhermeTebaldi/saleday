@@ -15,6 +15,7 @@ import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 import { buildProductImageEntries, parseImageList } from '../utils/images.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 import {
   IMAGE_KIND,
   IMAGE_KIND_BADGE_LABEL,
@@ -659,7 +660,13 @@ export default function EditProduct() {
     }
   };
 
-  if (loading) return <div className="page-loading">Carregando produto...</div>;
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <LoadingBar message="Carregando produto..." />
+      </div>
+    );
+  }
 
   return (
     <div className="edit-product-page">

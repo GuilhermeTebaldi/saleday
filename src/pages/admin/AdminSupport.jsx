@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../api/api.js';
+import LoadingBar from '../../components/LoadingBar.jsx';
 
 const formatAdminTimestamp = (value) => {
   if (!value) return '';
@@ -156,7 +157,7 @@ export default function AdminSupport() {
         </div>
         <div className="space-y-3 rounded-3xl border border-white/10 bg-slate-900/60 p-4 shadow-inner shadow-black/40">
           {loadingConversations ? (
-            <p className="text-sm text-slate-400">Carregando conversas...</p>
+            <LoadingBar message="Carregando conversas..." className="text-sm text-slate-400" size="sm" />
           ) : conversations.length === 0 ? (
             <p className="text-sm text-slate-400">Nenhuma conversa registrada ainda.</p>
           ) : (
@@ -225,7 +226,7 @@ export default function AdminSupport() {
             className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-1"
           >
             {loadingMessages ? (
-              <p className="text-sm text-slate-400">Carregando mensagens...</p>
+              <LoadingBar message="Carregando mensagens..." className="text-sm text-slate-400" size="sm" />
             ) : !activeConversation ? (
               <p className="text-sm text-slate-500">Nenhuma conversa ativa no momento.</p>
             ) : messages.length === 0 ? (

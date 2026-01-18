@@ -27,6 +27,7 @@ import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getCurrentPath } from '../components/ScrollRestoration.jsx';
 import { getPhoneActions } from '../utils/phone.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -2407,7 +2408,7 @@ export default function Home() {
       <section id="feed" className="home-grid-section mt-2 px-0 sm:px-0">
         {productsLoading && displayedProducts.length === 0 ? (
           <div className="home-empty-state">
-            <h2>Carregando produtos...</h2>
+            <LoadingBar message="Carregando produtos..." />
             <p>Estamos preparando os melhores anúncios para você.</p>
           </div>
         ) : displayedProducts.length === 0 ? (
@@ -2675,7 +2676,11 @@ export default function Home() {
 
                     <div className="home-drawer__content">
                       {favoriteLoading ? (
-                        <p className="home-drawer__empty">Carregando favoritos...</p>
+                        <LoadingBar
+                          message="Carregando favoritos..."
+                          className="home-drawer__empty"
+                          size="sm"
+                        />
                       ) : favoriteItems.length === 0 ? (
                         <p className="home-drawer__empty">
                           Marque produtos como favoritos para acessá-los rapidamente aqui.

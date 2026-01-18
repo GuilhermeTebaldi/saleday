@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter } from 'lucide-react';
 import { getCountryLabel } from '../data/countries.js';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
+import LoadingBar from './LoadingBar.jsx';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -891,12 +892,19 @@ export default function SearchBar({
         >
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div>
-              <p className="font-semibold text-sm text-gray-800">
-                {countryLoading ? 'Carregando países' : 'Filtrar por país'}
-              </p>
-              <p className="text-[11px] text-gray-400">
-                {countryLoading ? 'Aguarde enquanto atualizamos os países ativos' : 'Somente países com anúncios ativos'}
-              </p>
+              {countryLoading ? (
+                <>
+                  <LoadingBar message="Carregando países" className="text-gray-800 text-sm" size="sm" />
+                  <p className="text-[11px] text-gray-400">
+                    Aguarde enquanto atualizamos os países ativos
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-sm text-gray-800">Filtrar por país</p>
+                  <p className="text-[11px] text-gray-400">Somente países com anúncios ativos</p>
+                </>
+              )}
             </div>
             <button
               type="button"
@@ -909,7 +917,7 @@ export default function SearchBar({
           </div>
           <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
             {countryLoading ? (
-              <p className="text-sm text-gray-500">Carregando países...</p>
+              <LoadingBar message="Carregando países..." className="text-sm text-gray-500" size="sm" />
             ) : countryOptions.length === 0 ? (
               <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
             ) : (

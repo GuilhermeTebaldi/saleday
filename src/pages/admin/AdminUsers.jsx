@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../api/api.js';
+import LoadingBar from '../../components/LoadingBar.jsx';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -214,7 +215,7 @@ export default function AdminUsers() {
       </section>
 
       {loading ? (
-        <p className="text-sm text-slate-300">Carregando usuários...</p>
+        <LoadingBar message="Carregando usuários..." className="text-sm text-slate-300" size="sm" />
       ) : users.length === 0 ? (
         <p className="text-sm text-slate-400">Nenhum usuário encontrado.</p>
       ) : (

@@ -21,6 +21,7 @@ import { isProductFree } from '../utils/product.js';
 import { normalizeOrderStatus } from '../utils/orderStatus.js';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -1151,7 +1152,11 @@ export default function Dashboard() {
 
                   <div className="home-drawer__content">
                     {favoritePanelLoading ? (
-                      <p className="home-drawer__empty">Carregando favoritos...</p>
+                      <LoadingBar
+                        message="Carregando favoritos..."
+                        className="home-drawer__empty"
+                        size="sm"
+                      />
                     ) : favoritePanelItems.length === 0 ? (
                       <p className="home-drawer__empty">
                         Marque produtos como favoritos para acessá-los rapidamente aqui no painel.
@@ -1521,7 +1526,7 @@ export default function Dashboard() {
               className="flex-1 overflow-y-auto px-6 py-4 space-y-3"
             >
               {supportLoading ? (
-                <p className="text-sm text-slate-500">Carregando a conversa...</p>
+                <LoadingBar message="Carregando a conversa..." className="text-sm text-slate-500" size="sm" />
               ) : supportMessages.length === 0 ? (
                 <p className="text-sm text-slate-400">
                   Aqui vão aparecer as mensagens trocadas com o suporte. Envie a primeira agora!

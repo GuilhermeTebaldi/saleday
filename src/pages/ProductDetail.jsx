@@ -7,14 +7,17 @@ import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy a
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import ImageViewerModal from '../components/ImageViewerModal.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
 import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
 import { isProductFree, getProductPriceLabel } from '../utils/product.js';
 import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
-import { buildProductImageEntries, parseImageList } from '../utils/images.js';
+import { buildProductImageEntries, parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
+import useImageViewer from '../hooks/useImageViewer.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getPhoneActions } from '../utils/phone.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
@@ -162,6 +165,13 @@ export default function ProductDetail() {
     node.setAttribute('data-templesale-product-viewer', 'true');
     return node;
   });
+  const {
+    isOpen: isSellerAvatarViewerOpen,
+    src: sellerAvatarViewerSrc,
+    alt: sellerAvatarViewerAlt,
+    openViewer: openSellerAvatarViewer,
+    closeViewer: closeSellerAvatarViewer
+  } = useImageViewer();
   const [touchStartX, setTouchStartX] = useState(null);
   const galleryTouchStartXRef = useRef(null);
   const galleryTouchMovedRef = useRef(false);
@@ -889,8 +899,22 @@ export default function ProductDetail() {
   };
 
   const sellerName = product?.seller_name || 'Usuário TempleSale';
-  const sellerAvatar = product?.seller_avatar || '';
+  const sellerAvatar = useMemo(
+    () => toAbsoluteImageUrl(product?.seller_avatar) || '',
+    [product?.seller_avatar]
+  );
   const sellerInitial = useMemo(() => getInitial(sellerName), [sellerName]);
+  const sellerAvatarLabel = sellerName ? `Foto de ${sellerName}` : 'Foto do vendedor';
+  const handleSellerAvatarPreview = useCallback(
+    (event) => {
+      if (!sellerAvatar) return;
+      if (event?.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+      if (event?.preventDefault) event.preventDefault();
+      if (event?.stopPropagation) event.stopPropagation();
+      openSellerAvatarViewer(sellerAvatar, sellerAvatarLabel);
+    },
+    [openSellerAvatarViewer, sellerAvatar, sellerAvatarLabel]
+  );
   const entryState = location.state;
   const stateSellerId = entryState?.sellerId;
   const sellerProfilePath = product?.user_id ? `/users/${product.user_id}` : '';
@@ -989,7 +1013,13 @@ export default function ProductDetail() {
     return () => window.removeEventListener('resize', measure);
   }, [showFloatingContactBar, showChatAction, showPhoneAction]);
 
-  if (loading) return <div className="p-6 text-center">Carregando produto...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <LoadingBar message="Carregando produto..." />
+      </div>
+    );
+  }
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
   if (!product) return null;
 
@@ -1068,7 +1098,14 @@ export default function ProductDetail() {
 
   const sellerCardContent = (
     <>
-              <div className="product-detail__seller-avatar">
+      <div
+        className={`product-detail__seller-avatar ${sellerAvatar ? 'cursor-pointer' : ''}`}
+        role={sellerAvatar ? 'button' : undefined}
+        tabIndex={sellerAvatar ? 0 : undefined}
+        aria-label={sellerAvatar ? `Ver foto de ${sellerName}` : undefined}
+        onClick={handleSellerAvatarPreview}
+        onKeyDown={handleSellerAvatarPreview}
+      >
         {sellerAvatar ? (
           <img src={sellerAvatar} alt={sellerName} loading="lazy" />
         ) : (
@@ -1668,7 +1705,7 @@ export default function ProductDetail() {
 
           <div className="product-detail__qa-list">
             {questionsLoading && (
-              <p className="product-detail__qa-empty">Carregando perguntas...</p>
+              <LoadingBar message="Carregando perguntas..." className="product-detail__qa-empty" size="sm" />
             )}
             {!questionsLoading && questionsError && (
               <p className="product-detail__qa-error">{questionsError}</p>
@@ -1911,6 +1948,12 @@ export default function ProductDetail() {
         )}
 
 
+      <ImageViewerModal
+        isOpen={isSellerAvatarViewerOpen}
+        src={sellerAvatarViewerSrc}
+        alt={sellerAvatarViewerAlt}
+        onClose={closeSellerAvatarViewer}
+      />
       {viewerPortal}
 
       {confirmPurchaseOpen &&

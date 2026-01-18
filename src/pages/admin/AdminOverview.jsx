@@ -2,6 +2,7 @@
 // Painel principal com métricas e insights do marketplace.
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../api/api.js';
+import LoadingBar from '../../components/LoadingBar.jsx';
 
 export default function AdminOverview() {
   const [metrics, setMetrics] = useState(null);
@@ -161,7 +162,7 @@ export default function AdminOverview() {
   const activities = metrics?.activities ?? [];
 
   if (loading) {
-    return <p className="text-sm text-slate-300">Carregando métricas...</p>;
+    return <LoadingBar message="Carregando métricas..." className="text-sm text-slate-300" size="sm" />;
   }
 
   if (error && !metrics) {

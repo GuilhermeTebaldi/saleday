@@ -6,6 +6,8 @@ import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { COUNTRY_OPTIONS, normalizeCountryCode, getCountryLabel } from '../data/countries.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import ImageViewerModal from '../components/ImageViewerModal.jsx';
+import useImageViewer from '../hooks/useImageViewer.js';
 // Compressão segura de imagem para no máximo ~2MB
 const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0.4) =>
   new Promise((resolve, reject) => {
@@ -124,6 +126,13 @@ export default function EditProfile() {
   const [avatarPreview, setAvatarPreview] = useState(user?.profile_image_url ?? '');
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const avatarObjectUrlRef = useRef(null);
+  const {
+    isOpen: isAvatarViewerOpen,
+    src: avatarViewerSrc,
+    alt: avatarViewerAlt,
+    openViewer: openAvatarViewer,
+    closeViewer: closeAvatarViewer
+  } = useImageViewer();
 
   useEffect(() => {
     setForm(initialFormState);
@@ -220,6 +229,13 @@ export default function EditProfile() {
     setAvatarPreview('');
     setRemoveAvatar(true);
   };
+  const avatarPreviewLabel = user?.username ? `Foto de ${user.username}` : 'Foto do perfil';
+  const handleAvatarPreview = (event) => {
+    if (!avatarPreview) return;
+    if (event?.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+    if (event?.preventDefault) event.preventDefault();
+    openAvatarViewer(avatarPreview, avatarPreviewLabel);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -268,6 +284,12 @@ export default function EditProfile() {
 
   return (
     <section className="edit-profile-page">
+      <ImageViewerModal
+        isOpen={isAvatarViewerOpen}
+        src={avatarViewerSrc}
+        alt={avatarViewerAlt}
+        onClose={closeAvatarViewer}
+      />
       <CloseBackButton />
       {saving && (
         <div
@@ -288,7 +310,15 @@ export default function EditProfile() {
 
         <form onSubmit={handleSubmit} className="edit-profile-form">
           <section className="edit-profile-avatar">
-            <div className="edit-profile-avatar__preview">
+            <div
+              className="edit-profile-avatar__preview"
+              role={avatarPreview ? 'button' : undefined}
+              tabIndex={avatarPreview ? 0 : undefined}
+              aria-label={avatarPreview ? 'Ver foto do perfil' : undefined}
+              onClick={handleAvatarPreview}
+              onKeyDown={handleAvatarPreview}
+              style={avatarPreview ? { cursor: 'zoom-in' } : undefined}
+            >
               {avatarPreview ? (
                 <img src={avatarPreview} alt="Foto do perfil" />
               ) : (

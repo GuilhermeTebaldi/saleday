@@ -9,6 +9,7 @@ import { getProductPriceLabel } from '../utils/product.js';
 import { parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
 import { getUnseenSellerOrderIds, markSellerOrdersSeen } from '../utils/orders.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 const STATUS_LABEL = {
   pending: 'Pendente',
@@ -187,7 +188,7 @@ export default function SalesRequests() {
 
       {loading ? (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center text-gray-500">
-          Carregando pedidos...
+          <LoadingBar message="Carregando pedidos..." className="text-gray-500" />
         </div>
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-lg shadow-sm p-6 text-center text-red-600">

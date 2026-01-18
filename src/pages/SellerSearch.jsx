@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/api.js';
 import { asStars } from '../utils/rating.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 const getInitial = (value) => {
   if (!value) return 'U';
@@ -131,7 +132,8 @@ export default function SellerSearch() {
 
       {loading ? (
         <div className="sellersearch-message text-center py-6 text-gray-600">
-Carregando vendedores...</div>
+          <LoadingBar message="Carregando vendedores..." className="text-gray-600" size="sm" />
+        </div>
       ) : error ? (
         <div className="sellersearch-message sellersearch-error text-center py-6 text-red-600 font-medium">
 {error}</div>

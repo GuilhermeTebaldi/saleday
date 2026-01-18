@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
 import api from '../api/api.js';
+import LoadingBar from './LoadingBar.jsx';
 
 export default function ProtectedRoute({ children, redirectTo = '/login' }) {
   const { user, loading } = useContext(AuthContext);
@@ -45,11 +46,23 @@ export default function ProtectedRoute({ children, redirectTo = '/login' }) {
     };
   }, [user]);
 
-  if (loading) return <div className="page-loading">Carregando...</div>;
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <LoadingBar message="Carregando..." />
+      </div>
+    );
+  }
 
   if (!user) return <Navigate to={redirectTo} replace />;
 
-  if (!consentChecked) return <div className="page-loading">Carregando...</div>;
+  if (!consentChecked) {
+    return (
+      <div className="page-loading">
+        <LoadingBar message="Carregando..." />
+      </div>
+    );
+  }
   if (requireReconsent) return <Navigate to={legalRedirect} replace />;
 
   return children;

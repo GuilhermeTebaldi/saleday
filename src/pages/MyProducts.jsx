@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import ProductCard from '../components/ProductCard.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import { getProductPriceLabel } from '../utils/product.js';
+import LoadingBar from '../components/LoadingBar.jsx';
 
 export default function MyProducts() {
   const { token } = useContext(AuthContext);
@@ -242,7 +243,7 @@ export default function MyProducts() {
     return (
       <>
         <CloseBackButton />
-        <p className="my-products-empty">Carregando seus anúncios...</p>
+        <LoadingBar message="Carregando seus anúncios..." className="my-products-empty" />
       </>
     );
   }

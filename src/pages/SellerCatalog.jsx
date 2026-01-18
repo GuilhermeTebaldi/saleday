@@ -7,6 +7,7 @@ import GeoContext from '../context/GeoContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 import {
   createCatalogTranslator,
   DEFAULT_CATALOG_LOCALE,
@@ -330,7 +331,7 @@ export default function SellerCatalog() {
               {error && <p className="text-xs text-red-500">{error}</p>}
             </div>
             {loading ? (
-              <p className="text-sm text-slate-500">Carregando produtos...</p>
+              <LoadingBar message="Carregando produtos..." className="text-sm text-slate-500" size="sm" />
             ) : products.length === 0 ? (
               <p className="text-sm text-slate-500">
                 Você ainda não publicou produtos. Crie um anúncio para aparecer no catálogo.

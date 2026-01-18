@@ -5,6 +5,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 import formatProductPrice, {
   convertCurrency,
   formatCurrency,
@@ -135,9 +136,10 @@ export default function DashboardBoost() {
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center bg-black">
-        <p className="text-center text-gray-500 text-sm tracking-[0.25em] uppercase">
-          Carregando seus anúncios...
-        </p>
+        <LoadingBar
+          message="Carregando seus anúncios..."
+          className="text-center text-gray-500 text-sm tracking-[0.25em] uppercase"
+        />
       </section>
     );
   }
@@ -511,9 +513,10 @@ export function DashboardBoostPlan() {
   if (loading || !product) {
     return (
       <section className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-gray-400 text-sm tracking-[0.25em] uppercase">
-          Carregando anúncio selecionado...
-        </p>
+        <LoadingBar
+          message="Carregando anúncio selecionado..."
+          className="text-gray-400 text-sm tracking-[0.25em] uppercase"
+        />
       </section>
     );
   }

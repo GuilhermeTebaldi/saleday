@@ -12,6 +12,7 @@ import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import { normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
+import LoadingBar from '../components/LoadingBar.jsx';
 import { buildLinkPayloadEntries } from '../utils/links.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
@@ -37,8 +38,8 @@ const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2048;
 const MIN_COMPRESS_QUALITY = 0.6;
 const FIELD_BASE_CLASS =
-  'w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm placeholder:text-[var(--ts-muted)] focus:border-[rgba(200,178,106,0.6)] focus:ring-2 focus:ring-[rgba(200,178,106,0.35)]';
-const FIELD_LABEL_CLASS = 'block text-sm font-medium text-[var(--ts-text)] mt-3';
+  'w-full rounded-lg border border-[rgba(200,178,106,0.28)] bg-white px-3 py-2 text-[var(--ts-text)] shadow-sm placeholder:text-[var(--ts-muted)] focus:border-[var(--ts-cta)] focus:ring-2 focus:ring-[rgba(31,143,95,0.25)] transition';
+const FIELD_LABEL_CLASS = 'block text-sm font-semibold text-[var(--ts-text)] mt-3';
 const WATERMARK_TEXT = 'templesale.com';
 const WATERMARK_TEXT_COLOR = '#0c0c0c';
 const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
@@ -1419,21 +1420,35 @@ export default function NewProduct() {
   };
 
   return (
-    <section className="bg-[var(--ts-bg)] min-h-screen py-12 px-4 text-[var(--ts-surface)]">
-      <div className="max-w-4xl mx-auto rounded-3xl border border-[rgba(200,178,106,0.18)] bg-[var(--ts-card)] p-6 shadow-[0_40px_80px_-55px_rgba(0,0,0,0.7)]">
-        <CloseBackButton />
-        <header className="text-center mb-6">
-          <h1 className="font-['Cinzel'] text-2xl sm:text-[28px] font-semibold text-[var(--ts-text)]">
-            Publicar novo produto
-          </h1>
-          <p className="text-sm font-medium text-[var(--ts-muted)] mt-1">
-            Compartilhe seu produto com a comunidade TempleSale em poucos passos.
-          </p>
-        </header>
+    <section className="relative min-h-screen bg-[var(--ts-bg)] py-10 px-4 text-[var(--ts-surface)]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-[rgba(31,143,95,0.18)] blur-3xl" />
+        <div className="absolute -bottom-36 -left-24 h-72 w-72 rounded-full bg-[rgba(200,178,106,0.2)] blur-3xl" />
+      </div>
+      <div className="relative mx-auto max-w-5xl">
+        <div className="relative overflow-hidden rounded-[28px] border border-[rgba(200,178,106,0.35)] bg-white text-[var(--ts-text)] shadow-[0_45px_90px_-60px_rgba(0,0,0,0.85)]">
+          <div
+            className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,rgba(200,178,106,0.1),rgba(31,143,95,0.5),rgba(200,178,106,0.1))]"
+            aria-hidden="true"
+          />
+          <div className="relative p-6 sm:p-10">
+            <CloseBackButton />
+            <header className="text-center mb-8">
+              <div
+                className="mx-auto mb-3 h-1 w-14 rounded-full bg-[var(--ts-gold)] opacity-80"
+                aria-hidden="true"
+              />
+              <h1 className="font-['Cinzel'] text-2xl sm:text-[30px] font-semibold text-[var(--ts-text)]">
+                Publicar novo produto
+              </h1>
+              <p className="text-sm font-medium text-[var(--ts-muted)] mt-2">
+                Compartilhe seu produto com a comunidade TempleSale em poucos passos.
+              </p>
+            </header>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4"
+          className="space-y-6"
           noValidate
           onInvalid={(event) => {
             event.preventDefault();
@@ -1458,7 +1473,8 @@ export default function NewProduct() {
               </ul>
             </div>
           )}
-          <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <div className="mt-4 rounded-2xl border border-[rgba(200,178,106,0.18)] bg-[rgba(14,17,22,0.02)] p-5 shadow-[0_18px_35px_-28px_rgba(0,0,0,0.4)]">
+            <div className="grid md:grid-cols-2 gap-4">
             <label className={FIELD_LABEL_CLASS}>
               <span>Título*</span>
               <input
@@ -1603,20 +1619,21 @@ export default function NewProduct() {
                 País e cidade são obrigatórios; use o botão acima para preencher estes campos automaticamente e acelerar a publicação.
               </p>
             </div>
-            <label className={FIELD_LABEL_CLASS}>
-              <span>País (sigla)</span>
-              <select name="country" value={form.country} onChange={handleChange} className={FIELD_BASE_CLASS}>
-                {COUNTRY_OPTIONS.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label} ({c.code})
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className={FIELD_LABEL_CLASS}>
+                <span>País (sigla)</span>
+                <select name="country" value={form.country} onChange={handleChange} className={FIELD_BASE_CLASS}>
+                  {COUNTRY_OPTIONS.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
           {/* CEP/ZIP primeiro */}
-          <div className="my-2">
+          <div className="my-2 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
             <div className="flex gap-2">
               <input
                 ref={zipInputRef}
@@ -1655,7 +1672,7 @@ export default function NewProduct() {
           </div>
 
           {/* Endereço */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="mt-2 grid grid-cols-2 gap-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
             {/* País como SELECT com siglas */}
             <label className="flex flex-col">
               <span className="text-sm font-medium text-[var(--ts-text)] mb-1">Cidade</span>
@@ -1706,7 +1723,7 @@ export default function NewProduct() {
              </label>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
             <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)] mb-2">
               Detalhes do produto
             </h2>
@@ -1788,7 +1805,7 @@ export default function NewProduct() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
             <div className="flex items-center justify-between">
               <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Fotos do produto</h2>
               <span className="text-xs text-[var(--ts-muted)]">{images.length}/{MAX_PRODUCT_PHOTOS}</span>
@@ -1835,7 +1852,7 @@ export default function NewProduct() {
           </div>
 
           {isFloorplanCategory && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-['Cinzel'] text-sm font-semibold text-[var(--ts-text)]">Planta do ambiente</h2>
                 <span className="text-xs text-[var(--ts-muted)]">
@@ -1889,31 +1906,33 @@ export default function NewProduct() {
               </p>
             </div>
           )}
-          <LinkListEditor
-            links={form.links}
-            onChange={(links) => setForm((prev) => ({ ...prev, links }))}
-          />
-
-          <label className={FIELD_LABEL_CLASS}>
-            <span>Descrição</span>
-            <textarea
-              name="description"
-              placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
-              value={form.description}
-              onChange={handleChange}
-              rows={5}
-              required
-              className={`${FIELD_BASE_CLASS} resize-none bg-[var(--ts-surface)] text-base leading-relaxed ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
+          <div className="mt-4 space-y-4 rounded-2xl border border-[rgba(200,178,106,0.2)] bg-[rgba(14,17,22,0.02)] p-4">
+            <LinkListEditor
+              links={form.links}
+              onChange={(links) => setForm((prev) => ({ ...prev, links }))}
             />
-            {hasFieldError('description') && (
-              <span className="text-xs text-red-600">Informe uma descrição.</span>
-            )}
-          </label>
 
-          <footer className="flex justify-end gap-4 mt-6">
+            <label className={FIELD_LABEL_CLASS}>
+              <span>Descrição</span>
+              <textarea
+                name="description"
+                placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
+                value={form.description}
+                onChange={handleChange}
+                rows={5}
+                required
+                className={`${FIELD_BASE_CLASS} resize-none bg-[var(--ts-surface)] text-base leading-relaxed ${hasFieldError('description') ? 'ring-2 ring-red-400' : ''}`}
+              />
+              {hasFieldError('description') && (
+                <span className="text-xs text-red-600">Informe uma descrição.</span>
+              )}
+            </label>
+          </div>
+
+          <footer className="mt-6 flex flex-col-reverse gap-3 border-t border-[rgba(200,178,106,0.2)] pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
-              className="bg-transparent text-[var(--ts-muted)] font-semibold py-2 px-4 rounded-lg border border-black/10 hover:bg-[var(--ts-surface)] disabled:opacity-50"
+              className="bg-white text-[var(--ts-text)] font-semibold py-2.5 px-4 rounded-lg border border-[rgba(200,178,106,0.35)] hover:bg-[rgba(200,178,106,0.08)] disabled:opacity-50"
               onClick={() => {
                 suppressFloorplanToastRef.current = true;
                 resetImagePreviews();
@@ -1926,13 +1945,13 @@ export default function NewProduct() {
             </button>
             <button
               type="submit"
-              className="bg-[var(--ts-cta)] hover:bg-[#1a7a51] text-white font-bold py-2.5 px-5 rounded-lg shadow-[0_18px_32px_-20px_rgba(31,143,95,0.65)] disabled:opacity-70"
+              className="bg-[var(--ts-cta)] hover:bg-[#1a7a51] text-white font-bold py-2.5 px-5 rounded-lg border border-[rgba(31,143,95,0.65)] shadow-[0_18px_32px_-20px_rgba(31,143,95,0.65)] disabled:opacity-70"
               disabled={sending}
             >
               {sending ? 'Publicando...' : 'Publicar produto'}
             </button>
           </footer>
-        </form>
+        </form></div>
       </div>
       {isOverlayVisible && (
         <div
@@ -1941,7 +1960,15 @@ export default function NewProduct() {
           aria-live="polite"
         >
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md text-center">
-            <p className="text-lg font-semibold text-[var(--ts-text)]">{stageTitle}</p>
+            {stageTitle.toLowerCase().includes('carregando') ? (
+              <LoadingBar
+                message={stageTitle}
+                className="text-lg font-semibold text-[var(--ts-text)]"
+                size="sm"
+              />
+            ) : (
+              <p className="text-lg font-semibold text-[var(--ts-text)]">{stageTitle}</p>
+            )}
             <p key={stageDetail} className="text-sm text-[var(--ts-muted)] mt-2">
               {stageDetail}
             </p>
@@ -2021,6 +2048,7 @@ export default function NewProduct() {
           </div>
         </div>
       )}
+      </div>
     </section>
   );
 }

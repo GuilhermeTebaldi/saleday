@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../api/api.js';
+import LoadingBar from '../../components/LoadingBar.jsx';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -196,7 +197,7 @@ export default function AdminProducts() {
       </section>
 
       {loading ? (
-        <p className="text-sm text-slate-300">Carregando produtos...</p>
+        <LoadingBar message="Carregando produtos..." className="text-sm text-slate-300" size="sm" />
       ) : products.length === 0 ? (
         <p className="text-sm text-slate-400">Nenhum dado disponível.</p>
       ) : (

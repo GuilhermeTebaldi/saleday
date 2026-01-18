@@ -8,6 +8,7 @@ import { Map as MapIcon, X } from 'lucide-react';
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
+import LoadingBar from './LoadingBar.jsx';
 
 const DEFAULT_CENTER = [-23.55, -46.63];
 const DEFAULT_ZOOM = 12;
@@ -612,7 +613,11 @@ export default function MapSearch({
                         className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                         type="button"
                       >
-                        {loading ? 'Carregando...' : 'Confirmar região'}
+                        {loading ? (
+                          <LoadingBar message="Carregando..." size="sm" variant="inline" className="text-white" />
+                        ) : (
+                          'Confirmar região'
+                        )}
                       </button>
                     </div>
                   </div>

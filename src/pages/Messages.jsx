@@ -6,6 +6,7 @@ import { MessageCircle } from 'lucide-react';
   import { toast } from 'react-hot-toast';
   import api from '../api/api.js';
   import { AuthContext } from '../context/AuthContext.jsx';
+  import ImageViewerModal from '../components/ImageViewerModal.jsx';
   import {
     formatOfferAmount,
     parseOfferMessage,
@@ -16,6 +17,7 @@ import { MessageCircle } from 'lucide-react';
   import formatProductPrice from '../utils/currency.js';
   import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
   import CloseBackButton from '../components/CloseBackButton.jsx';
+  import useImageViewer from '../hooks/useImageViewer.js';
 
   const sortConversationsByDate = (list) =>
     [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -141,6 +143,13 @@ import { MessageCircle } from 'lucide-react';
     const [activeConversationKey, setActiveConversationKey] = useState(null);
     const [searchParams] = useSearchParams();
     const [previewContext, setPreviewContext] = useState(null);
+    const {
+      isOpen: isAvatarViewerOpen,
+      src: avatarViewerSrc,
+      alt: avatarViewerAlt,
+      openViewer: openAvatarViewer,
+      closeViewer: closeAvatarViewer
+    } = useImageViewer();
     const sendSoundRef = useRef(null);
     const receiveSoundRef = useRef(null);
     const pendingContextRef = useRef(null);
@@ -918,6 +927,21 @@ import { MessageCircle } from 'lucide-react';
     const hasActiveConversation = Boolean(counterpartId);
     const headerPartnerName = selectedMeta.counterpart || selectedMeta.seller || 'Vendedor TempleSale';
     const headerSubtitle = selectedProduct ? 'Produto em foco abaixo' : 'Mensagens privadas';
+    const headerAvatarUrl = useMemo(
+      () => toAbsoluteImageUrl(selectedMeta.avatar) || '',
+      [selectedMeta.avatar]
+    );
+    const handleHeaderAvatarPreview = useCallback(
+      (event) => {
+        if (!headerAvatarUrl) return;
+        if (event?.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+        if (event?.preventDefault) event.preventDefault();
+        if (event?.stopPropagation) event.stopPropagation();
+        const label = headerPartnerName ? `Foto de ${headerPartnerName}` : 'Foto do vendedor';
+        openAvatarViewer(headerAvatarUrl, label);
+      },
+      [headerAvatarUrl, headerPartnerName, openAvatarViewer]
+    );
     const sortedMessages = useMemo(() => {
       return [...messages].sort(
         (a, b) =>
@@ -1129,6 +1153,12 @@ import { MessageCircle } from 'lucide-react';
 
     return (
       <>
+    <ImageViewerModal
+      isOpen={isAvatarViewerOpen}
+      src={avatarViewerSrc}
+      alt={avatarViewerAlt}
+      onClose={closeAvatarViewer}
+    />
     <div className="flex h-screen flex-col overflow-x-hidden overflow-y-hidden bg-slate-50 pt-[var(--home-header-height,64px)]">
           <CloseBackButton />
           <div className="mx-auto flex h-full w-full max-w-[1400px] flex-1 flex-col gap-[18px] px-0 py-0 lg:flex-row lg:gap-6 lg:px-6 lg:py-4">
@@ -1152,13 +1182,20 @@ import { MessageCircle } from 'lucide-react';
             </button>
           </div>
     <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20">
-                          {selectedMeta.avatar ? (
+    <div
+      className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20 ${
+        headerAvatarUrl ? 'cursor-pointer' : ''
+      }`}
+      role={headerAvatarUrl ? 'button' : undefined}
+      tabIndex={headerAvatarUrl ? 0 : undefined}
+      aria-label={headerAvatarUrl ? `Ver foto de ${headerPartnerName}` : undefined}
+      onClick={handleHeaderAvatarPreview}
+      onKeyDown={handleHeaderAvatarPreview}
+    >
+                          {headerAvatarUrl ? (
                             <img
-                              src={selectedMeta.avatar}
-                              alt={
-                                selectedMeta.counterpart || selectedMeta.seller || 'Usuário TempleSale'
-                              }
+                              src={headerAvatarUrl}
+                              alt={headerPartnerName || 'Usuário TempleSale'}
                               className="h-full w-full rounded-2xl object-cover"
                             />
                           ) : (

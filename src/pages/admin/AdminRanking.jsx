@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../../api/api.js';
+import LoadingBar from '../../components/LoadingBar.jsx';
 
 const DEFAULT_COUNTRY = '';
 const LIMIT = 120;
@@ -410,7 +411,7 @@ export default function AdminRanking() {
 
       {/* LISTA DE PRODUTOS */}
       {loading ? (
-        <p className="text-sm text-slate-200">Carregando ranking...</p>
+        <LoadingBar message="Carregando ranking..." className="text-sm text-slate-200" size="sm" />
       ) : visibleBoard.length === 0 ? (
         <p className="text-sm text-slate-300">
           Nenhum produto encontrado para o país <span className="font-semibold">{country || '—'}</span>.
