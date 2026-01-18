@@ -3,7 +3,26 @@
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Heart, Send, Share2, MapPin, MessageCircle, Eye, X as CloseIcon, Copy as CopyIcon, ChevronLeft, PhoneCall, ShoppingCart } from 'lucide-react';
+import {
+  Heart,
+  Send,
+  Share2,
+  MapPin,
+  MessageCircle,
+  Eye,
+  X as CloseIcon,
+  Copy as CopyIcon,
+  ChevronLeft,
+  PhoneCall,
+  ShoppingCart,
+  Home,
+  Ruler,
+  BedDouble,
+  Bath,
+  Car,
+  Building2,
+  Tag
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -134,6 +153,26 @@ const buildLocationQuery = (city, state, country) =>
   [city, state, country].filter(Boolean).join(', ');
 
 const QUESTION_PAGE_SIZE = 4;
+const MESSAGE_LIMIT = 200;
+const QUICK_QUESTION_PRESETS = [
+  'Eu posso visitar?',
+  'Aceita permuta?',
+  'Me retorne no WhatsApp!',
+  'Tenho interesse, está disponível?'
+];
+const DESKTOP_LAYOUT_WIDTH = 1024;
+
+const HIGHLIGHT_ICON_BY_LABEL = {
+  'Tipo de imóvel': Home,
+  'Área (m²)': Ruler,
+  Quartos: BedDouble,
+  Banheiros: Bath,
+  Vagas: Car,
+  Condomínio: Building2,
+  'Tipo de aluguel': Building2
+};
+
+const resolveHighlightIcon = (label) => HIGHLIGHT_ICON_BY_LABEL[label] || Tag;
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -185,6 +224,7 @@ export default function ProductDetail() {
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
   const [phoneActionsOpen, setPhoneActionsOpen] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [floatingBarHeight, setFloatingBarHeight] = useState(0);
   const floatingBarRef = useRef(null);
   const { user, token } = useContext(AuthContext);
@@ -222,6 +262,7 @@ export default function ProductDetail() {
   const viewIncrementPending = useRef(false);
   const questionRefs = useRef(new Map());
   const replyInputRefs = useRef(new Map());
+  const questionInputRef = useRef(null);
   const highlightHandledRef = useRef(false);
   const [highlightQuestionKey, setHighlightQuestionKey] = useState('');
   const sellerRating = Number(product?.seller_rating_avg ?? 0);
@@ -604,6 +645,13 @@ export default function ProductDetail() {
     }
   };
 
+  const handleQuickQuestionPick = useCallback((preset) => {
+    setMessage(preset);
+    requestAnimationFrame(() => {
+      questionInputRef.current?.focus();
+    });
+  }, []);
+
   const handleReplyChange = (questionId, value) => {
     setReplyDrafts((prev) => ({
       ...prev,
@@ -944,6 +992,9 @@ export default function ProductDetail() {
   }, [productQuestions]);
   const displayedQuestions = visibleProductQuestions.slice(0, visibleQuestionCount);
   const hasMoreQuestions = visibleProductQuestions.length > visibleQuestionCount;
+  const hasLoadedQuestions = initialQuestionsLoadedRef.current;
+  const showQuestionsLoading = questionsLoading && !hasLoadedQuestions;
+  const showQuestionsEmpty = !questionsError && visibleProductQuestions.length === 0;
 
   const setQuestionRef = useCallback((key, node) => {
     if (!key) return;
@@ -997,7 +1048,22 @@ export default function ProductDetail() {
   const isSeller = Boolean(isOwner);
   const showChatAction = Boolean(!isSeller);
   const showPhoneAction = Boolean(!isSeller && phoneActions);
-  const showFloatingContactBar = showChatAction || showPhoneAction;
+  const showWhatsappAction = Boolean(!isSeller && phoneActions);
+  const hasContactActions = showChatAction || showPhoneAction || showWhatsappAction;
+  const showFloatingContactBar = hasContactActions && !isDesktopLayout;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const query = window.matchMedia(`(min-width: ${DESKTOP_LAYOUT_WIDTH}px)`);
+    const updateLayout = () => setIsDesktopLayout(query.matches);
+    updateLayout();
+    if (query.addEventListener) {
+      query.addEventListener('change', updateLayout);
+      return () => query.removeEventListener('change', updateLayout);
+    }
+    query.addListener(updateLayout);
+    return () => query.removeListener(updateLayout);
+  }, []);
 
   useLayoutEffect(() => {
     if (!showFloatingContactBar) {
@@ -1011,12 +1077,12 @@ export default function ProductDetail() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [showFloatingContactBar, showChatAction, showPhoneAction]);
+  }, [showFloatingContactBar, showChatAction, showPhoneAction, showWhatsappAction]);
 
   if (loading) {
     return (
-      <div className="p-6 text-center">
-        <LoadingBar message="Carregando produto..." />
+      <div className="p-6 text-center" aria-busy="true">
+        <LoadingBar message="Carregando produto..." className="sr-only" />
       </div>
     );
   }
@@ -1063,6 +1129,21 @@ export default function ProductDetail() {
     { label: 'Cor', value: product.color },
     { label: 'Ano', value: product.year }
   ].filter((entry) => entry.value);
+  const highlightSource =
+    propertySpecs.length > 0
+      ? propertySpecs
+      : serviceSpecs.length > 0
+      ? serviceSpecs
+      : jobSpecs.length > 0
+      ? jobSpecs
+      : specEntries;
+  const highlightSpecs = highlightSource.slice(0, 6);
+  const highlightSignature = new Set(
+    highlightSpecs.map((entry) => `${entry.label}::${entry.value}`)
+  );
+  const detailSpecs = specEntries.filter(
+    (entry) => !highlightSignature.has(`${entry.label}::${entry.value}`)
+  );
 
   const hasMapLocation =
     mapCoords.lat !== null && mapCoords.lng !== null;
@@ -1205,6 +1286,44 @@ export default function ProductDetail() {
         )
       : null;
 
+  const safetyNotice = (
+    <details className="product-detail__safety">
+      <summary>
+        <span className="product-detail__safety-title">Cuidados a serem tomados:</span>
+        <span className="product-detail__safety-preview">
+          Nunca faça nenhum pagamento antecipado. O Portal serve apenas como divulgação, sendo assim não se
+          responsabiliza pelas negociações feitas.
+        </span>
+      </summary>
+      <div className="product-detail__safety-body">
+        <p>
+          Nunca faça nenhum pagamento antecipado. O Portal serve apenas como divulgação, sendo assim não se
+          responsabiliza pelas negociações feitas.
+        </p>
+        <p>
+          Não pedimos PINs, senhas, protocolos ou códigos de confirmação. Desconfie se alguém entrar em contato em
+          nome do Chaves na Mão.
+        </p>
+        <ul>
+          <li>Desconfie de preços abaixo do mercado</li>
+          <li>Na dúvida ligue para o anunciante</li>
+          <li>Verifique bem toda a documentação</li>
+          <li>Nunca efetue pagamento antecipado</li>
+        </ul>
+        <p>
+          O Chaves na Mão é um portal de classificados online e tem como objetivo a aproximação de interessados na
+          compra, venda ou locação de imóveis, carros e motos, de modo que não presta serviços de consultoria ou
+          intermediações de negócios entre seus anunciantes e usuários, portanto sendo de exclusiva responsabilidade
+          dos seus anunciantes e usuários pelos anúncios e pelas negociações empreendidas.
+        </p>
+        <p>
+          <strong>*Importante:</strong> Os anúncios listados em nosso site são publicados por terceiros. Logo, não
+          nos responsabilizamos pelos dados apresentados.
+        </p>
+      </div>
+    </details>
+  );
+
   const floatingBarPortal =
     showFloatingContactBar && typeof document !== 'undefined'
       ? createPortal(
@@ -1230,6 +1349,16 @@ export default function ProductDetail() {
                 >
                   <PhoneCall size={18} /> Chamar
                 </button>
+              )}
+              {showWhatsappAction && (
+                <a
+                  href={whatsappContactLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="product-detail__cta product-detail__cta--whatsapp"
+                >
+                  <MessageCircle size={18} /> WhatsApp
+                </a>
               )}
             </div>
           </div>,
@@ -1272,794 +1401,898 @@ export default function ProductDetail() {
               Produto excluído!
             </div>
           )}
-        {/* Cabeçalho com vendedor */}
-        <header className="product-detail__header">
-          <div className="product-detail__header-actions">
-            {sellerProfilePath ? (
-              <Link
-                to={sellerProfilePath}
-                className="product-detail__seller-card"
-                aria-label={`Ver perfil completo de ${sellerName}`}
-              >
-                {sellerCardContent}
-              </Link>
-            ) : (
-              <div className="product-detail__seller-card">
-                {sellerCardContent}
-              </div>
-            )}
-
-            {showReturnToSellerProfile && (
-              <button
-                type="button"
-                onClick={handleReturnToSellerProfile}
-                className="product-detail__backlink"
-              >
-                <ChevronLeft size={14} />
-                Voltar ao perfil
-              </button>
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="product-detail__title">
-              {product.title}
-            </h1>
-            {isSold && (
-              <span className="product-detail__tag product-detail__tag--sold">
-                Vendido
-              </span>
-            )}
-            {!isSold && isFreeProduct && (
-              <span className="product-detail__tag product-detail__tag--free">
-                Grátis
-              </span>
-            )}
-            <p className="product-detail__location">
-              <MapPin size={14} /> {locCity || 'Local não informado'}
-              {locState ? `, ${locState}` : ''}
-              {locCountry ? ` (${locCountry})` : ''}
-            </p>
-          </div>
-        </header>
-
-      {/* Galeria de imagens */}
-      <div
-        className="product-detail__gallery"
-        onTouchStart={handleGalleryTouchStart}
-        onTouchMove={handleGalleryTouchMove}
-        onTouchEnd={handleGalleryTouchEnd}
-      >
-        {images.length > 0 ? (
-          <img
-            src={images[activeImageIndex]}
-            alt={product.title}
-            className="product-detail__gallery-image"
-            onClick={handleGalleryClick}
-          />
-        ) : (
-          <div className="product-detail__gallery-empty">
-            Sem imagem
-          </div>
-        )}
-
-        {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
-        {isFreeProduct && !isSold && (
-          <span className="product-detail__badge product-detail__badge--free">
-            Grátis
-          </span>
-        )}
-        {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
-          <span className="product-detail__badge product-detail__badge--illustrative">
-            {IMAGE_KIND_BADGE_LABEL}
-          </span>
-        )}
-
-        {images.length > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={goPrevImage}
-              className="product-detail__gallery-arrow product-detail__gallery-arrow--left"
-              aria-label="Imagem anterior"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={goNextImage}
-              className="product-detail__gallery-arrow product-detail__gallery-arrow--right"
-              aria-label="Próxima imagem"
-            >
-              ›
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Tiras de miniaturas responsivas sem vazar largura */}
-      {images.length > 1 && (
-        <div className="product-detail__thumbs">
-          {images.map((image, index) => (
-            <button
-              key={`${product.id}-${image}`}
-              type="button"
-              onClick={() => setActiveImageIndex(index)}
-              className={`product-detail__thumb ${
-                activeImageIndex === index ? 'is-active' : ''
-              }`}
-            >
-              <img src={image} alt={`${product.title} ${index + 1}`} className="h-full w-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Detalhes do produto */}
-      <section className="product-detail__section">
-      <div className="product-detail__price-card">
-        <div className="product-detail__metrics">
-          <div className="product-detail__metric">
-            <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
-            <span className="product-detail__metric-count">{viewsCount}</span>
-            <span>Visualizações</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleFavorite}
-            disabled={favoriteLoading}
-            aria-pressed={favorite}
-            title={favorite ? 'Remover curtida' : 'Curtir'}
-            className={`product-detail__metric product-detail__metric--favorite ${
-              favorite ? 'is-active' : ''
-            }`}
-          >
-            <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
-            <span className="product-detail__metric-count">{likesCount}</span>
-            <span>Curtidas</span>
-          </button>
-          <details className="product-detail__more-actions product-detail__more-actions--inline">
-            <summary
-              className="product-detail__more-actions-toggle"
-              aria-label="Mais ações"
-              title="Mais ações"
-            >
-              ⋯
-            </summary>
-            <div className="product-detail__more-actions-panel">
-              <button
-                onClick={openOfferModal}
-                disabled={isSold || isOwner}
-                className="product-detail__action product-detail__action--secondary"
-              >
-                <Send size={18} />{' '}
-                {isSold
-                  ? 'Produto vendido'
-                  : isOwner
-                  ? 'Você é o vendedor'
-                  : isFreeProduct
-                  ? 'Combinar retirada'
-                  : 'Fazer oferta'}
-              </button>
-
-              {!isSeller && !isSold && user && (
-                <button
-                  onClick={handleRequestPurchase}
-                  disabled={ordering}
-                  className="product-detail__action product-detail__action--tertiary"
-                >
-                  <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
-                </button>
-              )}
-
-              <button
-                onClick={openShare}
-                className="product-detail__action product-detail__action--secondary"
-              >
-                <Share2 size={18} /> Compartilhar
-              </button>
-
-              {isOwner && !isSold && (
-                <button
-                  onClick={async () => {
-                    try {
-                      await api.put(
-                        `/products/${product.id}/status`,
-                        { status: 'sold' },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                      );
-                      setProduct((prev) => ({ ...prev, status: 'sold' }));
-                      toast.success('Produto marcado como vendido.');
-                    } catch {
-                      toast.error('Falha ao marcar como vendido.');
-                    }
-                  }}
-                  className="product-detail__action product-detail__action--dark"
-                >
-                  Marcar como vendido
-                </button>
-              )}
-
-              {false && isOwner && !isSold && (
-                // para voltar o botao é só tirar o : false && 
-                <Link
-                  to={boostLinkTarget}
-                  state={boostLinkState}
-                  className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
-                >
-                  Impulsionar anúncio
-                </Link>
-              )}
-            </div>
-          </details>
-        </div>
-        <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
-          {priceFmt}
-        </p>
-        {product.pickup_only && (
-          <p className="product-detail__pickup">
-            Entrega: retirada em mãos combinada com o vendedor.
-          </p>
-        )}
-      </div>
-
-        {isSeller && buyerInfo && (
-          <div className="product-detail__buyer-card">
-            <p>
-              <strong>Status:</strong>{' '}
-              {buyerInfo.status === 'confirmed'
-                ? 'Compra confirmada'
-                : 'Pedido pendente de confirmação'}
-            </p>
-            <p>
-              <strong>Comprador:</strong> {buyerInfo.buyer_name}{' '}
-              {buyerInfo.buyer_email ? `(${buyerInfo.buyer_email})` : ''}
-            </p>
-            {buyerInfo.confirmed_at && (
-              <p>
-                <strong>Confirmado em:</strong>{' '}
-                {new Date(buyerInfo.confirmed_at).toLocaleString()}
-              </p>
-            )}
-          </div>
-        )}
-
-        <p className="product-detail__description">
-          {product.description || 'Sem descrição disponível.'}
-        </p>
-
-        {detailLinks.length > 0 && (
-          <div className="product-detail__links">
-            <p className="product-detail__links-title">Links úteis</p>
-            <div className="product-detail__links-grid">
-              {detailLinks.map((link, index) => (
-                <a
-                  key={`${link.url ?? 'link'}-${index}`}
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="product-detail__link"
-                >
-                  <span className="product-detail__link-label">
-                    {link.label || `Link ${index + 1}`}
-                  </span>
-                  <span className="product-detail__link-url">{link.url}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {specEntries.length > 0 && (
-          <div className="product-detail__specs">
-            {specEntries.map((entry) => (
-              <p key={entry.label}>
-                <span className="product-detail__field-label">{entry.label}</span>
-                <span className="product-detail__field-value text-gray-800">{entry.value}</span>
-              </p>
-            ))}
-          </div>
-        )}
-
-        <div className="product-detail__location-grid">
-          <p>
-            <span className="product-detail__field-label">Categoria</span>
-            <span className="product-detail__field-value">{product.category || 'Não informada'}</span>
-          </p>
-          <p>
-            <span className="product-detail__field-label">CEP</span>
-            <span className="product-detail__field-value">{product.zip || 'Não informado'}</span>
-          </p>
-          <p>
-            <span className="product-detail__field-label">Rua</span>
-            <span className="product-detail__field-value">{product.street || 'Não informada'}</span>
-          </p>
-          <p>
-            <span className="product-detail__field-label">Bairro</span>
-            <span className="product-detail__field-value">{product.neighborhood || 'Não informado'}</span>
-          </p>
-        </div>
-
-        {(hasMapLocation || mapLoading) && (
-          <div className="product-detail__map-card">
-            <div className="product-detail__map-header">
-              <div>
-                <p className="product-detail__map-title">Mapa do local</p>
-                <p className="product-detail__map-subtitle">
-                  {mapCoords.source === 'city'
-                    ? 'Aproximação baseada na cidade informada no anúncio.'
-                    : 'Aproximação baseada nas coordenadas informadas no anúncio.'}
-                </p>
-              </div>
-              {hasMapLocation && (
-                <a
-                  href={buildOpenStreetMapLink(mapCoords.lat, mapCoords.lng)}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="product-detail__map-link"
-                >
-                  Abrir mapa
-                </a>
-              )}
-            </div>
-            <div className="product-detail__map-frame">
-              {hasMapLocation ? (
-                <iframe
-                  title="Mapa do local do produto"
-                  src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
-                  className="product-detail__map-embed"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <div className="product-detail__map-placeholder">
-                  Buscando mapa pela cidade...
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {images.length > 0 && (
-          <div className="product-detail__image-stack">
-            <p className="product-detail__image-stack-title">Fotos do anúncio</p>
-            <div className="product-detail__image-stack-list">
-              {images.map((image, index) => (
-                <img
-                  key={`${product.id}-stack-${image}`}
-                  src={image}
-                  alt={`${product.title} ${index + 1}`}
-                  className="product-detail__image-stack-item"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {floorplanUrls.length > 0 && (
-          <div className="product-detail__image-stack">
-            <p className="product-detail__image-stack-title">Plantas do ambiente</p>
-            <div className="product-detail__image-stack-list">
-              {floorplanUrls.map((url, index) =>
-                isImageUrl(url) ? (
-                  <img
-                    key={`floorplan-${url}`}
-                    src={url}
-                    alt={`${product.title} planta ${index + 1}`}
-                    className="product-detail__image-stack-item"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <a
-                    key={`floorplan-${url}`}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="product-detail__image-stack-file"
-                  >
-                    Abrir arquivo da planta {index + 1}
-                  </a>
-                )
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Perguntas e respostas da publicação */}
-      {!isSold && (
-        <section className="product-detail__qa">
-          <div className="product-detail__qa-header">
-            <div>
-              <h3 className="product-detail__qa-title">Perguntas e respostas</h3>
-              <p className="product-detail__qa-subtitle">
-                As mensagens ficam registradas aqui para que qualquer pessoa veja a conversa diretamente no produto.
-              </p>
-            </div>
-            <span className="product-detail__qa-count">
-              {visibleProductQuestions.length} {visibleProductQuestions.length === 1 ? 'mensagem' : 'mensagens'}
-            </span>
-          </div>
-
-          {!isOwner && (
-            <div className="product-detail__qa-form">
-              <textarea
-                rows={4}
-                className="product-detail__qa-textarea"
-                placeholder="Faça uma pergunta pública ao vendedor sobre este produto..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={sending}
-                className="product-detail__qa-submit"
-              >
-                {sending ? 'Enviando...' : 'Enviar pergunta'}
-              </button>
-            </div>
-          )}
-
-          <div className="product-detail__qa-list">
-            {questionsLoading && (
-              <LoadingBar message="Carregando perguntas..." className="product-detail__qa-empty" size="sm" />
-            )}
-            {!questionsLoading && questionsError && (
-              <p className="product-detail__qa-error">{questionsError}</p>
-            )}
-            {!questionsLoading && !questionsError && visibleProductQuestions.length === 0 && (
-              <p className="product-detail__qa-empty">Ainda não há perguntas para este anúncio.</p>
-            )}
-            {displayedQuestions.map((msg) => {
-              const messageKey = getMessageIdentifier(msg);
-              const responseText = (msg.response_content || '').trim();
-              const hasResponse = Boolean(responseText);
-              const authorLabel = msg.user_name || 'Usuário TempleSale';
-              const responseAuthor = msg.response_user_name || 'Vendedor';
-              const isHighlighted = highlightQuestionKey === messageKey;
-              return (
-                <article
-                  key={messageKey}
-                  ref={(node) => setQuestionRef(messageKey, node)}
-                  className={`product-detail__qa-card ${
-                    isHighlighted ? 'is-highlighted' : ''
-                  }`}
-                >
-                  <header className="product-detail__qa-meta">
-                    <span>Pergunta</span>
-                    <span>{formatMessageTimestamp(msg.created_at)}</span>
-                  </header>
-                  <p className="product-detail__qa-text">{msg.content}</p>
-                  <p className="product-detail__qa-author">Feita por {authorLabel}</p>
-
-                  {hasResponse && (
-                    <div className="product-detail__qa-response">
-                      <div className="product-detail__qa-response-meta">
-                        <span>Resposta do vendedor</span>
-                        <span>{formatMessageTimestamp(msg.response_created_at)}</span>
-                      </div>
-                      <p className="product-detail__qa-response-text">{responseText}</p>
-                      <p className="product-detail__qa-response-author">Por {responseAuthor}</p>
+          {/* Layout ajustado para refletir card lateral e perguntas rápidas. */}
+          <div className="product-detail__layout">
+            <div className="product-detail__main">
+              {/* Cabeçalho com vendedor */}
+              <header className="product-detail__header">
+                <div className="product-detail__header-actions">
+                  {sellerProfilePath ? (
+                    <Link
+                      to={sellerProfilePath}
+                      className="product-detail__seller-card"
+                      aria-label={`Ver perfil completo de ${sellerName}`}
+                    >
+                      {sellerCardContent}
+                    </Link>
+                  ) : (
+                    <div className="product-detail__seller-card">
+                      {sellerCardContent}
                     </div>
                   )}
 
-                  {!hasResponse && isOwner && (
-                    <div className="product-detail__qa-reply">
+                  {showReturnToSellerProfile && (
+                    <button
+                      type="button"
+                      onClick={handleReturnToSellerProfile}
+                      className="product-detail__backlink"
+                    >
+                      <ChevronLeft size={14} />
+                      Voltar ao perfil
+                    </button>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <h1 className="product-detail__title">
+                    {product.title}
+                  </h1>
+                  {isSold && (
+                    <span className="product-detail__tag product-detail__tag--sold">
+                      Vendido
+                    </span>
+                  )}
+                  {!isSold && isFreeProduct && (
+                    <span className="product-detail__tag product-detail__tag--free">
+                      Grátis
+                    </span>
+                  )}
+                  <p className="product-detail__location">
+                    <MapPin size={14} /> {locCity || 'Local não informado'}
+                    {locState ? `, ${locState}` : ''}
+                    {locCountry ? ` (${locCountry})` : ''}
+                  </p>
+                </div>
+              </header>
+
+              <div className="product-detail__gallery-group">
+                {/* Galeria de imagens */}
+                <div
+                  className="product-detail__gallery"
+                  onTouchStart={handleGalleryTouchStart}
+                  onTouchMove={handleGalleryTouchMove}
+                  onTouchEnd={handleGalleryTouchEnd}
+                >
+                  {images.length > 0 ? (
+                    <img
+                      src={images[activeImageIndex]}
+                      alt={product.title}
+                      className="product-detail__gallery-image"
+                      onClick={handleGalleryClick}
+                    />
+                  ) : (
+                    <div className="product-detail__gallery-empty">
+                      Sem imagem
+                    </div>
+                  )}
+
+                  {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}
+                  {isFreeProduct && !isSold && (
+                    <span className="product-detail__badge product-detail__badge--free">
+                      Grátis
+                    </span>
+                  )}
+                  {activeImageKind === IMAGE_KIND.ILLUSTRATIVE && (
+                    <span className="product-detail__badge product-detail__badge--illustrative">
+                      {IMAGE_KIND_BADGE_LABEL}
+                    </span>
+                  )}
+
+                  {images.length > 1 && (
+                    <>
                       <button
                         type="button"
-                        onClick={() => toggleReplyArea(msg.id)}
-                        className="product-detail__qa-reply-toggle"
+                        onClick={goPrevImage}
+                        className="product-detail__gallery-arrow product-detail__gallery-arrow--left"
+                        aria-label="Imagem anterior"
                       >
-                        {activeReplyQuestionId === msg.id ? 'Cancelar' : 'Responder'}
+                        ‹
                       </button>
-                      {activeReplyQuestionId === msg.id && (
-                        <div className="product-detail__qa-reply-form">
-                          <textarea
-                            rows={3}
-                            value={replyDrafts[msg.id] || ''}
-                            onChange={(event) => handleReplyChange(msg.id, event.target.value)}
-                            ref={(node) => {
-                              if (node) {
-                                replyInputRefs.current.set(msg.id, node);
-                              } else {
-                                replyInputRefs.current.delete(msg.id);
-                              }
-                            }}
-                            className="product-detail__qa-reply-textarea"
-                            placeholder="Responda diretamente esta pergunta..."
-                          />
+                      <button
+                        type="button"
+                        onClick={goNextImage}
+                        className="product-detail__gallery-arrow product-detail__gallery-arrow--right"
+                        aria-label="Próxima imagem"
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Tiras de miniaturas responsivas sem vazar largura */}
+                {images.length > 1 && (
+                  <div className="product-detail__thumbs">
+                    {images.map((image, index) => (
+                      <button
+                        key={`${product.id}-${image}`}
+                        type="button"
+                        onClick={() => setActiveImageIndex(index)}
+                        className={`product-detail__thumb ${
+                          activeImageIndex === index ? 'is-active' : ''
+                        }`}
+                      >
+                        <img src={image} alt={`${product.title} ${index + 1}`} className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Detalhes do produto */}
+              <section className="product-detail__section">
+                <div className="product-detail__summary">
+                  <div className="product-detail__price-card">
+                    <div className="product-detail__metrics">
+                      <div className="product-detail__metric">
+                        <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
+                        <span className="product-detail__metric-count">{viewsCount}</span>
+                        <span>Visualizações</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleFavorite}
+                        disabled={favoriteLoading}
+                        aria-pressed={favorite}
+                        title={favorite ? 'Remover curtida' : 'Curtir'}
+                        className={`product-detail__metric product-detail__metric--favorite ${
+                          favorite ? 'is-active' : ''
+                        }`}
+                      >
+                        <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
+                        <span className="product-detail__metric-count">{likesCount}</span>
+                        <span>Curtidas</span>
+                      </button>
+                      <details className="product-detail__more-actions product-detail__more-actions--inline">
+                        <summary
+                          className="product-detail__more-actions-toggle"
+                          aria-label="Mais ações"
+                          title="Mais ações"
+                        >
+                          ⋯
+                        </summary>
+                        <div className="product-detail__more-actions-panel">
                           <button
-                            type="button"
-                            onClick={() => submitAnswer(msg.id)}
-                            disabled={answerLoadingId === msg.id}
-                            className="product-detail__qa-reply-submit"
+                            onClick={openOfferModal}
+                            disabled={isSold || isOwner}
+                            className="product-detail__action product-detail__action--secondary"
                           >
-                            {answerLoadingId === msg.id ? 'Enviando...' : 'Enviar resposta'}
+                            <Send size={18} />{' '}
+                            {isSold
+                              ? 'Produto vendido'
+                              : isOwner
+                              ? 'Você é o vendedor'
+                              : isFreeProduct
+                              ? 'Combinar retirada'
+                              : 'Fazer oferta'}
                           </button>
+
+                          {!isSeller && !isSold && user && (
+                            <button
+                              onClick={handleRequestPurchase}
+                              disabled={ordering}
+                              className="product-detail__action product-detail__action--tertiary"
+                            >
+                              <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={openShare}
+                            className="product-detail__action product-detail__action--secondary"
+                          >
+                            <Share2 size={18} /> Compartilhar
+                          </button>
+
+                          {isOwner && !isSold && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.put(
+                                    `/products/${product.id}/status`,
+                                    { status: 'sold' },
+                                    { headers: { Authorization: `Bearer ${token}` } }
+                                  );
+                                  setProduct((prev) => ({ ...prev, status: 'sold' }));
+                                  toast.success('Produto marcado como vendido.');
+                                } catch {
+                                  toast.error('Falha ao marcar como vendido.');
+                                }
+                              }}
+                              className="product-detail__action product-detail__action--dark"
+                            >
+                              Marcar como vendido
+                            </button>
+                          )}
+
+                          {false && isOwner && !isSold && (
+                            // para voltar o botao é só tirar o : false &&
+                            <Link
+                              to={boostLinkTarget}
+                              state={boostLinkState}
+                              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
+                            >
+                              Impulsionar anúncio
+                            </Link>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                    <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
+                      {priceFmt}
+                    </p>
+                    {product.pickup_only && (
+                      <p className="product-detail__pickup">
+                        Entrega: retirada em mãos combinada com o vendedor.
+                      </p>
+                    )}
+                  </div>
+                  {highlightSpecs.length > 0 && (
+                    <div className="product-detail__highlights">
+                      {highlightSpecs.map((entry) => {
+                        const HighlightIcon = resolveHighlightIcon(entry.label);
+                        return (
+                          <div
+                            key={`${entry.label}-${entry.value}`}
+                            className="product-detail__highlight-card"
+                          >
+                            <span className="product-detail__highlight-icon" aria-hidden="true">
+                              <HighlightIcon size={18} />
+                            </span>
+                            <div className="product-detail__highlight-info">
+                              <span className="product-detail__highlight-label">{entry.label}</span>
+                              <span className="product-detail__highlight-value">{entry.value}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {isSeller && buyerInfo && (
+                  <div className="product-detail__buyer-card">
+                    <p>
+                      <strong>Status:</strong>{' '}
+                      {buyerInfo.status === 'confirmed'
+                        ? 'Compra confirmada'
+                        : 'Pedido pendente de confirmação'}
+                    </p>
+                    <p>
+                      <strong>Comprador:</strong> {buyerInfo.buyer_name}{' '}
+                      {buyerInfo.buyer_email ? `(${buyerInfo.buyer_email})` : ''}
+                    </p>
+                    {buyerInfo.confirmed_at && (
+                      <p>
+                        <strong>Confirmado em:</strong>{' '}
+                        {new Date(buyerInfo.confirmed_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <p className="product-detail__description">
+                  {product.description || 'Sem descrição disponível.'}
+                </p>
+
+                {detailLinks.length > 0 && (
+                  <div className="product-detail__links">
+                    <p className="product-detail__links-title">Links úteis</p>
+                    <div className="product-detail__links-grid">
+                      {detailLinks.map((link, index) => (
+                        <a
+                          key={`${link.url ?? 'link'}-${index}`}
+                          href={link.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="product-detail__link"
+                        >
+                          <span className="product-detail__link-label">
+                            {link.label || `Link ${index + 1}`}
+                          </span>
+                          <span className="product-detail__link-url">{link.url}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {detailSpecs.length > 0 && (
+                  <div className="product-detail__specs">
+                    {detailSpecs.map((entry) => (
+                      <p key={entry.label}>
+                        <span className="product-detail__field-label">{entry.label}</span>
+                        <span className="product-detail__field-value text-gray-800">{entry.value}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="product-detail__location-grid">
+                  <p>
+                    <span className="product-detail__field-label">Categoria</span>
+                    <span className="product-detail__field-value">{product.category || 'Não informada'}</span>
+                  </p>
+                  <p>
+                    <span className="product-detail__field-label">CEP</span>
+                    <span className="product-detail__field-value">{product.zip || 'Não informado'}</span>
+                  </p>
+                  <p>
+                    <span className="product-detail__field-label">Rua</span>
+                    <span className="product-detail__field-value">{product.street || 'Não informada'}</span>
+                  </p>
+                  <p>
+                    <span className="product-detail__field-label">Bairro</span>
+                    <span className="product-detail__field-value">{product.neighborhood || 'Não informado'}</span>
+                  </p>
+                </div>
+
+                {(hasMapLocation || mapLoading) && (
+                  <div className="product-detail__map-card">
+                    <div className="product-detail__map-header">
+                      <div>
+                        <p className="product-detail__map-title">Mapa do local</p>
+                        <p className="product-detail__map-subtitle">
+                          {mapCoords.source === 'city'
+                            ? 'Aproximação baseada na cidade informada no anúncio.'
+                            : 'Aproximação baseada nas coordenadas informadas no anúncio.'}
+                        </p>
+                      </div>
+                      {hasMapLocation && (
+                        <a
+                          href={buildOpenStreetMapLink(mapCoords.lat, mapCoords.lng)}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="product-detail__map-link"
+                        >
+                          Abrir mapa
+                        </a>
+                      )}
+                    </div>
+                    <div className="product-detail__map-frame">
+                      {hasMapLocation ? (
+                        <iframe
+                          title="Mapa do local do produto"
+                          src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
+                          className="product-detail__map-embed"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                      ) : (
+                        <div className="product-detail__map-placeholder">
+                          Buscando mapa pela cidade...
                         </div>
                       )}
                     </div>
-                  )}
-                </article>
-              );
-            })}
-            {!questionsLoading && hasMoreQuestions && (
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={showMoreQuestions}
-                  className="product-detail__qa-more"
-                >
-                  Ver mais perguntas
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {floatingBarPortal}
-
-      {phoneActionsOpen &&
-        phoneActions &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
-            onClick={() => setPhoneActionsOpen(false)}
-          >
-            <div
-              className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <header className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Contato do vendedor
-                  </p>
-                  <p className="text-base font-semibold text-gray-900">{phoneActions.display}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPhoneActionsOpen(false)}
-                  className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
-                  aria-label="Fechar"
-                >
-                  <CloseIcon size={18} />
-                </button>
-              </header>
-
-              <div className="mt-4 grid gap-2">
-                <a
-                  href={phoneActions.telHref}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
-                >
-                  <PhoneCall size={18} /> Ligar agora
-                </a>
-                <a
-                  href={whatsappContactLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                >
-                  <MessageCircle size={18} /> WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
-
-      {showFloatingContactBar && (
-        <div
-          aria-hidden="true"
-          style={{
-            height: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1 rem)`
-          }}
-        />
-      )}
-
-      {offerOpen &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6 transition-opacity duration-200">
-            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-emerald-600 shadow-2xl">
-              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9)_0,_transparent_55%)] pointer-events-none" />
-              <div className="relative p-6 sm:p-8 space-y-5 text-white">
-                <header className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-2xl font-semibold drop-shadow-sm">Fazer oferta</h3>
-                    <p className="text-sm text-emerald-50">
-                      Negocie um valor especial para{' '}
-                      <span className="font-medium">{product.title}</span>
-                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={closeOfferModal}
-                    className="rounded-full bg-white/15 p-2 hover:bg-white/25 transition"
-                    aria-label="Fechar"
-                  >
-                    <CloseIcon size={20} />
-                  </button>
-                </header>
+                )}
 
-                <div className="space-y-4">
-                  <label className="block">
-                    <span className="text-sm font-medium uppercase tracking-wide text-white/80">
-                      Valor da oferta
-                    </span>
-                    <div className="mt-2 flex items-center rounded-2xl bg-white/90 px-4 shadow-lg ring-2 ring-white/40 focus-within:ring-emerald-100">
-                      <span className="text-emerald-700 font-semibold text-sm">
-                        {getCurrencySettings(resolveCurrencyFromCountry(product.country)).symbol}
-                      </span>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        inputMode="decimal"
-                        className="w-full bg-transparent py-3 pl-3 pr-1 text-lg font-semibold text-emerald-900 placeholder:text-emerald-400 focus:outline-none"
-                        placeholder="0,00"
-                        value={offerValue}
-                        onChange={(event) => setOfferValue(event.target.value)}
-                      />
+                {images.length > 0 && (
+                  <div className="product-detail__image-stack">
+                    <p className="product-detail__image-stack-title">Fotos do anúncio</p>
+                    <div className="product-detail__image-stack-list">
+                      {images.map((image, index) => (
+                        <img
+                          key={`${product.id}-stack-${image}`}
+                          src={image}
+                          alt={`${product.title} ${index + 1}`}
+                          className="product-detail__image-stack-item"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ))}
                     </div>
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm font-medium uppercase tracking-wide text-white/80">
-                      Mensagem ao vendedor (opcional)
-                    </span>
-                    <textarea
-                      rows={3}
-                      className="mt-2 w-full resize-none rounded-2xl bg-white/90 px-4 py-3 text-sm text-emerald-900 placeholder:text-emerald-400 shadow-lg ring-2 ring-white/40 focus:outline-none focus:ring-emerald-100"
-                      placeholder="Ex.: Posso retirar amanhã à tarde, tudo bem?"
-                      value={offerNote}
-                      onChange={(event) => setOfferNote(event.target.value)}
-                    />
-                  </label>
-                </div>
-
-                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeOfferModal}
-                    className="rounded-full border border-white/40 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition"
-                    disabled={sendingOffer}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={submitOffer}
-                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={sendingOffer}
-                  >
-                    {sendingOffer ? 'Enviando oferta...' : 'Enviar oferta'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
-
-
-      <ImageViewerModal
-        isOpen={isSellerAvatarViewerOpen}
-        src={sellerAvatarViewerSrc}
-        alt={sellerAvatarViewerAlt}
-        onClose={closeSellerAvatarViewer}
-      />
-      {viewerPortal}
-
-      {confirmPurchaseOpen &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6">
-            <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-              <div className="p-6 space-y-4">
-                <header className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Confirmar compra</h3>
-                    <p className="text-sm text-slate-600">
-                      Ao confirmar, o pedido será enviado e a compra só será concluída após a aprovação do vendedor.
-                    </p>
                   </div>
+                )}
+
+                {floorplanUrls.length > 0 && (
+                  <div className="product-detail__image-stack">
+                    <p className="product-detail__image-stack-title">Plantas do ambiente</p>
+                    <div className="product-detail__image-stack-list">
+                      {floorplanUrls.map((url, index) =>
+                        isImageUrl(url) ? (
+                          <img
+                            key={`floorplan-${url}`}
+                            src={url}
+                            alt={`${product.title} planta ${index + 1}`}
+                            className="product-detail__image-stack-item"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <a
+                            key={`floorplan-${url}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="product-detail__image-stack-file"
+                          >
+                            Abrir arquivo da planta {index + 1}
+                          </a>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!isDesktopLayout && safetyNotice}
+              </section>
+
+              {/* Perguntas e respostas da publicação */}
+              {!isSold && (
+                <section className="product-detail__qa">
+                  <div className="product-detail__qa-header">
+                    <div>
+                      <h3 className="product-detail__qa-title">Perguntas rápidas para o anunciante</h3>
+                      <p className="product-detail__qa-subtitle">
+                        Faça perguntas rápidas ao anunciante e acompanhe as respostas publicamente no anúncio.
+                      </p>
+                    </div>
+                    <span className="product-detail__qa-count">
+                      {visibleProductQuestions.length} {visibleProductQuestions.length === 1 ? 'mensagem' : 'mensagens'}
+                    </span>
+                  </div>
+
+                  {!isOwner && (
+                    <div className="product-detail__qa-form">
+                      <div className="product-detail__qa-quick">
+                        <p className="product-detail__qa-quick-title">Sugestões rápidas</p>
+                        <div className="product-detail__qa-quick-list">
+                          {QUICK_QUESTION_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => handleQuickQuestionPick(preset)}
+                              className={`product-detail__qa-chip ${
+                                message.trim() === preset ? 'is-active' : ''
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="product-detail__qa-input">
+                        <textarea
+                          rows={3}
+                          maxLength={MESSAGE_LIMIT}
+                          className="product-detail__qa-textarea"
+                          placeholder="Escreva sua pergunta..."
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          ref={questionInputRef}
+                        />
+                        <div className="product-detail__qa-actions">
+                          <span className="product-detail__qa-charcount">
+                            {message.length}/{MESSAGE_LIMIT}
+                          </span>
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={sending}
+                            className="product-detail__qa-submit"
+                          >
+                            {sending ? 'Enviando...' : 'Enviar'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="product-detail__qa-list">
+                    <p className="product-detail__qa-list-title">Perguntas e respostas</p>
+                    {showQuestionsLoading && (
+                      <LoadingBar message="Carregando perguntas..." className="sr-only" size="sm" />
+                    )}
+                    {!questionsLoading && questionsError && (
+                      <p className="product-detail__qa-error">{questionsError}</p>
+                    )}
+                    {showQuestionsEmpty && (
+                      <p className="product-detail__qa-empty">Ainda não há perguntas para este anúncio.</p>
+                    )}
+                    {displayedQuestions.map((msg) => {
+                      const messageKey = getMessageIdentifier(msg);
+                      const responseText = (msg.response_content || '').trim();
+                      const hasResponse = Boolean(responseText);
+                      const authorLabel = msg.user_name || 'Usuário TempleSale';
+                      const responseAuthor = msg.response_user_name || 'Vendedor';
+                      const isHighlighted = highlightQuestionKey === messageKey;
+                      return (
+                        <article
+                          key={messageKey}
+                          ref={(node) => setQuestionRef(messageKey, node)}
+                          className={`product-detail__qa-card ${
+                            isHighlighted ? 'is-highlighted' : ''
+                          }`}
+                        >
+                          <header className="product-detail__qa-meta">
+                            <span>Pergunta</span>
+                            <span>{formatMessageTimestamp(msg.created_at)}</span>
+                          </header>
+                          <p className="product-detail__qa-text">{msg.content}</p>
+                          <p className="product-detail__qa-author">Feita por {authorLabel}</p>
+
+                          {hasResponse && (
+                            <div className="product-detail__qa-response">
+                              <div className="product-detail__qa-response-meta">
+                                <span>Resposta do vendedor</span>
+                                <span>{formatMessageTimestamp(msg.response_created_at)}</span>
+                              </div>
+                              <p className="product-detail__qa-response-text">{responseText}</p>
+                              <p className="product-detail__qa-response-author">Por {responseAuthor}</p>
+                            </div>
+                          )}
+
+                          {!hasResponse && isOwner && (
+                            <div className="product-detail__qa-reply">
+                              <button
+                                type="button"
+                                onClick={() => toggleReplyArea(msg.id)}
+                                className="product-detail__qa-reply-toggle"
+                              >
+                                {activeReplyQuestionId === msg.id ? 'Cancelar' : 'Responder'}
+                              </button>
+                              {activeReplyQuestionId === msg.id && (
+                                <div className="product-detail__qa-reply-form">
+                                  <textarea
+                                    rows={3}
+                                    value={replyDrafts[msg.id] || ''}
+                                    onChange={(event) => handleReplyChange(msg.id, event.target.value)}
+                                    ref={(node) => {
+                                      if (node) {
+                                        replyInputRefs.current.set(msg.id, node);
+                                      } else {
+                                        replyInputRefs.current.delete(msg.id);
+                                      }
+                                    }}
+                                    className="product-detail__qa-reply-textarea"
+                                    placeholder="Responda diretamente esta pergunta..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => submitAnswer(msg.id)}
+                                    disabled={answerLoadingId === msg.id}
+                                    className="product-detail__qa-reply-submit"
+                                  >
+                                    {answerLoadingId === msg.id ? 'Enviando...' : 'Enviar resposta'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                    {!questionsLoading && hasMoreQuestions && (
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={showMoreQuestions}
+                          className="product-detail__qa-more"
+                        >
+                          Ver mais perguntas
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
+            <aside className="product-detail__aside">
+              <div className="product-detail__contact-card">
+                <div className="product-detail__contact-header">
+                  <p className="product-detail__contact-eyebrow">Fale com o anunciante</p>
+                  <p className="product-detail__contact-title">Atendimento rápido</p>
+                  <p className="product-detail__contact-subtitle">
+                    Escolha o melhor canal para falar com {sellerName}.
+                  </p>
+                </div>
+                <div className="product-detail__contact-actions">
+                  {showChatAction && (
+                    <button
+                      type="button"
+                      onClick={handleOpenConversation}
+                      className="product-detail__contact-button product-detail__contact-button--primary"
+                    >
+                      <MessageCircle size={18} /> Mensagem
+                    </button>
+                  )}
+                  {showPhoneAction && (
+                    <button
+                      type="button"
+                      onClick={() => setPhoneActionsOpen(true)}
+                      className="product-detail__contact-button product-detail__contact-button--secondary"
+                    >
+                      <PhoneCall size={18} /> Ligar agora
+                    </button>
+                  )}
+                  {showWhatsappAction && (
+                    <a
+                      href={whatsappContactLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="product-detail__contact-button product-detail__contact-button--whatsapp"
+                    >
+                      <MessageCircle size={18} /> WhatsApp
+                    </a>
+                  )}
+                </div>
+                {!hasContactActions && (
+                  <p className="product-detail__contact-note">
+                    Você é o vendedor deste anúncio.
+                  </p>
+                )}
+              </div>
+              {isDesktopLayout && safetyNotice}
+            </aside>
+          </div>
+
+          {floatingBarPortal}
+
+          {phoneActionsOpen &&
+            phoneActions &&
+            typeof document !== 'undefined' &&
+            createPortal(
+              <div
+                className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
+                onClick={() => setPhoneActionsOpen(false)}
+              >
+                <div
+                  className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <header className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                        Contato do vendedor
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">{phoneActions.display}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPhoneActionsOpen(false)}
+                      className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
+                      aria-label="Fechar"
+                    >
+                      <CloseIcon size={18} />
+                    </button>
+                  </header>
+
+                  <div className="mt-4 grid gap-2">
+                    <a
+                      href={phoneActions.telHref}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+                    >
+                      <PhoneCall size={18} /> Ligar agora
+                    </a>
+                    <a
+                      href={whatsappContactLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                    >
+                      <MessageCircle size={18} /> WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+
+          {showFloatingContactBar && (
+            <div
+              aria-hidden="true"
+              style={{
+                height: `calc(${floatingBarHeight}px + env(safe-area-inset-bottom,0px) + 1 rem)`
+              }}
+            />
+          )}
+
+          {offerOpen &&
+            typeof document !== 'undefined' &&
+            createPortal(
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6 transition-opacity duration-200">
+                <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-emerald-600 shadow-2xl">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9)_0,_transparent_55%)] pointer-events-none" />
+                  <div className="relative p-6 sm:p-8 space-y-5 text-white">
+                    <header className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-2xl font-semibold drop-shadow-sm">Fazer oferta</h3>
+                        <p className="text-sm text-emerald-50">
+                          Negocie um valor especial para{' '}
+                          <span className="font-medium">{product.title}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={closeOfferModal}
+                        className="rounded-full bg-white/15 p-2 hover:bg-white/25 transition"
+                        aria-label="Fechar"
+                      >
+                        <CloseIcon size={20} />
+                      </button>
+                    </header>
+
+                    <div className="space-y-4">
+                      <label className="block">
+                        <span className="text-sm font-medium uppercase tracking-wide text-white/80">
+                          Valor da oferta
+                        </span>
+                        <div className="mt-2 flex items-center rounded-2xl bg-white/90 px-4 shadow-lg ring-2 ring-white/40 focus-within:ring-emerald-100">
+                          <span className="text-emerald-700 font-semibold text-sm">
+                            {getCurrencySettings(resolveCurrencyFromCountry(product.country)).symbol}
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            inputMode="decimal"
+                            className="w-full bg-transparent py-3 pl-3 pr-1 text-lg font-semibold text-emerald-900 placeholder:text-emerald-400 focus:outline-none"
+                            placeholder="0,00"
+                            value={offerValue}
+                            onChange={(event) => setOfferValue(event.target.value)}
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="text-sm font-medium uppercase tracking-wide text-white/80">
+                          Mensagem ao vendedor (opcional)
+                        </span>
+                        <textarea
+                          rows={3}
+                          className="mt-2 w-full resize-none rounded-2xl bg-white/90 px-4 py-3 text-sm text-emerald-900 placeholder:text-emerald-400 shadow-lg ring-2 ring-white/40 focus:outline-none focus:ring-emerald-100"
+                          placeholder="Ex.: Posso retirar amanhã à tarde, tudo bem?"
+                          value={offerNote}
+                          onChange={(event) => setOfferNote(event.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={closeOfferModal}
+                        className="rounded-full border border-white/40 px-5 py-2 text-sm font-medium text-white hover:bg-white/15 transition"
+                        disabled={sendingOffer}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={submitOffer}
+                        className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={sendingOffer}
+                      >
+                        {sendingOffer ? 'Enviando oferta...' : 'Enviar oferta'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+
+          <ImageViewerModal
+            isOpen={isSellerAvatarViewerOpen}
+            src={sellerAvatarViewerSrc}
+            alt={sellerAvatarViewerAlt}
+            onClose={closeSellerAvatarViewer}
+          />
+          {viewerPortal}
+
+          {confirmPurchaseOpen &&
+            typeof document !== 'undefined' &&
+            createPortal(
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6">
+                <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+                  <div className="p-6 space-y-4">
+                    <header className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Confirmar compra</h3>
+                        <p className="text-sm text-slate-600">
+                          Ao confirmar, o pedido será enviado e a compra só será concluída após a aprovação do vendedor.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmPurchaseOpen(false)}
+                        className="rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200"
+                        aria-label="Fechar"
+                      >
+                        <CloseIcon size={18} />
+                      </button>
+                    </header>
+
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmPurchaseOpen(false)}
+                        className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                        disabled={ordering}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await submitPurchaseRequest();
+                          setConfirmPurchaseOpen(false);
+                        }}
+                        className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={ordering}
+                      >
+                        {ordering ? 'Enviando...' : 'Confirmar compra'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+
+          {/* Modal de compartilhamento (fallback) */}
+          {shareOpen && (
+            <div className="product-detail__share-overlay">
+              <div className="product-detail__share-sheet">
+                <div className="product-detail__share-header">
+                  <h4>Compartilhar</h4>
                   <button
-                    type="button"
-                    onClick={() => setConfirmPurchaseOpen(false)}
-                    className="rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200"
+                    onClick={() => setShareOpen(false)}
+                    className="product-detail__share-close"
                     aria-label="Fechar"
                   >
                     <CloseIcon size={18} />
                   </button>
-                </header>
+                </div>
 
-                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2">
+                <div className="product-detail__share-grid">
+                  <a href={whatsapp} target="_blank" rel="noreferrer" className="product-detail__share-item">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WhatsApp" className="w-8 h-8 mx-auto" />
+                    WhatsApp
+                  </a>
+                  <a href={telegram} target="_blank" rel="noreferrer" className="product-detail__share-item">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/telegram.svg" alt="Telegram" className="w-8 h-8 mx-auto" />
+                    Telegram
+                  </a>
+                  <a href={facebook} target="_blank" rel="noreferrer" className="product-detail__share-item">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" className="w-8 h-8 mx-auto" />
+                    Facebook
+                  </a>
+                  <a href={xUrl} target="_blank" rel="noreferrer" className="product-detail__share-item">
+                    <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X" className="w-8 h-8 mx-auto" />
+                    X
+                  </a>
+                </div>
+
+                <div className="product-detail__share-actions">
                   <button
-                    type="button"
-                    onClick={() => setConfirmPurchaseOpen(false)}
-                    className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                    disabled={ordering}
+                    onClick={copyLink}
+                    className="product-detail__share-button"
                   >
-                    Cancelar
+                    <CopyIcon size={16} /> Copiar link
                   </button>
                   <button
-                    type="button"
-                    onClick={async () => {
-                      await submitPurchaseRequest();
-                      setConfirmPurchaseOpen(false);
-                    }}
-                    className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={ordering}
+                    onClick={() => setShareOpen(false)}
+                    className="product-detail__share-button product-detail__share-button--dark"
                   >
-                    {ordering ? 'Enviando...' : 'Confirmar compra'}
+                    Fechar
                   </button>
                 </div>
               </div>
             </div>
-          </div>,
-          document.body
-        )}
-
-
-      {/* Modal de compartilhamento (fallback) */}
-      {shareOpen && (
-        <div className="product-detail__share-overlay">
-          <div className="product-detail__share-sheet">
-            <div className="product-detail__share-header">
-              <h4>Compartilhar</h4>
-              <button
-                onClick={() => setShareOpen(false)}
-                className="product-detail__share-close"
-                aria-label="Fechar"
-              >
-                <CloseIcon size={18} />
-              </button>
-            </div>
-
-            <div className="product-detail__share-grid">
-              <a href={whatsapp} target="_blank" rel="noreferrer" className="product-detail__share-item">
-                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WhatsApp" className="w-8 h-8 mx-auto" />
-                WhatsApp
-              </a>
-              <a href={telegram} target="_blank" rel="noreferrer" className="product-detail__share-item">
-                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/telegram.svg" alt="Telegram" className="w-8 h-8 mx-auto" />
-                Telegram
-              </a>
-              <a href={facebook} target="_blank" rel="noreferrer" className="product-detail__share-item">
-                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook" className="w-8 h-8 mx-auto" />
-                Facebook
-              </a>
-              <a href={xUrl} target="_blank" rel="noreferrer" className="product-detail__share-item">
-                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X" className="w-8 h-8 mx-auto" />
-                X
-              </a>
-            </div>
-
-            <div className="product-detail__share-actions">
-              <button
-                onClick={copyLink}
-                className="product-detail__share-button"
-              >
-                <CopyIcon size={16} /> Copiar link
-              </button>
-              <button
-                onClick={() => setShareOpen(false)}
-                className="product-detail__share-button product-detail__share-button--dark"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </article>
-    </section>
+          )}
+        </article>
+      </section>
     </>
   );
 }
