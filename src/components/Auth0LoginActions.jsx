@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
 
-export default function Auth0LoginActions({ onLoginSuccess, onLoginError }) {
+export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
   const { loginWithRedirect, getIdTokenClaims, isAuthenticated, isLoading, error } = useAuth0();
   const [backendError, setBackendError] = useState('');
   const [syncing, setSyncing] = useState(false);
@@ -54,28 +54,35 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError }) {
     exchangeToken();
   }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, syncing]);
 
-  const handleAuth0Login = () => {
+  const handleAuth0Login = (connection) => {
     setBackendError('');
-    loginWithRedirect().catch(() => {
+    const options = connection ? { authorizationParams: { connection } } : undefined;
+    loginWithRedirect(options).catch(() => {
       if (mountedRef.current) {
         setBackendError('Não foi possível iniciar o login pelo Auth0.');
       }
     });
   };
 
+  const isBusy = isLoading || syncing;
+  const errorMessage = backendError || error?.message || '';
+
+  if (renderButtons) {
+    return (
+      <div className={`auth0-actions ${className}`.trim()}>
+        {renderButtons({ onLogin: handleAuth0Login, isBusy, errorMessage })}
+      </div>
+    );
+  }
+
   return (
-    <div className="auth0-actions">
-      <button
-        type="button"
-        className="btn-secondary"
-        onClick={handleAuth0Login}
-        disabled={isLoading || syncing}
-      >
-        {isLoading || syncing ? 'Autenticando...' : 'Entrar com Auth0'}
+    <div className={`auth0-actions ${className}`.trim()}>
+      <button type="button" className="btn-secondary" onClick={() => handleAuth0Login()} disabled={isBusy}>
+        {isBusy ? 'Autenticando...' : 'Entrar com Auth0'}
       </button>
-      {(backendError || error?.message) && (
+      {errorMessage && (
         <p className="form-error" aria-live="polite">
-          {backendError || error.message}
+          {errorMessage}
         </p>
       )}
     </div>

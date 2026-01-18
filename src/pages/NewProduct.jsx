@@ -1695,12 +1695,8 @@ export default function NewProduct() {
                 className="mx-auto mb-3 h-1 w-14 rounded-full bg-[var(--ts-gold)] opacity-80"
                 aria-hidden="true"
               />
-              <h1 className="font-['Cinzel'] text-2xl sm:text-[30px] font-semibold text-[var(--ts-text)]">
-                Publicar novo produto
-              </h1>
-              <p className="text-sm font-medium text-[var(--ts-muted)] mt-2">
-                Compartilhe seu produto com a comunidade TempleSale em poucos passos.
-              </p>
+             
+            
             </header>
 
             <form
