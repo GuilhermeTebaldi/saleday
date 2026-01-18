@@ -43,13 +43,25 @@ function Auth0SessionSync({
       return;
     }
     if (auth0Loading || syncAttemptedRef.current) return;
-    if (user && token) return;
-    // Se Auth0 autenticou, não bloqueie a UI por depender do backend.
-    // Preenche user/token diretamente do Auth0 e evita "voltar deslogado".
+    const hasProfileData = Boolean(
+      user?.phone ||
+        user?.country ||
+        user?.state ||
+        user?.city ||
+        user?.district ||
+        user?.street ||
+        user?.zip ||
+        user?.profile_image_url
+    );
+    const shouldBootstrap = !user || !token;
+    const shouldFetchProfile = !hasProfileData;
+    if (!shouldBootstrap && !shouldFetchProfile) return;
 
     let isActive = true;
     syncAttemptedRef.current = true;
-    setLoading(true);
+    if (shouldBootstrap) {
+      setLoading(true);
+    }
 
     const exchangeToken = async () => {
       try {
@@ -59,23 +71,45 @@ function Auth0SessionSync({
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
         if (!isActive) return;
-        // Usa Auth0 como fonte principal. Mantém compatibilidade salvando algo em token.
-        login({
-          user: {
-            id: claims?.sub,
-            email: claims?.email,
-            username: claims?.nickname || claims?.name || claims?.email,
-            name: claims?.name
-          },
-          token: idToken
-        });
+        const fallbackUser = {
+          id: claims?.sub,
+          email: claims?.email,
+          username: claims?.nickname || claims?.name || claims?.email,
+          name: claims?.name
+        };
+        if (shouldBootstrap) {
+          login({ user: fallbackUser, token: idToken });
+        }
+        if (shouldFetchProfile) {
+          try {
+            const response = await api.get('/auth/me', {
+              headers: { Authorization: `Bearer ${idToken}` }
+            });
+            if (!isActive) return;
+            const profile = response.data?.data;
+            if (profile) {
+              login({ user: profile, token: idToken });
+            } else if (shouldBootstrap) {
+              login({ user: fallbackUser, token: idToken });
+            }
+          } catch (profileErr) {
+            if (shouldBootstrap) {
+              login({ user: fallbackUser, token: idToken });
+            }
+            if (isActive) {
+              console.warn('auth0 profile sync failed:', profileErr);
+            }
+          }
+        }
       } catch (err) {
         if (isActive) {
           console.error('auth0 session sync failed:', err);
         }
       } finally {
         if (isActive) {
-          setLoading(false);
+          if (shouldBootstrap) {
+            setLoading(false);
+          }
         }
       }
     };

@@ -2,7 +2,9 @@
 // Página de cadastro de novos usuários.
 import { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
+import { AUTH0_ENABLED } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { localeFromCountry } from '../i18n/localeMap.js';
 
@@ -26,6 +28,33 @@ const COUNTRY_OPTIONS = [
   { label: 'China', value: 'CN' },
   { label: 'Índia', value: 'IN' },
 ];
+
+function Auth0SignupActions({ className = '' }) {
+  const { loginWithRedirect, isLoading, error } = useAuth0();
+  const [localError, setLocalError] = useState('');
+
+  const handleAuth0Signup = () => {
+    setLocalError('');
+    loginWithRedirect({ authorizationParams: { screen_hint: 'signup' } }).catch(() => {
+      setLocalError('Não foi possível iniciar o cadastro pelo Auth0.');
+    });
+  };
+
+  const errorMessage = localError || error?.message || '';
+
+  return (
+    <div className={`auth0-actions ${className}`.trim()}>
+      <button type="button" className="btn-secondary" onClick={handleAuth0Signup} disabled={isLoading}>
+        {isLoading ? 'Abrindo...' : 'Criar conta com Auth0'}
+      </button>
+      {errorMessage && (
+        <p className="form-error" role="alert" aria-live="polite">
+          {errorMessage}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -103,9 +132,11 @@ export default function Register() {
           <p className="auth-card__subtitle">
             Crie sua conta para negociar com segurança e acompanhar suas operações em um só lugar.
           </p>
-        </div>
+      </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+      {AUTH0_ENABLED && <Auth0SignupActions className="auth-card__auth0" />}
+
+      <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-form__group">
             <label htmlFor="username">Nome</label>
             <input
