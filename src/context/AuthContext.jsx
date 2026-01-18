@@ -134,6 +134,9 @@ export function AuthProvider({ children }) {
       }
       setUser(sanitizeUser(data.user));
       setToken(data.token);
+      if (data?.token) {
+        api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+      }
       if (data?.rememberToken) {
         persistRememberToken(data.rememberToken);
       }
@@ -150,6 +153,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('templesale.locale');
+    delete api.defaults.headers.common.Authorization;
     persistRememberToken(null);
     setRememberAttempted(false);
     if (AUTH0_ENABLED && auth0StateRef.current.isAuthenticated && auth0StateRef.current.logout) {

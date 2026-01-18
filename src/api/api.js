@@ -67,19 +67,17 @@ const handleSessionExpiration = (message) => {
 api.interceptors.request.use((config) => {
   config.headers ||= {};
 
-  // Não sobrescreve Authorization se já foi setado manualmente
-  if (!config.headers.Authorization) {
-    const url = (config.url || '').toLowerCase();
-    const isAdmin =
-      url.startsWith('/admin') || url.includes('/api/admin') || url.includes('/support/admin');
-    const adminToken = localStorage.getItem('adminToken');
-    const userToken  = localStorage.getItem('token');
+  // Não sobrescreve Authorization se já foi setado manualmente (exceto rotas admin).
+  const url = (config.url || '').toLowerCase();
+  const isAdmin =
+    url.startsWith('/admin') || url.includes('/api/admin') || url.includes('/support/admin');
+  const adminToken = localStorage.getItem('adminToken');
+  const userToken  = localStorage.getItem('token');
 
-    if (isAdmin && adminToken) {
-      config.headers.Authorization = `Bearer ${adminToken}`;
-    } else if (!isAdmin && userToken) {
-      config.headers.Authorization = `Bearer ${userToken}`;
-    }
+  if (isAdmin && adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (!config.headers.Authorization && userToken) {
+    config.headers.Authorization = `Bearer ${userToken}`;
   }
 
   // Content-Type automático (mantém upload funcionando)
