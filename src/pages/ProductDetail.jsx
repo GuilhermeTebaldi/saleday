@@ -1301,8 +1301,8 @@ export default function ProductDetail() {
           responsabiliza pelas negociações feitas.
         </p>
         <p>
-          Não pedimos PINs, senhas, protocolos ou códigos de confirmação. Desconfie se alguém entrar em contato em
-          nome do Chaves na Mão.
+              Não pedimos PINs, senhas, protocolos ou códigos de confirmação. Desconfie se alguém entrar em contato em
+              nome do TempleSale.
         </p>
         <ul>
           <li>Desconfie de preços abaixo do mercado</li>
@@ -1311,7 +1311,7 @@ export default function ProductDetail() {
           <li>Nunca efetue pagamento antecipado</li>
         </ul>
         <p>
-          O Chaves na Mão é um portal de classificados online e tem como objetivo a aproximação de interessados na
+              O TempleSale é um portal de classificados online e tem como objetivo a aproximação de interessados na
           compra, venda ou locação de imóveis, carros e motos, de modo que não presta serviços de consultoria ou
           intermediações de negócios entre seus anunciantes e usuários, portanto sendo de exclusiva responsabilidade
           dos seus anunciantes e usuários pelos anúncios e pelas negociações empreendidas.
