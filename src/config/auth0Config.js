@@ -5,7 +5,7 @@ const AUTH0_CONNECTION_APPLE = (import.meta.env.VITE_AUTH0_CONNECTION_APPLE || '
 const AUTH0_CONNECTION_GOOGLE = (import.meta.env.VITE_AUTH0_CONNECTION_GOOGLE || '').trim();
 const AUTH0_CONNECTION_FACEBOOK = (import.meta.env.VITE_AUTH0_CONNECTION_FACEBOOK || '').trim();
 
-const AUTH0_ENABLED = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE);
+const AUTH0_ENABLED = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID);
 
 const AUTH0_REDIRECT_URI =
   (typeof window !== 'undefined' && window.location?.origin) ||

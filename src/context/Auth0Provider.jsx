@@ -1,11 +1,5 @@
 import { Auth0Provider } from '@auth0/auth0-react';
-import {
-  AUTH0_AUDIENCE,
-  AUTH0_CLIENT_ID,
-  AUTH0_DOMAIN,
-  AUTH0_ENABLED,
-  AUTH0_REDIRECT_URI
-} from '../config/auth0Config.js';
+import { AUTH0_CLIENT_ID, AUTH0_DOMAIN, AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
 
 export default function Auth0ProviderWrapper({ children }) {
   if (!AUTH0_ENABLED) {
@@ -19,7 +13,6 @@ export default function Auth0ProviderWrapper({ children }) {
       cacheLocation="localstorage"
       useRefreshTokens
       authorizationParams={{
-        audience: AUTH0_AUDIENCE,
         redirect_uri: AUTH0_REDIRECT_URI,
         scope: 'openid profile email'
       }}

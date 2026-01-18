@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import api from '../api/api.js';
 
 export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
   const { loginWithRedirect, getIdTokenClaims, isAuthenticated, isLoading, error } = useAuth0();
@@ -34,9 +33,19 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
         if (!idToken) {
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
-        const response = await api.post('/auth/auth0', { idToken });
+        if (claims?.email_verified === false) {
+          throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
+        }
         processedRef.current = true;
-        onLoginSuccess?.(response.data.data);
+        onLoginSuccess?.({
+          user: {
+            id: claims?.sub,
+            email: claims?.email,
+            username: claims?.nickname || claims?.name || claims?.email,
+            name: claims?.name
+          },
+          token: idToken
+        });
       } catch (err) {
         const message =
           err?.response?.data?.message || err?.message || 'Não foi possível validar o login pelo Auth0.';
