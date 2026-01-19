@@ -46,6 +46,13 @@ const handleSessionExpiration = (message) => {
     }
   }
   localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  delete api.defaults.headers.common.Authorization;
+  try {
+    window.dispatchEvent(new Event('templesale:session-expired'));
+  } catch {
+    // ignore event failures
+  }
   const onAdminPage =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
   if (onAdminPage) {

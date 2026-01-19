@@ -247,25 +247,50 @@ export function AuthProvider({ children }) {
     [persistRememberToken]
   );
 
-  const logout = useCallback(() => {
-    api.post('/auth/logout').catch(() => {});
-    setUser(null);
-    setToken(null);
-    setLoading(false);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('templesale.locale');
-    delete api.defaults.headers.common.Authorization;
-    persistRememberToken(null);
-    setRememberAttempted(false);
-    if (AUTH0_ENABLED && auth0StateRef.current.isAuthenticated && auth0StateRef.current.logout) {
-      try {
-        auth0StateRef.current.logout({ logoutParams: { returnTo: AUTH0_REDIRECT_URI } });
-      } catch (error) {
-        console.error('auth0 logout failed:', error);
+  const clearSession = useCallback(
+    (options = {}) => {
+      const { skipAuth0 = false, redirectTo } = options;
+      setUser(null);
+      setToken(null);
+      setLoading(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('templesale.locale');
+      delete api.defaults.headers.common.Authorization;
+      persistRememberToken(null);
+      setRememberAttempted(false);
+      if (!skipAuth0 && AUTH0_ENABLED && auth0StateRef.current.isAuthenticated && auth0StateRef.current.logout) {
+        try {
+          const returnTo = redirectTo || AUTH0_REDIRECT_URI;
+          auth0StateRef.current.logout({ logoutParams: { returnTo } });
+        } catch (error) {
+          console.error('auth0 logout failed:', error);
+        }
       }
-    }
-  }, [persistRememberToken]);
+    },
+    [persistRememberToken]
+  );
+
+  const logout = useCallback(
+    (options = {}) => {
+      const { skipServer = false } = options;
+      if (!skipServer) {
+        api.post('/auth/logout').catch(() => {});
+      }
+      clearSession(options);
+    },
+    [clearSession]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleSessionExpired = () => {
+      const redirectTo = `${window.location.origin}/login`;
+      clearSession({ skipServer: true, redirectTo });
+    };
+    window.addEventListener('templesale:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('templesale:session-expired', handleSessionExpired);
+  }, [clearSession]);
 
   useEffect(() => {
     if (user || typeof window === 'undefined') return undefined;
