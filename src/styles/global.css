@@ -8831,23 +8831,36 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   white-space: nowrap;
 }
 
-/* toolbar (desktop: coluna à direita; mobile: vira carrossel) */
+/* toolbar do hamburguer (off-canvas) */
 .home-search-toolbar {
-  position: relative;
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.55rem;
-  padding: 0.45rem;
-  border-radius: 16px;
-  border: 1px solid rgba(200, 178, 106, 0.25);
-  background: rgba(14, 17, 22, 0.92);
-  box-shadow: 0 16px 34px -28px rgba(0, 0, 0, 0.55);
-  width: 100%;
-  max-width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.2rem 1.3rem;
+  border-radius: 0 18px 18px 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+  width: min(320px, 92vw);
+  height: 100vh;
+  max-height: 100vh;
   box-sizing: border-box;
-  overflow: visible;
-  z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 40000;
+  transform: translateX(-105%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.3s ease, opacity 0.3s ease, visibility 0s linear 0.3s;
+  will-change: transform, opacity;
 }
 
 .home-search-toolbtn {
@@ -8907,60 +8920,60 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   border-radius: 10px;
   border: 0;
   background: transparent;
-  color: rgba(245, 246, 247, 0.8);
+  color: #475569;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .home-search-toolbar__close:hover {
-  color: var(--ts-gold);
+  background: #f3f4f6;
+  color: #0f172a;
 }
 
 body.templesale-panel-open .home-search-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  position: fixed;
-  top: calc(var(--home-header-height, 64px) + 0.75rem);
-  left: 0.75rem;
-  right: auto;
-  transform: none;
-  padding: 0.85rem 0.8rem;
-  border-radius: 14px;
-  border: 1px solid rgba(200, 178, 106, 0.25);
-  background: rgba(14, 17, 22, 0.95);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.4);
-  z-index: 40000;
-  align-items: stretch;
-  width: min(260px, 86vw);
+  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 body.templesale-panel-open .home-search-toolbar__close {
   display: inline-flex;
-  align-self: flex-end;
-  margin-right: -13.35rem;
+  align-self: flex-start;
+  margin: 0 0 0.4rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: #111827;
+}
+
+body.templesale-panel-open .home-search-toolbar__close svg {
+  width: 22px;
+  height: 22px;
 }
 
 body.templesale-panel-open .home-search-toolbar__profile {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 0.65rem;
+  display: flex;
   align-items: center;
+  gap: 0.9rem;
   width: 100%;
-  padding: 0.4rem 0.35rem 0.6rem;
-  border-bottom: 1px solid rgba(200, 178, 106, 0.2);
-  margin-bottom: 0.2rem;
+  padding: 0.45rem 0.2rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.6rem;
 }
 
 .home-search-toolbar__avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid rgba(200, 178, 106, 0.35);
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: rgba(245, 246, 247, 0.95);
-  color: var(--ts-text);
+  background: #f3f4f6;
+  color: #111827;
   font-weight: 700;
 }
 
@@ -8978,45 +8991,73 @@ body.templesale-panel-open .home-search-toolbar__profile {
 
 .home-search-toolbar__profile-name {
   margin: 0;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ts-surface);
+  font-size: 1.08rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #111827;
+  font-weight: 700;
 }
 
 .home-search-toolbar__profile-meta {
   margin: 0;
-  font-size: 0.75rem;
-  color: rgba(245, 246, 247, 0.7);
+  font-size: 0.92rem;
+  color: #6b7280;
 }
 
 .home-search-toolbar__profile-link {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ts-gold);
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #111827;
+  font-weight: 700;
 }
 
-body.templesale-panel-open .home-search-toolbar > * {
+body.templesale-panel-open .home-search-toolbar > *:not(.home-search-toolbar__close) {
   width: 100%;
   height: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.6rem;
 }
 
 body.templesale-panel-open .home-search-toolbtn {
   width: 100%;
   height: auto;
+  min-height: 56px;
   border-radius: 12px;
-  padding: 0.55rem 0.75rem;
-  gap: 0.65rem;
+  padding: 0.55rem 0.3rem;
+  gap: 1rem;
   justify-content: flex-start;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #1f2937;
+  font-weight: 600;
 }
 
 body.templesale-panel-open .home-search-toolbtn__label {
   display: inline-flex;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+body.templesale-panel-open .home-search-toolbtn:hover {
+  background: #f8fafc;
+  border-color: transparent;
+  transform: none;
+}
+
+body.templesale-panel-open .home-search-toolbtn svg {
+  width: 22px;
+  height: 22px;
+  color: #6b7280;
+}
+
+body.templesale-panel-open .home-search-toolbtn.bg-white,
+body.templesale-panel-open .home-search-toolbtn.border-gray-200,
+body.templesale-panel-open .home-search-toolbtn.shadow-md {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 body.templesale-panel-open .home-grid-section,
@@ -9064,27 +9105,8 @@ body.templesale-panel-open .nav-side-backdrop {
 /* Mobile */
 @media (max-width: 640px) {
   .home-search-toolbar {
-    width: 100%;
-    display: none;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(44px, 1fr);
-    gap: 0.55rem;
-    overflow: visible;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .home-search-toolbar > * {
-    display: flex;
-    justify-content: center;
-  }
-
-  .home-search-toolbar .home-search-toolbtn {
-    width: 100%;
-  }
-
-  .home-search-toolbar::-webkit-scrollbar {
-    display: none;
+    width: min(300px, 92vw);
+    border-radius: 0 16px 16px 0;
   }
 
   .home-search-bar__input {
@@ -9103,7 +9125,36 @@ body.templesale-panel-open .nav-side-backdrop {
   }
 
   body.templesale-panel-open .home-search-toolbar {
-    display: flex;
+    gap: 0.2rem;
+    padding: 0.6rem 0.85rem 0.8rem;
+  }
+
+  body.templesale-panel-open .home-search-toolbtn {
+    min-height: 36px;
+    padding: 0.2rem 0;
+    gap: 0.55rem;
+  }
+
+  body.templesale-panel-open .home-search-toolbtn__label {
+    font-size: 0.95rem;
+    line-height: 1.05;
+  }
+
+  body.templesale-panel-open .home-search-toolbar__profile {
+    margin-bottom: 0.25rem;
+    padding-bottom: 1.6rem;
+  }
+
+  body.templesale-panel-open .home-search-toolbtn svg {
+    width: 25px;
+    height: 50px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-search-toolbar,
+  body.templesale-panel-open .home-search-toolbar {
+    transition: none;
   }
 }
 
