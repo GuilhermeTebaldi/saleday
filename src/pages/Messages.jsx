@@ -30,6 +30,19 @@ import { MessageCircle } from 'lucide-react';
 
   const LONG_PRESS_DELAY = 550;
 
+  const normalizeId = (value) => {
+    if (value === undefined || value === null) return null;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    return String(value);
+  };
+
+  const isSameId = (first, second) => {
+    if (first === undefined || first === null) return false;
+    if (second === undefined || second === null) return false;
+    return normalizeId(first) === normalizeId(second);
+  };
+
   const getCoordinatesFromEvent = (event) => {
     if (!event) return { x: 0, y: 0 };
     const touch = event.touches?.[0] || event.changedTouches?.[0];
@@ -40,8 +53,8 @@ import { MessageCircle } from 'lucide-react';
   };
 
   const getConversationCounterpartId = (conversation, currentUserId) => {
-    if (!conversation || !currentUserId) return null;
-    return conversation.sender_id === currentUserId
+    if (!conversation || currentUserId === undefined || currentUserId === null) return null;
+    return isSameId(conversation.sender_id, currentUserId)
       ? conversation.receiver_id
       : conversation.sender_id;
   };
