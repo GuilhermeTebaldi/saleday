@@ -98,14 +98,6 @@ function Auth0SessionSync({
     }
     if (auth0Loading || syncAttemptedRef.current) return;
     const shouldBootstrap = !user || !token;
-    const missingCountry = isBlank(user?.country);
-    const missingState = isBlank(user?.state);
-    const missingCity = isBlank(user?.city);
-    const missingAvatar = isBlank(user?.profile_image_url);
-    const shouldSync = shouldBootstrap || missingCountry || missingState || missingCity || missingAvatar;
-    if (!shouldSync) return;
-
-    const shouldFetchProfile = !user || missingCountry || missingState || missingCity || missingAvatar;
 
     let isActive = true;
     syncAttemptedRef.current = true;
@@ -125,33 +117,36 @@ function Auth0SessionSync({
         if (shouldBootstrap) {
           login({ user: fallbackUser, token: idToken });
         }
-        let profile = null;
-        if (shouldFetchProfile) {
-          try {
-            const response = await api.get('/auth/me', {
-              headers: { Authorization: `Bearer ${idToken}` }
-            });
-            if (!isActive) return;
-            profile = response.data?.data || null;
-            if (profile) {
-              login({ user: profile, token: idToken });
-            }
-          } catch (profileErr) {
-            if (isActive) {
-              console.warn('auth0 profile sync failed:', profileErr);
-            }
+
+        let provisionedUser = null;
+        try {
+          const response = await api.post(
+            '/auth/auth0/provision',
+            null,
+            { headers: { Authorization: `Bearer ${idToken}` } }
+          );
+          if (!isActive) return;
+          provisionedUser = response.data?.data || null;
+          if (provisionedUser) {
+            login({ user: provisionedUser, token: idToken });
+          }
+        } catch (provisionErr) {
+          if (isActive) {
+            console.warn('auth0 provision failed:', provisionErr);
           }
         }
+
         if (!isActive) return;
 
-        const baseUser = profile || user || fallbackUser;
+        const baseUser = provisionedUser || user || fallbackUser;
         const localeCountry = resolveCountryFromLocale(claims?.locale);
         const timezoneCountry = resolveTimezoneCountry();
+        const missingCountry = isBlank(baseUser?.country);
+        const missingState = isBlank(baseUser?.state);
+        const missingCity = isBlank(baseUser?.city);
         let geo = null;
         const needsGeoLookup =
-          isBlank(baseUser?.city) ||
-          isBlank(baseUser?.state) ||
-          (isBlank(baseUser?.country) && !localeCountry && !timezoneCountry);
+          missingCity || missingState || (missingCountry && !localeCountry && !timezoneCountry);
         if (needsGeoLookup) {
           try {
             const response = await api.get('/geo/ip');

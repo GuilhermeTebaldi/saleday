@@ -107,6 +107,7 @@ const formatBrazilPhone = (value) => {
 
 export default function EditProfile() {
   const { token, user, login } = useContext(AuthContext);
+  const loadedTokenRef = useRef(null);
   const initialFormState = useMemo(
     () => ({
       username: user?.username ?? '',
@@ -144,6 +145,32 @@ export default function EditProfile() {
       avatarObjectUrlRef.current = null;
     }
   }, [initialFormState]);
+
+  useEffect(() => {
+    if (!token) {
+      loadedTokenRef.current = null;
+      return;
+    }
+    if (loadedTokenRef.current === token) return;
+    loadedTokenRef.current = token;
+    let isActive = true;
+    api
+      .get('/users/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => {
+        if (!isActive) return;
+        const profile = response.data?.data;
+        if (profile) {
+          login({ user: profile, token });
+        }
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        console.warn('Falha ao carregar perfil:', error);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [login, token]);
 
   useEffect(
     () => () => {
@@ -255,7 +282,7 @@ export default function EditProfile() {
       } else if (removeAvatar) {
         payload.append('removeAvatar', 'true');
       }
-      const response = await api.put('/auth/update', payload, {
+      const response = await api.put('/users/me', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
