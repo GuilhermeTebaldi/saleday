@@ -285,8 +285,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleSessionExpired = () => {
-      const redirectTo = `${window.location.origin}/login`;
-      clearSession({ skipServer: true, redirectTo });
+      clearSession({ skipServer: true, skipAuth0: true });
     };
     window.addEventListener('templesale:session-expired', handleSessionExpired);
     return () => window.removeEventListener('templesale:session-expired', handleSessionExpired);

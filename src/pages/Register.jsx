@@ -42,18 +42,18 @@ function Auth0SignupActions({ className = '' }) {
 
   const errorMessage = localError || error?.message || '';
 
-  return (
-    <div className={`auth0-actions ${className}`.trim()}>
-      <button type="button" className="btn-secondary" onClick={handleAuth0Signup} disabled={isLoading}>
-        {isLoading ? 'Abrindo...' : 'Criar conta com Auth0'}
-      </button>
-      {errorMessage && (
-        <p className="form-error" role="alert" aria-live="polite">
-          {errorMessage}
-        </p>
-      )}
-    </div>
-  );
+  //return (
+    //<div className={`auth0-actions ${className}`.trim()}>
+     // <button type="button" className="btn-secondary" onClick={handleAuth0Signup} disabled={isLoading}>
+     //   {isLoading ? 'Abrindo...' : 'Criar conta com Auth0'}
+    //  </button>
+     // {errorMessage && (
+     //   <p className="form-error" role="alert" aria-live="polite">
+     //     {errorMessage}
+     //   </p>
+     // )}
+    //</div>
+  //);
 }
 
 export default function Register() {
