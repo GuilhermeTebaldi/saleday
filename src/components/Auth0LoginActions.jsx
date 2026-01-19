@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
   const { loginWithRedirect, getIdTokenClaims, isAuthenticated, isLoading, error } = useAuth0();
   const [backendError, setBackendError] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [resumeKey, setResumeKey] = useState(0);
   const processedRef = useRef(false);
   const mountedRef = useRef(false);
 
@@ -16,6 +18,10 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
   }, []);
 
   useEffect(() => {
+    if (isSessionExpired()) {
+      processedRef.current = false;
+      return;
+    }
     if (!isAuthenticated) {
       processedRef.current = false;
       setBackendError('');
@@ -61,10 +67,16 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     };
 
     exchangeToken();
-  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, syncing]);
+  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, resumeKey, syncing]);
 
   const handleAuth0Login = (connection) => {
     setBackendError('');
+    clearSessionExpired();
+    processedRef.current = false;
+    setResumeKey((prev) => prev + 1);
+    if (isAuthenticated) {
+      return;
+    }
     const options = connection ? { authorizationParams: { connection } } : undefined;
     loginWithRedirect(options).catch(() => {
       if (mountedRef.current) {

@@ -13,6 +13,7 @@ import {
 import { Link } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import { usePurchaseNotifications } from '../context/PurchaseNotificationsContext.jsx';
 import { getUnseenSellerOrderIds } from '../utils/orders.js';
 import { toast } from 'react-hot-toast';
@@ -221,6 +222,12 @@ const CogIcon = ({ className = '' }) => (
 const BOOST_LINK_TARGET = '/dashboard/impulsiona';
 const BOOST_LINK_STATE = undefined;
 const watermarkLogoSrc = '/logo-templesale.png';
+const LOCALE_OPTIONS = [
+  { value: 'pt-BR', label: 'Português (BR)' },
+  { value: 'en-US', label: 'English (US)' },
+  { value: 'es-ES', label: 'Español' },
+  { value: 'it-IT', label: 'Italiano' }
+];
 
 const PrimaryButton = ({
   as: Component = 'button',
@@ -383,6 +390,7 @@ const MobileMenu = ({ actions }) => (
 
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
+  const { locale, setLocale } = useContext(LocaleContext);
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
   const [passwords, setPasswords] = useState(getInitialSecurityPasswords);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
@@ -422,6 +430,7 @@ export default function Dashboard() {
   const purchaseActionClasses = `h-full min-h-[140px] md:col-span-2 purchase-action-card ${
     hasUnseenOrders ? 'purchase-action-card--alert' : ''
   }`.trim();
+  const activeLocale = locale || 'pt-BR';
 
   const userId = user?.id;
   const userAvatar = user?.profile_image_url ?? '';
@@ -1039,6 +1048,34 @@ export default function Dashboard() {
               <p className="mt-3 text-sm text-[var(--ts-muted)]">
                 Mantenha a segurança em dia, sincronize termos aceitos e revise permissões.
               </p>
+              <div className="mt-4 rounded-2xl border border-gray-100 bg-[var(--ts-surface)] p-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--ts-muted)]">Idioma</p>
+                  <p className="text-sm font-semibold text-[var(--ts-text)]">Idioma da interface</p>
+                  <p className="text-xs text-[var(--ts-muted)]">
+                    Escolha como deseja ver o app.
+                  </p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {LOCALE_OPTIONS.map((option) => {
+                    const isActive = option.value === activeLocale;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setLocale(option.value)}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                          isActive
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton
                   variant="muted"

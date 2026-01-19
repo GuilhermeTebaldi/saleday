@@ -14,8 +14,7 @@ import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
-import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
-import { localeFromCountry } from '../i18n/localeMap.js';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import { getProductPriceLabel, isProductFree } from '../utils/product.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
@@ -527,70 +526,7 @@ const prioritizeProducts = (list, priorityKeys = []) => {
 const DEFAULT_COUNTRY = 'BR';
 const MOBILE_BREAKPOINT = 768;
 
-const extractRegionFromLocale = (value) => {
-  if (!value || typeof value !== 'string') return '';
-  const match = value.match(/[-_](\w{2})/);
-  return match ? match[1] : '';
-};
-
-const readStoredPreferredCountry = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return normalizeCountryCode(
-      window.localStorage.getItem('templesale.preferredCountry')
-    );
-  } catch {
-    return null;
-  }
-};
-
-const detectPreferredCountry = (userCountry, geoCountry) => {
-  const normalizedUser = normalizeCountryCode(userCountry);
-  if (normalizedUser) return normalizedUser;
-  const normalizedGeo = normalizeCountryCode(geoCountry);
-  if (normalizedGeo) return normalizedGeo;
-  if (typeof window !== 'undefined') {
-    try {
-      const storedPref = readStoredPreferredCountry();
-      if (storedPref) return storedPref;
-
-      const candidates = [];
-
-      const storedLocale = window.localStorage.getItem('templesale.locale');
-      if (storedLocale) candidates.push(storedLocale);
-
-      if (typeof window.navigator !== 'undefined') {
-        if (window.navigator.language) candidates.push(window.navigator.language);
-        if (Array.isArray(window.navigator.languages)) {
-          candidates.push(...window.navigator.languages);
-        }
-      }
-
-      if (
-        typeof window.Intl !== 'undefined' &&
-        typeof window.Intl.DateTimeFormat === 'function'
-      ) {
-        const intlLocale = window.Intl.DateTimeFormat().resolvedOptions?.().locale;
-        if (intlLocale) candidates.push(intlLocale);
-      }
-
-      for (const candidate of candidates) {
-        const region = extractRegionFromLocale(candidate);
-        const normalizedRegion = normalizeCountryCode(region);
-        if (normalizedRegion) return normalizedRegion;
-      }
-      const timezone =
-        typeof window.Intl !== 'undefined'
-          ? window.Intl.DateTimeFormat().resolvedOptions?.().timeZone
-          : null;
-      const timezoneCountry = detectCountryFromTimezone(timezone);
-      if (timezoneCountry) return timezoneCountry;
-    } catch {
-      /* ignore */
-    }
-  }
-  return DEFAULT_COUNTRY;
-};
+const normalizeMarketCountry = (value) => normalizeCountryCode(value) || '';
 
 const MAP_CENTER_KEY = 'templesale.map.center';
 const readStoredMapCenter = () => {
@@ -1378,12 +1314,13 @@ export default function Home() {
     [promptLogin, token]
   );
   const {
-    country: detectedCountry,
     lat: detectedLat,
     lng: detectedLng,
-    locale: detectedLocale,
+    marketCountry,
+    setMarketCountry,
     ready: geoReady
   } = useContext(GeoContext);
+  const { locale } = useContext(LocaleContext);
   const navigate = useNavigate();
   const location = useLocation();
   const initialHomeSnapshot = useMemo(() => {
@@ -1397,15 +1334,15 @@ export default function Home() {
     }
     return snapshot;
   }, []);
-  const storedPreferredCountry = useMemo(() => readStoredPreferredCountry(), []);
-  const preferredCountry = useMemo(
-    () => detectPreferredCountry(user?.country, detectedCountry),
-    [user?.country, detectedCountry]
+  const normalizedMarketCountry = useMemo(
+    () => normalizeMarketCountry(marketCountry),
+    [marketCountry]
   );
-  const homeLocale = useMemo(() => {
-    const userLocale = user?.country ? localeFromCountry(user.country) : null;
-    return userLocale || detectedLocale || 'pt-BR';
-  }, [detectedLocale, user?.country]);
+  const preferredCountry = useMemo(
+    () => normalizedMarketCountry || DEFAULT_COUNTRY,
+    [normalizedMarketCountry]
+  );
+  const homeLocale = useMemo(() => locale || 'pt-BR', [locale]);
   const [geoScope, setGeoScope] = useState(() =>
     initialHomeSnapshot?.geoScope || { type: 'country', country: preferredCountry }
   );
@@ -1572,15 +1509,6 @@ export default function Home() {
   }, [products]);
 
   useEffect(() => {
-    if (!preferredCountry || typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('templesale.preferredCountry', preferredCountry);
-    } catch {
-      // ignora falha de storage (modo privado, quota, etc.)
-    }
-  }, [preferredCountry, handlePersistMapCenter]);
-
-  useEffect(() => {
     setGeoScope((current) => {
       if (initialHomeSnapshot) return current;
       if (!preferredCountry) return current;
@@ -1588,7 +1516,12 @@ export default function Home() {
       if (current.country === preferredCountry) return current;
       return { type: 'country', country: preferredCountry };
     });
-  }, [preferredCountry, handlePersistMapCenter, initialHomeSnapshot]);
+  }, [preferredCountry, initialHomeSnapshot]);
+
+  useEffect(() => {
+    if (geoScope?.type !== 'country' || !geoScope?.country) return;
+    setMarketCountry(geoScope.country);
+  }, [geoScope?.country, geoScope?.type, setMarketCountry]);
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400);
     onScroll();
@@ -1631,8 +1564,7 @@ export default function Home() {
     if (
       !token &&
       !geoReady &&
-      !storedPreferredCountry &&
-      !user?.country
+      !normalizedMarketCountry
     ) {
       // Aguarda detecção automática para evitar mostrar país errado a visitantes.
       return;
@@ -1665,7 +1597,7 @@ export default function Home() {
     } finally {
       setProductsLoading(false);
     }
-  }, [preferredCountry, handleProductsLoaded, geoReady, storedPreferredCountry, token, user?.country]);
+  }, [preferredCountry, handleProductsLoaded, geoReady, normalizedMarketCountry, token]);
 
   // carregar produtos iniciais
   useEffect(() => {

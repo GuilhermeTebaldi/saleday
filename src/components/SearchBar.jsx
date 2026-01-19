@@ -685,7 +685,7 @@ export default function SearchBar({
             aria-expanded={panel === 'country'}
           >
             <Globe size={18} />
-            <span className="home-search-toolbtn__label">País</span>
+            <span className="home-search-toolbtn__label">Catálogo</span>
           </button>
         </div>
         {false && (
@@ -901,7 +901,7 @@ export default function SearchBar({
                 </>
               ) : (
                 <>
-                  <p className="font-semibold text-sm text-gray-800">Filtrar por país</p>
+                  <p className="font-semibold text-sm text-gray-800">País do catálogo</p>
                   <p className="text-[11px] text-gray-400">Somente países com anúncios ativos</p>
                 </>
               )}

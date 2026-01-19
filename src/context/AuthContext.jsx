@@ -4,6 +4,7 @@ import api from '../api/api.js';
 import { AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
 import { normalizeCountryCode } from '../data/countries.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
+import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 const REMEMBER_TOKEN_KEY = 'templesale.rememberToken';
 
@@ -92,6 +93,10 @@ function Auth0SessionSync({
   }, [auth0Logout, auth0Loading, auth0StateRef, isAuthenticated, setAuth0Authenticated, setAuth0Ready]);
 
   useEffect(() => {
+    if (isSessionExpired()) {
+      syncAttemptedRef.current = false;
+      return;
+    }
     if (!isAuthenticated) {
       syncAttemptedRef.current = false;
       return;
@@ -234,6 +239,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
+      clearSessionExpired();
       setUser(sanitizeUser(data.user));
       setToken(data.token);
       if (data?.token) {
@@ -255,7 +261,6 @@ export function AuthProvider({ children }) {
       setLoading(false);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.removeItem('templesale.locale');
       delete api.defaults.headers.common.Authorization;
       persistRememberToken(null);
       setRememberAttempted(false);

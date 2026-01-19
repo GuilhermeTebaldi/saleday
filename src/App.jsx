@@ -5,6 +5,7 @@ import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GeoProvider } from './context/GeoContext.jsx';
 import Auth0ProviderWrapper from './context/Auth0Provider.jsx';
+import { LocaleProvider } from './context/LocaleContext.jsx';
 import Header from './components/Header.jsx';
 import BanBanner from './components/BanBanner.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -85,9 +86,10 @@ export default function App() {
   return (
     <Auth0ProviderWrapper>
       <AuthProvider>
-        <PurchaseNotificationsProvider>
-          <GeoProvider>
-            <BrowserRouter>
+        <LocaleProvider>
+          <PurchaseNotificationsProvider>
+            <GeoProvider>
+              <BrowserRouter>
               <ScrollRestoration />
               {!splashDone && (
                 <div
@@ -242,9 +244,10 @@ export default function App() {
                   )
                 }
               </Toaster>
-            </BrowserRouter>
-          </GeoProvider>
-        </PurchaseNotificationsProvider>
+              </BrowserRouter>
+            </GeoProvider>
+          </PurchaseNotificationsProvider>
+        </LocaleProvider>
       </AuthProvider>
     </Auth0ProviderWrapper>
   );

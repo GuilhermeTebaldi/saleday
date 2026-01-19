@@ -5,13 +5,12 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'r
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
-import GeoContext from '../context/GeoContext.jsx';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import { asStars } from '../utils/rating.js';
 import { getProductPriceLabel } from '../utils/product.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { localeFromCountry } from '../i18n/localeMap.js';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import { makeAbsolute } from '../utils/urlHelpers.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
@@ -30,7 +29,7 @@ export default function SellerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, token } = useContext(AuthContext);
-  const geo = useContext(GeoContext);
+  const { locale } = useContext(LocaleContext);
   const promptLogin = useLoginPrompt();
   const requireAuth = useCallback(
     (message) => {
@@ -476,8 +475,7 @@ export default function SellerProfile() {
     navigate(messageLink);
   };
 
-  const reviewLocale =
-    (user?.country ? localeFromCountry(user.country) : null) || geo?.locale || 'pt-BR';
+  const reviewLocale = locale || 'pt-BR';
 
   const formatReviewDate = (value) => {
     if (!value) return '';

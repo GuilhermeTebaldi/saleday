@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { notifyBanReason } from '../utils/banNotice.js';
+import { markSessionExpired } from '../utils/sessionExpired.js';
 
 const resolveBaseURL = () => {
   const envUrl = import.meta.env?.VITE_API_BASE_URL;
@@ -36,6 +37,7 @@ let networkErrorNotice = false;
 
 const handleSessionExpiration = (message) => {
   if (typeof window === 'undefined') return;
+  markSessionExpired();
   if (!sessionExpiredNotice) {
     sessionExpiredNotice = true;
     const finalMessage = message || 'Sua sessão expirou. Entre novamente para continuar.';

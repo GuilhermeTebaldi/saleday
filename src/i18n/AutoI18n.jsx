@@ -1,10 +1,7 @@
 // src/i18n/AutoI18n.jsx
 import { useContext, useEffect, useMemo } from 'react';
-import { AuthContext } from '../context/AuthContext.jsx';
-import GeoContext from '../context/GeoContext.jsx';
-import { localeFromCountry } from './localeMap.js';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import { DICTS } from './dictionaries.js';
-import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 
 function normalize(s) {
   return (s || '').replace(/\s+/g, ' ').trim();
@@ -211,48 +208,17 @@ function matchSupportedLocale(value) {
 }
 
 export default function AutoI18n() {
-  const { user } = useContext(AuthContext);
-  const { locale: geoLocale } = useContext(GeoContext);
-
-  // 1) Locale sempre derivado do país do usuário quando logado
-  // 2) Fallback para PT-BR (idioma oficial)
-  const locale = useMemo(() => {
-    const byUser = user?.country ? localeFromCountry(user.country) : null;
-    const byStorage =
-      typeof window !== 'undefined' ? localStorage.getItem('templesale.locale') : null;
-    const byBrowser =
-      typeof navigator !== 'undefined'
-        ? navigator.languages?.[0] || navigator.language
-        : null;
-
-    const timezone =
-      typeof Intl !== 'undefined'
-        ? Intl.DateTimeFormat().resolvedOptions?.().timeZone
-        : null;
-    const timezoneCountry = detectCountryFromTimezone(timezone);
-    const supportedByUser = matchSupportedLocale(byUser);
-    const supportedByBrowser = matchSupportedLocale(byBrowser);
-    const supportedByGeo = matchSupportedLocale(geoLocale);
-    const supportedByStorage = matchSupportedLocale(byStorage);
-    const supportedByTimezone = matchSupportedLocale(localeFromCountry(timezoneCountry));
-    if (supportedByUser) return supportedByUser;
-    if (supportedByBrowser) return supportedByBrowser;
-    return (
-      supportedByGeo ||
-      supportedByStorage ||
-      supportedByTimezone ||
-      'pt-BR'
-    );
-  }, [user, geoLocale]);
+  const { locale } = useContext(LocaleContext);
+  const resolvedLocale = useMemo(
+    () => matchSupportedLocale(locale) || 'pt-BR',
+    [locale]
+  );
 
   useEffect(() => {
-    if (!locale) return;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('templesale.locale', locale);
-    }
+    if (!resolvedLocale) return;
     const previousLang = document.documentElement.lang;
 
-    if (locale.startsWith('pt')) {
+    if (resolvedLocale.startsWith('pt')) {
       resetTranslations(document.body);
       document.documentElement.lang = 'pt-BR';
       return () => {
@@ -260,12 +226,12 @@ export default function AutoI18n() {
       };
     }
 
-    const dict = DICTS[locale];
+    const dict = DICTS[resolvedLocale];
     if (!dict) {
       document.documentElement.lang = previousLang || 'pt-BR';
       return;
     }
-    document.documentElement.lang = locale;
+    document.documentElement.lang = resolvedLocale;
 
     resetTranslations(document.body);
     replaceTextNodes(document.body, dict);
@@ -285,7 +251,7 @@ export default function AutoI18n() {
       scheduled = false;
       document.documentElement.lang = previousLang || 'pt-BR';
     };
-  }, [locale]);
+  }, [resolvedLocale]);
 
   return null;
 }

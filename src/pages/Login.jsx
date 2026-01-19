@@ -11,7 +11,6 @@ import {
   AUTH0_ENABLED
 } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { localeFromCountry } from '../i18n/localeMap.js';
 import { sanitizeNextPath } from '../utils/authRedirect.js';
 
 const SOCIAL_PROVIDERS = [
@@ -108,10 +107,6 @@ export default function Login() {
 
   const handleLoginSuccess = (payload) => {
     login(payload);
-    const userCountry = payload?.user?.country;
-    if (userCountry) {
-      localStorage.setItem('templesale.locale', localeFromCountry(userCountry));
-    }
     navigate(nextPath, { replace: true });
   };
 

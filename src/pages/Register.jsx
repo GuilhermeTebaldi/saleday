@@ -6,7 +6,6 @@ import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
 import { AUTH0_ENABLED } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { localeFromCountry } from '../i18n/localeMap.js';
 
 // ISO-3166-1 alpha-2
 const COUNTRY_OPTIONS = [
@@ -112,7 +111,6 @@ export default function Register() {
       }
 
       login(data);
-      localStorage.setItem('templesale.locale', localeFromCountry(country)); // <- aqui
       navigate('/');                                                     // <- aqui
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Não foi possível criar sua conta.';

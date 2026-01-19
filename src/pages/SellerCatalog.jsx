@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import api from '../api/api.js';
-import GeoContext from '../context/GeoContext.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
@@ -19,11 +19,10 @@ import {
   drawVibrantCatalog,
   drawModernCatalog
 } from '../utils/catalogBuilder.js';
-import { localeFromCountry } from '../i18n/localeMap.js';
 
 export default function SellerCatalog() {
   const { user } = useContext(AuthContext);
-  const geo = useContext(GeoContext);
+  const { locale } = useContext(LocaleContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -83,12 +82,10 @@ export default function SellerCatalog() {
     return products.filter((product) => product?.id && ids.has(String(product.id)));
   }, [catalogSelection, products]);
 
-  const catalogLocale = useMemo(() => {
-    if (user?.country) return localeFromCountry(user.country);
-    if (geo?.locale) return geo.locale;
-    if (geo?.country) return localeFromCountry(geo.country);
-    return DEFAULT_CATALOG_LOCALE;
-  }, [user?.country, geo?.locale, geo?.country]);
+  const catalogLocale = useMemo(
+    () => locale || DEFAULT_CATALOG_LOCALE,
+    [locale]
+  );
 
   const catalogTranslator = useMemo(
     () => createCatalogTranslator(catalogLocale),
