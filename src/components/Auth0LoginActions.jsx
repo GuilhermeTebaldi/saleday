@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { AUTH0_AUDIENCE, AUTH0_SCOPE } from '../config/auth0Config.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
@@ -77,7 +78,14 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     if (isAuthenticated) {
       return;
     }
-    const options = connection ? { authorizationParams: { connection } } : undefined;
+    const options = {
+      authorizationParams: {
+        audience: AUTH0_AUDIENCE,
+        scope: AUTH0_SCOPE,
+        prompt: 'consent',
+        ...(connection ? { connection } : {})
+      }
+    };
     loginWithRedirect(options).catch(() => {
       if (mountedRef.current) {
         setBackendError('Não foi possível iniciar o login pelo Auth0.');
