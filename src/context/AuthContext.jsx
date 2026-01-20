@@ -80,6 +80,7 @@ function Auth0SessionSync({
   const {
     isAuthenticated,
     isLoading: auth0Loading,
+   getAccessTokenSilently,
     getIdTokenClaims,
     logout: auth0Logout
   } = useAuth0();
@@ -112,15 +113,24 @@ function Auth0SessionSync({
 
     const exchangeToken = async () => {
       try {
-        const claims = await getIdTokenClaims();
-        const idToken = claims?.__raw;
-        if (!idToken) {
-          throw new Error('Não foi possível recuperar o token do Auth0.');
+        const [accessToken, claims] = await Promise.all([
+          getAccessTokenSilently({
+          authorizationParams: {
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE
+          }
+             }),
+             getIdTokenClaims()
+           ]);
+        
+        if (!accessToken) {
+          throw new Error('Não foi possível recuperar o access token do Auth0.');
         }
+        
         if (!isActive) return;
         const fallbackUser = buildAuth0FallbackUser(claims);
         if (shouldBootstrap) {
-          login({ user: fallbackUser, token: idToken });
+          login({ user: fallbackUser, token: accessToken });
+
         }
 
         let provisionedUser = null;
@@ -128,12 +138,13 @@ function Auth0SessionSync({
           const response = await api.post(
             '/auth/auth0/provision',
             null,
-            { headers: { Authorization: `Bearer ${idToken}` } }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
+          
           if (!isActive) return;
           provisionedUser = response.data?.data || null;
           if (provisionedUser) {
-            login({ user: provisionedUser, token: idToken });
+            login({ user: provisionedUser, token: accessToken });
           }
         } catch (provisionErr) {
           if (isActive) {
@@ -172,7 +183,7 @@ function Auth0SessionSync({
           city: geo?.city
         });
         if (mergedUser) {
-          login({ user: mergedUser, token: idToken });
+          login({ user: mergedUser, token: accessToken });
         }
       } catch (err) {
         if (isActive) {
@@ -192,8 +203,7 @@ function Auth0SessionSync({
     return () => {
       isActive = false;
     };
-  }, [auth0Loading, getIdTokenClaims, isAuthenticated, login, setLoading, token, user]);
-
+  }, [auth0Loading, getAccessTokenSilently, getIdTokenClaims, isAuthenticated, login, setLoading, token, user]);
   return null;
 }
 
