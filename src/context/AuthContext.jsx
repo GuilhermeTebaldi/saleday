@@ -80,7 +80,6 @@ function Auth0SessionSync({
   const {
     isAuthenticated,
     isLoading: auth0Loading,
-    getAccessTokenSilently,
     getIdTokenClaims,
     logout: auth0Logout,
     loginWithRedirect
@@ -114,24 +113,16 @@ function Auth0SessionSync({
 
     const exchangeToken = async () => {
       try {
-        const [accessToken, claims] = await Promise.all([
-          getAccessTokenSilently({
-            authorizationParams: {
-              audience: AUTH0_AUDIENCE,
-              scope: AUTH0_SCOPE
-            }
-          }),
-          getIdTokenClaims()
-        ]);
-        
-        if (!accessToken) {
-          throw new Error('Não foi possível recuperar o access token do Auth0.');
+        const claims = await getIdTokenClaims();
+        const idToken = claims?.__raw;
+        if (!idToken) {
+          throw new Error('Não foi possível recuperar o token do Auth0.');
         }
         
         if (!isActive) return;
         const fallbackUser = buildAuth0FallbackUser(claims);
         if (shouldBootstrap) {
-          login({ user: fallbackUser, token: accessToken });
+          login({ user: fallbackUser, token: idToken });
 
         }
 
@@ -140,13 +131,13 @@ function Auth0SessionSync({
           const response = await api.post(
             '/auth/auth0/provision',
             null,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
+            { headers: { Authorization: `Bearer ${idToken}` } }
           );
           
           if (!isActive) return;
           provisionedUser = response.data?.data || null;
           if (provisionedUser) {
-            login({ user: provisionedUser, token: accessToken });
+            login({ user: provisionedUser, token: idToken });
           }
         } catch (provisionErr) {
           if (isActive) {
@@ -185,7 +176,7 @@ function Auth0SessionSync({
           city: geo?.city
         });
         if (mergedUser) {
-          login({ user: mergedUser, token: accessToken });
+          login({ user: mergedUser, token: idToken });
         }
       } catch (err) {
         if (isActive) {
@@ -232,7 +223,6 @@ function Auth0SessionSync({
     };
   }, [
     auth0Loading,
-    getAccessTokenSilently,
     getIdTokenClaims,
     isAuthenticated,
     login,

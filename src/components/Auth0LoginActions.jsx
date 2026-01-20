@@ -7,7 +7,6 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
   const {
     loginWithRedirect,
     getIdTokenClaims,
-    getAccessTokenSilently,
     isAuthenticated,
     isLoading,
     error
@@ -46,14 +45,9 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
         if (claims?.email_verified === false) {
           throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
         }
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: AUTH0_AUDIENCE,
-            scope: AUTH0_SCOPE
-          }
-        });
-        if (!accessToken) {
-          throw new Error('Não foi possível recuperar o access token do Auth0.');
+        const idToken = claims?.__raw;
+        if (!idToken) {
+          throw new Error('Não foi possível recuperar o token do Auth0.');
         }
         processedRef.current = true;
         onLoginSuccess?.({
@@ -63,7 +57,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
             username: claims?.nickname || claims?.name || claims?.email,
             name: claims?.name
           },
-          token: accessToken
+          token: idToken
         });
       } catch (err) {
         const message =
@@ -80,15 +74,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     };
 
     exchangeToken();
-  }, [
-    isAuthenticated,
-    getIdTokenClaims,
-    getAccessTokenSilently,
-    onLoginError,
-    onLoginSuccess,
-    resumeKey,
-    syncing
-  ]);
+  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, resumeKey, syncing]);
 
   const handleAuth0Login = (connection) => {
     setBackendError('');
