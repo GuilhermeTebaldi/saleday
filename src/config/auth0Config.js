@@ -4,6 +4,8 @@ const AUTH0_AUDIENCE = (import.meta.env.VITE_AUTH0_AUDIENCE || '').trim();
 const AUTH0_CONNECTION_APPLE = (import.meta.env.VITE_AUTH0_CONNECTION_APPLE || '').trim();
 const AUTH0_CONNECTION_GOOGLE = (import.meta.env.VITE_AUTH0_CONNECTION_GOOGLE || '').trim();
 const AUTH0_CONNECTION_FACEBOOK = (import.meta.env.VITE_AUTH0_CONNECTION_FACEBOOK || '').trim();
+const AUTH0_SCOPE =
+  (import.meta.env.VITE_AUTH0_SCOPE || 'openid profile email offline_access').trim();
 
 const AUTH0_ENABLED = Boolean(AUTH0_DOMAIN && AUTH0_CLIENT_ID);
 
@@ -17,6 +19,7 @@ export {
   AUTH0_DOMAIN,
   AUTH0_CLIENT_ID,
   AUTH0_AUDIENCE,
+  AUTH0_SCOPE,
   AUTH0_REDIRECT_URI,
   AUTH0_CONNECTION_APPLE,
   AUTH0_CONNECTION_GOOGLE,

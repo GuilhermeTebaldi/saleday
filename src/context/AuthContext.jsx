@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
-import { AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
+import { AUTH0_AUDIENCE, AUTH0_ENABLED, AUTH0_REDIRECT_URI, AUTH0_SCOPE } from '../config/auth0Config.js';
 import { normalizeCountryCode } from '../data/countries.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
@@ -115,12 +115,13 @@ function Auth0SessionSync({
       try {
         const [accessToken, claims] = await Promise.all([
           getAccessTokenSilently({
-          authorizationParams: {
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE
-          }
-             }),
-             getIdTokenClaims()
-           ]);
+            authorizationParams: {
+              audience: AUTH0_AUDIENCE,
+              scope: AUTH0_SCOPE
+            }
+          }),
+          getIdTokenClaims()
+        ]);
         
         if (!accessToken) {
           throw new Error('Não foi possível recuperar o access token do Auth0.');
