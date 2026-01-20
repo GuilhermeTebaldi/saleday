@@ -140,7 +140,7 @@ api.interceptors.response.use(
       normalizedMessage.includes('sessão') ||
       normalizedMessage.includes('autentica');
 
-    if (!isAdmin && (status === 401 || status === 403) && likelyTokenIssue) {
+    if (!isAdmin && (status === 401 || status === 403)) {
       handleSessionExpiration(
         normalizedMessage.includes('expirado')
           ? 'Sua sessão expirou. Faça login novamente.'

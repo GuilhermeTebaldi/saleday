@@ -4,7 +4,14 @@ import { AUTH0_AUDIENCE, AUTH0_SCOPE } from '../config/auth0Config.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
-  const { loginWithRedirect, getIdTokenClaims, isAuthenticated, isLoading, error } = useAuth0();
+  const {
+    loginWithRedirect,
+    getIdTokenClaims,
+    getAccessTokenSilently,
+    isAuthenticated,
+    isLoading,
+    error
+  } = useAuth0();
   const [backendError, setBackendError] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [resumeKey, setResumeKey] = useState(0);
@@ -36,12 +43,17 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
       setSyncing(true);
       try {
         const claims = await getIdTokenClaims();
-        const idToken = claims?.__raw;
-        if (!idToken) {
-          throw new Error('Não foi possível recuperar o token do Auth0.');
-        }
         if (claims?.email_verified === false) {
           throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
+        }
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: AUTH0_AUDIENCE,
+            scope: AUTH0_SCOPE
+          }
+        });
+        if (!accessToken) {
+          throw new Error('Não foi possível recuperar o access token do Auth0.');
         }
         processedRef.current = true;
         onLoginSuccess?.({
@@ -51,7 +63,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
             username: claims?.nickname || claims?.name || claims?.email,
             name: claims?.name
           },
-          token: idToken
+          token: accessToken
         });
       } catch (err) {
         const message =
@@ -68,7 +80,15 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     };
 
     exchangeToken();
-  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, resumeKey, syncing]);
+  }, [
+    isAuthenticated,
+    getIdTokenClaims,
+    getAccessTokenSilently,
+    onLoginError,
+    onLoginSuccess,
+    resumeKey,
+    syncing
+  ]);
 
   const handleAuth0Login = (connection) => {
     setBackendError('');

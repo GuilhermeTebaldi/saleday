@@ -80,9 +80,10 @@ function Auth0SessionSync({
   const {
     isAuthenticated,
     isLoading: auth0Loading,
-   getAccessTokenSilently,
+    getAccessTokenSilently,
     getIdTokenClaims,
-    logout: auth0Logout
+    logout: auth0Logout,
+    loginWithRedirect
   } = useAuth0();
   const syncAttemptedRef = useRef(false);
 
@@ -188,6 +189,31 @@ function Auth0SessionSync({
         }
       } catch (err) {
         if (isActive) {
+          const missingRefresh =
+            err?.error === 'missing_refresh_token' ||
+            /missing refresh token/i.test(err?.message || '');
+          if (missingRefresh) {
+            syncAttemptedRef.current = false;
+            try {
+              await auth0Logout({
+                logoutParams: { returnTo: AUTH0_REDIRECT_URI }
+              });
+            } catch (logoutErr) {
+              console.warn('auth0 logout before refresh-token re-login failed:', logoutErr);
+            }
+            try {
+              await loginWithRedirect({
+                authorizationParams: {
+                  audience: AUTH0_AUDIENCE,
+                  scope: AUTH0_SCOPE,
+                  prompt: 'consent'
+                }
+              });
+              return;
+            } catch (redirectErr) {
+              console.error('auth0 re-login failed:', redirectErr);
+            }
+          }
           console.error('auth0 session sync failed:', err);
         }
       } finally {
@@ -204,7 +230,17 @@ function Auth0SessionSync({
     return () => {
       isActive = false;
     };
-  }, [auth0Loading, getAccessTokenSilently, getIdTokenClaims, isAuthenticated, login, setLoading, token, user]);
+  }, [
+    auth0Loading,
+    getAccessTokenSilently,
+    getIdTokenClaims,
+    isAuthenticated,
+    login,
+    loginWithRedirect,
+    setLoading,
+    token,
+    user
+  ]);
   return null;
 }
 
