@@ -7,6 +7,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
   const {
     loginWithRedirect,
     getIdTokenClaims,
+    getAccessTokenSilently,
     isAuthenticated,
     isLoading,
     error
@@ -45,9 +46,14 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
         if (claims?.email_verified === false) {
           throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
         }
-        const idToken = claims?.__raw;
-        if (!idToken) {
-          throw new Error('Não foi possível recuperar o token do Auth0.');
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: AUTH0_AUDIENCE,
+            scope: AUTH0_SCOPE
+          }
+        });
+        if (!accessToken) {
+          throw new Error('Não foi possível recuperar o access token do Auth0.');
         }
         processedRef.current = true;
         onLoginSuccess?.({
@@ -57,9 +63,24 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
             username: claims?.nickname || claims?.name || claims?.email,
             name: claims?.name
           },
-          token: idToken
+          token: accessToken
         });
       } catch (err) {
+        const missingRefresh =
+          err?.error === 'missing_refresh_token' ||
+          /missing refresh token/i.test(err?.message || '');
+        if (missingRefresh) {
+          processedRef.current = false;
+          loginWithRedirect({
+            authorizationParams: {
+              audience: AUTH0_AUDIENCE,
+              scope: AUTH0_SCOPE,
+              prompt: 'consent'
+            }
+          }).catch(() => {
+            // ignore and surface the error message below
+          });
+        }
         const message =
           err?.response?.data?.message || err?.message || 'Não foi possível validar o login pelo Auth0.';
         if (mountedRef.current) {
@@ -74,7 +95,16 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     };
 
     exchangeToken();
-  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, resumeKey, syncing]);
+  }, [
+    isAuthenticated,
+    getIdTokenClaims,
+    getAccessTokenSilently,
+    loginWithRedirect,
+    onLoginError,
+    onLoginSuccess,
+    resumeKey,
+    syncing
+  ]);
 
   const handleAuth0Login = (connection) => {
     setBackendError('');
