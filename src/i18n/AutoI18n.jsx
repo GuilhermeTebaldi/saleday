@@ -26,11 +26,22 @@ function translateString(raw, helpers) {
     return `${leading}${translated}${trailing}`;
   }
 
+  const wordRegex = /^[\p{L}\p{N}]+$/u;
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   let output = raw;
   let changed = false;
   for (const [src, target] of orderedEntries) {
     if (!src) continue;
-    if (output.includes(src)) {
+    if (!output.includes(src)) continue;
+    if (wordRegex.test(src)) {
+      const escaped = escapeRegExp(src);
+      const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}(?=[^\\p{L}\\p{N}]|$)`, 'gu');
+      if (pattern.test(output)) {
+        output = output.replace(pattern, (match, prefix) => `${prefix ?? ''}${target}`);
+        changed = true;
+      }
+    } else {
       output = output.split(src).join(target);
       changed = true;
     }
