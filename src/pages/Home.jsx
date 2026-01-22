@@ -649,6 +649,7 @@ const getFactIcon = (label, product) => {
   if (label.endsWith('m²')) return 'tape';
   if (isImovelLabel(label) && normalized === categoryLabel) return 'home';
   if (startsWithLabel(label, 'tipo de imovel:')) return 'home';
+  if (startsWithLabel(label, 'tipo de terreno:')) return 'home';
   if (startsWithLabel(label, 'tipo de aluguel:')) return 'home';
   if (includesLabel(label, 'quarto')) return 'bed';
   if (includesLabel(label, 'banheiro')) return 'bath';
@@ -1027,15 +1028,17 @@ const pickProductFacts = (product) => {
 
   if (isEstate) {
     if (isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
-    if (isLandCategory && propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
+    if (isLandCategory && propertyType) addFact(`Tipo de terreno: ${propertyType}`);
     const area = formatNumberLabel(areaValue);
     if (area !== null) addFact(`${area} m²`);
-    const bedrooms = formatNumberLabel(product.bedrooms);
-    if (bedrooms !== null) addFact(`${bedrooms} quarto${bedrooms > 1 ? 's' : ''}`);
-    const bathrooms = formatNumberLabel(product.bathrooms);
-    if (bathrooms !== null) addFact(`${bathrooms} banheiro${bathrooms > 1 ? 's' : ''}`);
-    if (parkingLabel) addFact(parkingLabel);
-    if (!isLandCategory && propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
+    if (!isLandCategory) {
+      const bedrooms = formatNumberLabel(product.bedrooms);
+      if (bedrooms !== null) addFact(`${bedrooms} quarto${bedrooms > 1 ? 's' : ''}`);
+      const bathrooms = formatNumberLabel(product.bathrooms);
+      if (bathrooms !== null) addFact(`${bathrooms} banheiro${bathrooms > 1 ? 's' : ''}`);
+      if (parkingLabel) addFact(parkingLabel);
+      if (propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
+    }
     if (!isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
   } else if (isFashion) {
     if (product.brand) addFact(`Marca: ${product.brand}`);

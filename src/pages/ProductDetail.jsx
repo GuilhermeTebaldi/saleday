@@ -154,6 +154,13 @@ const buildOpenStreetMapLink = (lat, lng) =>
 const buildLocationQuery = (city, state, country) =>
   [city, state, country].filter(Boolean).join(', ');
 
+const normalizeLabel = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
 const QUESTION_PAGE_SIZE = 4;
 const MESSAGE_LIMIT = 200;
 const REGION_RESULT_LIMIT = 6;
@@ -175,6 +182,7 @@ const buildRegionBounds = (lat, lng, delta = REGION_BOUNDS_DELTA) => ({
 
 const HIGHLIGHT_ICON_BY_LABEL = {
   'Tipo de imóvel': Home,
+  'Tipo de terreno': Home,
   'Área (m²)': Ruler,
   Quartos: BedDouble,
   Banheiros: Bath,
@@ -1231,15 +1239,22 @@ export default function ProductDetail() {
   const jobSalary = product.job_salary ?? product.jobSalary;
   const jobRequirements = product.job_requirements ?? product.jobRequirements;
 
-  const propertySpecs = [
-    { label: 'Tipo de imóvel', value: propertyType },
-    { label: 'Área (m²)', value: surfaceArea },
-    { label: 'Quartos', value: product.bedrooms },
-    { label: 'Banheiros', value: product.bathrooms },
-    { label: 'Vagas', value: product.parking },
-    { label: 'Condomínio', value: condoFee },
-    { label: 'Tipo de aluguel', value: rentType }
-  ].filter((entry) => entry.value);
+  const normalizedCategory = normalizeLabel(product.category);
+  const isLandCategory = normalizedCategory.includes('terreno');
+  const propertySpecs = isLandCategory
+    ? [
+        { label: 'Tipo de terreno', value: propertyType },
+        { label: 'Área (m²)', value: surfaceArea }
+      ].filter((entry) => entry.value)
+    : [
+        { label: 'Tipo de imóvel', value: propertyType },
+        { label: 'Área (m²)', value: surfaceArea },
+        { label: 'Quartos', value: product.bedrooms },
+        { label: 'Banheiros', value: product.bathrooms },
+        { label: 'Vagas', value: product.parking },
+        { label: 'Condomínio', value: condoFee },
+        { label: 'Tipo de aluguel', value: rentType }
+      ].filter((entry) => entry.value);
   const serviceSpecs = [
     { label: 'Tipo de serviço', value: serviceType },
     { label: 'Duração / carga horária', value: serviceDuration },

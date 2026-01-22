@@ -18,6 +18,11 @@ const RENTAL_EXTRA_DETAILS = [
   { name: 'rentType', label: 'Tipo de aluguel', placeholder: 'Ex: Temporada ou mensal' }
 ];
 
+const LAND_DETAILS = [
+  { name: 'propertyType', label: 'Tipo de terreno', placeholder: 'Ex: Residencial, rural' },
+  { name: 'area', label: 'Área (m²)', placeholder: 'Ex: 500', inputMode: 'numeric' }
+];
+
 const SERVICE_FIELDS = [
   { name: 'serviceType', label: 'Tipo de serviço', placeholder: 'Ex: Aulas, consertos ou fotografia' },
   { name: 'serviceDuration', label: 'Duração / carga horária', placeholder: 'Ex: 2h por sessão, 40h/semana' },
@@ -50,7 +55,7 @@ const CATEGORY_FIELD_CONFIG = {
     { name: 'model', label: 'Modelo', placeholder: 'Ex: Legion 5i' }
   ],
   Imóveis: REAL_ESTATE_CONFIG,
-  Terreno: REAL_ESTATE_CONFIG,
+  Terreno: { fields: LAND_DETAILS, skipDefaults: true },
   Imóvel: REAL_ESTATE_CONFIG,
   Apartamento: REAL_ESTATE_CONFIG,
   Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true },

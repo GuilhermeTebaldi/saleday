@@ -593,6 +593,7 @@ const ENTRIES = [
   { key: 'Salário', en: 'Salary', es: 'Salario', it: 'Salario', ja: '給与' },
   { key: 'Requisitos', en: 'Requirements', es: 'Requisitos', it: 'Requisiti', ja: '要件' },
   { key: 'Tipo de imóvel', en: 'Property type', es: 'Tipo de propiedad', it: 'Tipo di immobile', ja: '物件タイプ' },
+  { key: 'Tipo de terreno', en: 'Land type', es: 'Tipo de terreno', it: 'Tipo di terreno', ja: '土地の種類' },
   { key: 'Área (m²)', en: 'Area (m²)', es: 'Área (m²)', it: 'Superficie (m²)', ja: '面積 (m²)' },
   { key: 'Quartos', en: 'Bedrooms', es: 'Habitaciones', it: 'Camere', ja: '寝室' },
   { key: 'quarto', en: 'Bedroom', es: 'Habitación', it: 'Camera', ja: '寝室' },

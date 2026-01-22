@@ -9,12 +9,26 @@ const PROPERTY_SPEC_FIELDS = [
   { key: 'rent_type', label: 'Tipo de aluguel' }
 ];
 
+const LAND_SPEC_FIELDS = [
+  { key: 'property_type', label: 'Tipo de terreno' },
+  { key: 'surface_area', label: 'Área (m²)' }
+];
+
 const EXTRA_SPEC_FIELDS = [
   { key: 'brand', label: 'Marca' },
   { key: 'model', label: 'Modelo' },
   { key: 'color', label: 'Cor' },
   { key: 'year', label: 'Ano' }
 ];
+
+const normalizeLabel = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const isLandCategory = (category) => normalizeLabel(category).includes('terreno');
 
 const cleanValue = (value) => {
   if (value === undefined || value === null) return '';
@@ -38,7 +52,10 @@ const appendFields = (fields, product, target) => {
 export function buildProductSpecEntries(product) {
   if (!product) return [];
   const entries = [];
-  appendFields(PROPERTY_SPEC_FIELDS, product, entries);
+  const propertyFields = isLandCategory(product?.category)
+    ? LAND_SPEC_FIELDS
+    : PROPERTY_SPEC_FIELDS;
+  appendFields(propertyFields, product, entries);
   appendFields(EXTRA_SPEC_FIELDS, product, entries);
   return entries;
 }
