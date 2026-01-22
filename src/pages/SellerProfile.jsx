@@ -12,6 +12,7 @@ import { buildProductMessageLink } from '../utils/messageLinks.js';
 import { Share2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
+import OwnerProductMenu from '../components/OwnerProductMenu.jsx';
 import { makeAbsolute } from '../utils/urlHelpers.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
@@ -50,6 +51,7 @@ export default function SellerProfile() {
   const [deletingReviewId, setDeletingReviewId] = useState(null);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const shareMenuRef = useRef(null);
+  const [deletingProductId, setDeletingProductId] = useState(null);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -360,6 +362,27 @@ export default function SellerProfile() {
       cancelEditingReview();
     }
   }, [cancelEditingReview, editingReviewId, reviews]);
+
+  const handleDeleteProduct = useCallback(
+    async (product) => {
+      if (!requireAuth('Faça login para excluir este anúncio.')) return;
+      if (!product?.id || deletingProductId === product.id) return;
+      setDeletingProductId(product.id);
+      try {
+        await api.delete(`/products/${product.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setProducts((prev) => prev.filter((item) => item.id !== product.id));
+        toast.success('Anúncio excluído.');
+      } catch (err) {
+        const message = err?.response?.data?.message || 'Erro ao excluir anúncio.';
+        toast.error(message);
+      } finally {
+        setDeletingProductId(null);
+      }
+    },
+    [deletingProductId, requireAuth, token]
+  );
 
   if (loading) {
     return (
@@ -820,6 +843,19 @@ export default function SellerProfile() {
                     registerClick={registerClick}
                     handleOpenProductChat={handleOpenProductChat}
                     linkState={{ fromSellerProfile: true, sellerId: seller?.id }}
+                    renderOverlayAction={
+                      isSelf
+                        ? ({ product }) => (
+                            <OwnerProductMenu
+                              className="absolute right-2 top-2 z-20"
+                              onDelete={() => handleDeleteProduct(product)}
+                              disabled={deletingProductId === product.id}
+                              panelPlacement="top"
+                              panelAlign="left"
+                            />
+                          )
+                        : null
+                    }
                   />
                 )}
               </>

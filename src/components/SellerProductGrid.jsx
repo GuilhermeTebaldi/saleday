@@ -8,6 +8,7 @@ export default function SellerProductGrid({
   isSelf = false,
   catalogSelection = [],
   renderSelfAction,
+  renderOverlayAction,
   registerClick,
   handleOpenProductChat,
   linkState,
@@ -41,6 +42,11 @@ export default function SellerProductGrid({
     return null;
   };
 
+  const renderOverlay = (product, normalizedId) =>
+    typeof renderOverlayAction === 'function'
+      ? renderOverlayAction({ product, normalizedId })
+      : null;
+
   const containerClass = isStrip
     ? 'flex flex-col gap-2'
     : isCompact
@@ -54,6 +60,8 @@ export default function SellerProductGrid({
         const imageEntry = getPrimaryImageEntry(product);
         const img = imageEntry?.url || '';
         const isIllustrative = imageEntry?.kind === IMAGE_KIND.ILLUSTRATIVE;
+        const overlayAction = renderOverlay(product, normalizedProductId);
+        const overflowClass = overlayAction ? 'overflow-visible' : 'overflow-hidden';
 
         if (isStrip) {
           return (
@@ -61,9 +69,10 @@ export default function SellerProductGrid({
               to={`/product/${product.id}`}
               state={linkState}
               key={product.id}
-              className="group flex items-center gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm shadow-sm transition hover:shadow-md"
+              className={`group relative flex items-center gap-3 ${overflowClass} rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm shadow-sm transition hover:shadow-md`}
               onClick={() => registerClick?.(product.id)}
             >
+              {overlayAction}
               <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-slate-100">
                 {img ? (
                   <img
@@ -96,9 +105,10 @@ export default function SellerProductGrid({
               to={`/product/${product.id}`}
               state={linkState}
               key={product.id}
-              className="group flex flex-col items-center gap-2 overflow-hidden rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 text-center shadow-sm transition hover:shadow-md"
+              className={`group relative flex flex-col items-center gap-2 ${overflowClass} rounded-xl bg-slate-50 border border-slate-100 px-3 py-3 text-center shadow-sm transition hover:shadow-md`}
               onClick={() => registerClick?.(product.id)}
             >
+              {overlayAction}
               {img ? (
                 <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-slate-100">
                   <img
@@ -113,7 +123,7 @@ export default function SellerProductGrid({
                   )}
                 </div>
               ) : (
-                <div className="aspect-[4/5] w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                <div className="relative aspect-[4/5] w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400">
                   Sem imagem
                 </div>
               )}
@@ -130,11 +140,12 @@ export default function SellerProductGrid({
             to={`/product/${product.id}`}
             state={linkState}
             key={product.id}
-            className="group relative overflow-hidden rounded-xl bg-slate-50 border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+            className={`group relative ${overflowClass} rounded-xl bg-slate-50 border border-slate-100 shadow-sm hover:shadow-md transition-shadow`}
             onClick={() => registerClick?.(product.id)}
           >
+            {overlayAction}
             {img ? (
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100">
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-xl bg-slate-100">
                 <img
                   src={img}
                   alt={product.title || 'Produto'}
@@ -147,7 +158,7 @@ export default function SellerProductGrid({
                 )}
               </div>
             ) : (
-              <div className="aspect-[4/5] w-full bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+              <div className="relative aspect-[4/5] w-full rounded-t-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400">
                 Sem imagem
               </div>
             )}

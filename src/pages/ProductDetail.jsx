@@ -30,6 +30,7 @@ import ImageViewerModal from '../components/ImageViewerModal.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
+import OwnerProductMenu from '../components/OwnerProductMenu.jsx';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
@@ -239,6 +240,7 @@ export default function ProductDetail() {
   const [sendingOffer, setSendingOffer] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [confirmPurchaseOpen, setConfirmPurchaseOpen] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(false);
   const [buyerInfo, setBuyerInfo] = useState(null);
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
@@ -1209,6 +1211,24 @@ export default function ProductDetail() {
     return () => window.removeEventListener('resize', measure);
   }, [showFloatingContactBar, showChatAction, showPhoneAction, showWhatsappAction]);
 
+  const handleDeleteProduct = useCallback(async () => {
+    if (!requireAuth('Faça login para excluir este anúncio.')) return;
+    if (!product?.id || deletingProduct) return;
+    setDeletingProduct(true);
+    try {
+      await api.delete(`/products/${product.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProduct((prev) => (prev ? { ...prev, hidden_by_seller: true } : prev));
+      toast.success('Anúncio excluído.');
+    } catch (err) {
+      const message = err?.response?.data?.message || 'Erro ao excluir anúncio.';
+      toast.error(message);
+    } finally {
+      setDeletingProduct(false);
+    }
+  }, [deletingProduct, product?.id, requireAuth, token]);
+
   if (loading) {
     return (
       <div className="p-6 text-center" aria-busy="true">
@@ -1296,6 +1316,9 @@ export default function ProductDetail() {
     mapCoords.lat !== null && mapCoords.lng !== null;
   const isSold = product.status === 'sold';
   const isDeleted = Boolean(product.hidden_by_seller);
+  const showOwnerMenu = isOwner && !isDeleted;
+  const ownerMenuOffsetClass =
+    activeImageKind === IMAGE_KIND.ILLUSTRATIVE ? 'top-12' : 'top-3';
   const productIsBoosted = Boolean(product?.manual_rank_plan);
   const boostLinkTarget = productIsBoosted
     ? '/dashboard/impulsiona'
@@ -1644,6 +1667,14 @@ export default function ProductDetail() {
                     <div className="product-detail__gallery-empty">
                       Sem imagem
                     </div>
+                  )}
+
+                  {showOwnerMenu && (
+                    <OwnerProductMenu
+                      className={`absolute right-3 ${ownerMenuOffsetClass} z-20`}
+                      onDelete={handleDeleteProduct}
+                      disabled={deletingProduct}
+                    />
                   )}
 
                   {product.status === 'sold' && <SoldBadge className="absolute -top-1 -left-1" />}

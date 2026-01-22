@@ -6,8 +6,9 @@ import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
+import { COUNTRY_OPTIONS, normalizeCountryCode } from '../data/countries.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
-import { resolveCurrencyFromCountry } from '../utils/currency.js';
+import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
 import { getProductPriceLabel, normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
@@ -29,6 +30,7 @@ const MAX_PRODUCT_PHOTOS = 10;
 const MAX_FLOORPLAN_FILES = 4;
 const FLOORPLAN_ACCEPT = 'image/*,application/pdf';
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
+const TITLE_MAX_LENGTH = 30;
 
 const initialFormState = {
   title: '',
@@ -88,6 +90,7 @@ export default function EditProduct() {
   };
   const [form, setForm] = useState(initialFormState);
   const currencyCode = useMemo(() => resolveCurrencyFromCountry(form.country), [form.country]);
+  const currencyInfo = useMemo(() => getCurrencySettings(currencyCode), [currencyCode]);
   const [existingImages, setExistingImages] = useState([]);
   const [existingImageKinds, setExistingImageKinds] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -171,7 +174,7 @@ export default function EditProduct() {
           price: data.price !== null && data.price !== undefined ? String(data.price) : '',
           category: data.category ?? '',
           city: data.city ?? '',
-          country: data.country ?? '',
+          country: normalizeCountryCode(data.country) || data.country || '',
           state: data.state ?? '',
           neighborhood: data.neighborhood ?? '',
           street: data.street ?? '',
@@ -213,6 +216,11 @@ export default function EditProduct() {
   }, [id, token]);
 
   const isValid = useMemo(() => Boolean(form.title?.trim()), [form.title]);
+  const titleLength = useMemo(() => form.title?.length ?? 0, [form.title]);
+  const titleRemaining = useMemo(
+    () => Math.max(0, TITLE_MAX_LENGTH - titleLength),
+    [titleLength]
+  );
 
   const pricePreview = useMemo(() => {
     if (form.isFree) return 'Grátis';
@@ -300,6 +308,15 @@ export default function EditProduct() {
       return;
     }
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCountryBlur = (event) => {
+    const value = event.target.value;
+    if (!value) return;
+    const normalized = normalizeCountryCode(value);
+    const next = normalized || value.trim();
+    if (!next) return;
+    setForm((prev) => (prev.country === next ? prev : { ...prev, country: next }));
   };
 
   const handleFreeToggle = (eventOrValue) => {
@@ -690,200 +707,153 @@ export default function EditProduct() {
       <CloseBackButton />
       <h2>Editar Produto</h2>
       <form onSubmit={handleSubmit} className="edit-product-form space-y-3">
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-          <div className="flex w-full flex-col gap-2" ref={freeHelpRef}>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleFreeToggle(!form.isFree)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-emerald-300 ${
-                  form.isFree
-                    ? 'bg-emerald-600 border-emerald-600 text-white'
-                    : 'bg-white border-emerald-200 text-emerald-700'
-                }`}
-                aria-pressed={form.isFree}
-              >
-                Zona Free
-              </button>
-              <button
-                type="button"
-                onClick={() => setFreeHelpVisible((prev) => !prev)}
-                className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 text-emerald-700"
-                aria-label={FREE_HELP_TITLE}
-                aria-expanded={freeHelpVisible}
-              >
-                ?
-              </button>
-              <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
-            </div>
-            {freeHelpVisible && (
-              <div className="mt-1 w-full max-w-sm rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
-                <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
-                  {FREE_HELP_LINES.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-xs text-emerald-700">
-              Ative para destacar o anúncio como gratuito. O preço não será exibido e o produto ficará disponível apenas para retirada.
-            </p>
-            <label className="flex items-center gap-2 text-xs text-emerald-700">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-emerald-600"
-                checked={form.pickupOnly}
-                onChange={handlePickupToggle}
-                disabled={form.isFree}
-              />
-              Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
-            </label>
-          </div>
+        {/* Order follows NewProduct sections to keep create/edit consistent. */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-700">Categoria</h3>
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Categoria</span>
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
+            >
+              <option value="">Selecione uma categoria</option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <input name="title" value={form.title} onChange={handleChange} placeholder="Título" required />
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">Título e preço</h3>
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Título</span>
+            <input
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              placeholder="Título"
+              required
+              maxLength={TITLE_MAX_LENGTH}
+            />
+            <span className="text-[11px] text-gray-400 mt-1">
+              {titleLength}/{TITLE_MAX_LENGTH} | restam {titleRemaining} letras
+            </span>
+          </label>
 
-        <div className="flex flex-col gap-1">
-          <input
-            name="price"
-            value={form.price}
-            onChange={handleChange}
-            placeholder="Valor a negociar"
-            type="text"
-            inputMode="decimal"
-            disabled={form.isFree}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
-          />
-          <span className="text-xs text-gray-500">
-            {form.isFree
-              ? 'Este anúncio será exibido como “Grátis”.'
-              : form.price?.trim()
-                ? `Será exibido como: ${pricePreview}`
-                : 'Deixe em branco para mostrar “Valor a negociar”.'}
-          </span>
-        </div>
-
-        <label className="flex flex-col text-sm">
-          <span className="text-[11px] text-gray-500 mb-1">Categoria</span>
-          <select
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
-          >
-            <option value="">Selecione uma categoria</option>
-            {PRODUCT_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </label>
-        {categoryDetailFields.length > 0 && (
-          <div className="grid gap-2 md:grid-cols-2">
-            {categoryDetailFields.map((field) => (
-              <label key={field.name} className="flex flex-col text-sm">
-                <span className="text-[11px] text-gray-500 mb-1">{field.label}</span>
-                <input
-                  name={field.name}
-                  value={form[field.name] ?? ''}
-                  onChange={handleChange}
-                  placeholder={field.placeholder}
-                  className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
-                  inputMode={field.inputMode}
-                />
-              </label>
-            ))}
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] text-gray-500">Preço ({currencyInfo.symbol})</span>
+            <input
+              name="price"
+              value={form.price}
+              onChange={handleChange}
+              placeholder={form.isFree ? 'Anúncio marcado como grátis' : `Ex: ${currencyInfo.example}`}
+              type="text"
+              inputMode="decimal"
+              disabled={form.isFree}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
+            />
+            <span className="text-xs text-gray-500">
+              {form.isFree
+                ? 'Este anúncio será exibido como “Grátis”.'
+                : form.price?.trim()
+                  ? `Será exibido como: ${pricePreview}`
+                  : 'Deixe em branco para mostrar “Valor a negociar”.'}
+            </span>
           </div>
-        )}
-        <input name="city" value={form.city} onChange={handleChange} placeholder="Cidade" />
 
-        <div className="flex items-center justify-between w-full" translate="no">
-          <span className="text-sm text-gray-600">Atualizar endereço automaticamente:</span>
-          <button
-            type="button"
-            onClick={handleDetectLocation}
-            disabled={loadingLocation}
-            className="bg-blue-600 text-white px-3 py-1 rounded"
-          >
-            {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
-          </button>
-        </div>
-
-        <input name="country" value={form.country} onChange={handleChange} placeholder="País" />
-        <input name="state" value={form.state} onChange={handleChange} placeholder="Estado" />
-        <input name="neighborhood" value={form.neighborhood} onChange={handleChange} placeholder="Bairro" />
-        <input name="street" value={form.street} onChange={handleChange} placeholder="Rua" />
-        <input name="zip" value={form.zip} onChange={handleChange} placeholder="CEP" />
-
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder="Descrição"
-        />
-
-<div className="mt-4 space-y-3" style={{ display: 'none' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-700">Imagem principal (opcional)</span>
-            {mainImageUploading && (
-              <span className="text-xs text-gray-500">Enviando...</span>
-            )}
-          </div>
-          <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm md:flex-row">
-            <div className="h-32 w-full overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50 md:w-32">
-              {form.image_url ? (
-                <img
-                  src={form.image_url}
-                  alt="Imagem principal atual"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-[11px] uppercase tracking-[0.3em] text-gray-400">
-                  Sem imagem principal
-                </div>
-              )}
-            </div>
-            <div className="flex flex-1 flex-col gap-2 text-sm text-gray-500">
-              <label className="flex flex-col gap-1 text-[11px]">
-                <span>Envie um arquivo</span>
-                <span className="inline-flex w-full cursor-pointer items-center justify-between rounded-full border border-gray-300 px-3 py-1 text-[11px] font-semibold text-gray-700 transition hover:border-gray-400">
-                  Selecionar imagem
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleMainImageFile}
-                    disabled={mainImageUploading}
-                  />
-                </span>
-              </label>
-              <p className="text-[10px] text-gray-400">Máx. 5MB, apenas imagens.</p>
-              <label className="flex flex-col gap-1 text-[11px]">
-                <span>Ou cole uma URL</span>
-                <input
-                  type="url"
-                  name="image_url"
-                  value={form.image_url}
-                  onChange={handleChange}
-                  disabled={mainImageUploading}
-                  placeholder="https://exemplo.com/minha-imagem.jpg"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
-                />
-              </label>
-              {form.image_url && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
+            <div className="flex w-full flex-col gap-2" ref={freeHelpRef}>
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
-                  className="text-[11px] font-semibold text-gray-700 underline-offset-2 hover:underline"
+                  onClick={() => handleFreeToggle(!form.isFree)}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:ring focus-visible:ring-emerald-300 ${
+                    form.isFree
+                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                      : 'bg-white border-emerald-200 text-emerald-700'
+                  }`}
+                  aria-pressed={form.isFree}
                 >
-                  Remover imagem principal
+                  Zona Free
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setFreeHelpVisible((prev) => !prev)}
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 text-emerald-700"
+                  aria-label={FREE_HELP_TITLE}
+                  aria-expanded={freeHelpVisible}
+                >
+                  ?
+                </button>
+                <span className="text-xs font-semibold text-emerald-700">{form.isFree ? 'Ativado' : 'Desativado'}</span>
+              </div>
+              {freeHelpVisible && (
+                <div className="mt-1 w-full max-w-sm rounded-xl border border-emerald-200 bg-white p-3 text-xs text-emerald-800 shadow-lg">
+                  <p className="font-semibold text-emerald-900">{FREE_HELP_TITLE}</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-emerald-700">
+                    {FREE_HELP_LINES.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
+              <p className="text-xs text-emerald-700">
+                Ative para destacar o anúncio como gratuito. O preço não será exibido e o produto ficará disponível apenas para retirada.
+              </p>
+              <label className="flex items-center gap-2 text-xs text-emerald-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-emerald-600"
+                  checked={form.pickupOnly}
+                  onChange={handlePickupToggle}
+                  disabled={form.isFree}
+                />
+                Apenas retirada em mãos {form.isFree ? '(obrigatório no modo grátis)' : ''}
+              </label>
             </div>
           </div>
         </div>
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-700">Descrição</h3>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="Detalhes importantes, estado do produto, acessórios inclusos..."
+          />
+        </div>
+
+        <LinkListEditor
+          links={form.links}
+          onChange={(links) => setForm((prev) => ({ ...prev, links }))}
+        />
+
+        {categoryDetailFields.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700">Detalhes do produto</h3>
+            <div className="grid gap-2 md:grid-cols-2">
+              {categoryDetailFields.map((field) => (
+                <label key={field.name} className="flex flex-col text-sm">
+                  <span className="text-[11px] text-gray-500 mb-1">{field.label}</span>
+                  <input
+                    name={field.name}
+                    value={form[field.name] ?? ''}
+                    onChange={handleChange}
+                    placeholder={field.placeholder}
+                    className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
+                    inputMode={field.inputMode}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -1022,10 +992,132 @@ export default function EditProduct() {
           </div>
         )}
 
-        <LinkListEditor
-          links={form.links}
-          onChange={(links) => setForm((prev) => ({ ...prev, links }))}
-        />
+        <div className="mt-4 space-y-3" style={{ display: 'none' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-700">Imagem principal (opcional)</span>
+            {mainImageUploading && (
+              <span className="text-xs text-gray-500">Enviando...</span>
+            )}
+          </div>
+          <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm md:flex-row">
+            <div className="h-32 w-full overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50 md:w-32">
+              {form.image_url ? (
+                <img
+                  src={form.image_url}
+                  alt="Imagem principal atual"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[11px] uppercase tracking-[0.3em] text-gray-400">
+                  Sem imagem principal
+                </div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 text-sm text-gray-500">
+              <label className="flex flex-col gap-1 text-[11px]">
+                <span>Envie um arquivo</span>
+                <span className="inline-flex w-full cursor-pointer items-center justify-between rounded-full border border-gray-300 px-3 py-1 text-[11px] font-semibold text-gray-700 transition hover:border-gray-400">
+                  Selecionar imagem
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleMainImageFile}
+                    disabled={mainImageUploading}
+                  />
+                </span>
+              </label>
+              <p className="text-[10px] text-gray-400">Máx. 5MB, apenas imagens.</p>
+              <label className="flex flex-col gap-1 text-[11px]">
+                <span>Ou cole uma URL</span>
+                <input
+                  type="url"
+                  name="image_url"
+                  value={form.image_url}
+                  onChange={handleChange}
+                  disabled={mainImageUploading}
+                  placeholder="https://exemplo.com/minha-imagem.jpg"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
+                />
+              </label>
+              {form.image_url && (
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, image_url: '' }))}
+                  className="text-[11px] font-semibold text-gray-700 underline-offset-2 hover:underline"
+                >
+                  Remover imagem principal
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-700">Localização</h3>
+          <div className="flex items-center justify-between w-full" translate="no">
+            <span className="text-sm text-gray-600">Atualizar endereço automaticamente:</span>
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={loadingLocation}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+            </button>
+          </div>
+
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">País (sigla)</span>
+            <input
+              list="country-options"
+              name="country"
+              value={form.country}
+              onChange={handleChange}
+              onBlur={handleCountryBlur}
+              placeholder="Ex: BR"
+            />
+            <datalist id="country-options">
+              {COUNTRY_OPTIONS.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.label}
+                </option>
+              ))}
+            </datalist>
+          </label>
+
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">CEP/ZIP</span>
+            <input
+              name="zip"
+              value={form.zip}
+              onChange={handleChange}
+              placeholder={form.country === 'US' ? 'ZIP (5 ou 9)' : 'CEP (8)'}
+              inputMode="numeric"
+            />
+          </label>
+
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Cidade</span>
+            <input name="city" value={form.city} onChange={handleChange} placeholder="Cidade" />
+          </label>
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Estado</span>
+            <input name="state" value={form.state} onChange={handleChange} placeholder="Estado" />
+          </label>
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Bairro</span>
+            <input
+              name="neighborhood"
+              value={form.neighborhood}
+              onChange={handleChange}
+              placeholder="Bairro"
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            <span className="text-[11px] text-gray-500 mb-1">Rua</span>
+            <input name="street" value={form.street} onChange={handleChange} placeholder="Rua" />
+          </label>
+        </div>
 
         <p className="text-xs text-gray-500">
           Coordenadas: {form.lat && form.lng ? `${form.lat}, ${form.lng}` : 'não definidas'}
