@@ -1,20 +1,14 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
-import {
-  AUTH0_AUDIENCE,
-  AUTH0_DOMAIN,
-  AUTH0_ENABLED,
-  AUTH0_REDIRECT_URI,
-  AUTH0_SCOPE
-} from '../config/auth0Config.js';
+import { AUTH0_DOMAIN, AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
 import { normalizeCountryCode } from '../data/countries.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 const REMEMBER_TOKEN_KEY = 'templesale.rememberToken';
-const AUTH0_REFRESH_BUFFER_MS = 60 * 1000;
-const AUTH0_REFRESH_MIN_DELAY_MS = 5 * 1000;
+const SESSION_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const SESSION_REFRESH_MIN_DELAY_MS = 30 * 1000;
 
 export const AuthContext = createContext();
 
@@ -76,7 +70,7 @@ const mergeAuth0Profile = (baseUser, fallbackUser, extras) => {
   return changed ? next : null;
 };
 
-const decodeAuth0Payload = (token) => {
+const decodeJwtPayload = (token) => {
   if (!token || typeof token !== 'string') return null;
   const parts = token.split('.');
   if (parts.length < 2) return null;
@@ -112,55 +106,10 @@ function Auth0SessionSync({
   const {
     isAuthenticated,
     isLoading: auth0Loading,
-    getAccessTokenSilently,
     getIdTokenClaims,
-    logout: auth0Logout,
-    loginWithRedirect
+    logout: auth0Logout
   } = useAuth0();
   const syncAttemptedRef = useRef(false);
-  const refreshTimerRef = useRef(null);
-
-  const handleMissingRefresh = useCallback(async () => {
-    syncAttemptedRef.current = false;
-    try {
-      await auth0Logout({
-        logoutParams: { returnTo: AUTH0_REDIRECT_URI }
-      });
-    } catch (logoutErr) {
-      console.warn('auth0 logout before refresh-token re-login failed:', logoutErr);
-    }
-    try {
-      await loginWithRedirect({
-        authorizationParams: {
-          audience: AUTH0_AUDIENCE,
-          scope: AUTH0_SCOPE,
-          prompt: 'consent'
-        }
-      });
-    } catch (redirectErr) {
-      console.error('auth0 re-login failed:', redirectErr);
-    }
-  }, [auth0Logout, loginWithRedirect]);
-
-  const getAuth0AccessToken = useCallback(async () => {
-    try {
-      return await getAccessTokenSilently({
-        authorizationParams: {
-          audience: AUTH0_AUDIENCE,
-          scope: AUTH0_SCOPE
-        }
-      });
-    } catch (err) {
-      const missingRefresh =
-        err?.error === 'missing_refresh_token' ||
-        /missing refresh token/i.test(err?.message || '');
-      if (missingRefresh) {
-        await handleMissingRefresh();
-        return null;
-      }
-      throw err;
-    }
-  }, [getAccessTokenSilently, handleMissingRefresh]);
 
   useEffect(() => {
     auth0StateRef.current.isAuthenticated = isAuthenticated;
@@ -179,6 +128,12 @@ function Auth0SessionSync({
       return;
     }
     if (auth0Loading || syncAttemptedRef.current) return;
+    const tokenPayload = decodeJwtPayload(token);
+    const hasAuth0Token = Boolean(token && isAuth0TokenPayload(tokenPayload));
+    if (token && !hasAuth0Token) {
+      syncAttemptedRef.current = true;
+      return;
+    }
     const shouldBootstrap = !user || !token;
 
     let isActive = true;
@@ -190,40 +145,22 @@ function Auth0SessionSync({
     const exchangeToken = async () => {
       try {
         const claims = await getIdTokenClaims();
-        const accessToken = await getAuth0AccessToken();
-        if (!accessToken) {
-          return;
+        const idToken = claims?.__raw;
+        if (!idToken) {
+          throw new Error('Não foi possível recuperar o token do Auth0.');
+        }
+
+        const response = await api.post('/auth/auth0', { idToken, rememberMe: true });
+        if (!isActive) return;
+        const session = response.data?.data;
+        if (session?.user && session?.token) {
+          login(session);
         }
         
         if (!isActive) return;
         const fallbackUser = buildAuth0FallbackUser(claims);
-        if (shouldBootstrap) {
-          login({ user: fallbackUser, token: accessToken });
-
-        }
-
-        let provisionedUser = null;
-        try {
-          const response = await api.post(
-            '/auth/auth0/provision',
-            null,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-          );
-          
-          if (!isActive) return;
-          provisionedUser = response.data?.data || null;
-          if (provisionedUser) {
-            login({ user: provisionedUser, token: accessToken });
-          }
-        } catch (provisionErr) {
-          if (isActive) {
-            console.warn('auth0 provision failed:', provisionErr);
-          }
-        }
-
-        if (!isActive) return;
-
-        const baseUser = provisionedUser || user || fallbackUser;
+        const sessionToken = session?.token || token;
+        const baseUser = session?.user || user || fallbackUser;
         const localeCountry = resolveCountryFromLocale(claims?.locale);
         const timezoneCountry = resolveTimezoneCountry();
         const missingCountry = isBlank(baseUser?.country);
@@ -251,8 +188,8 @@ function Auth0SessionSync({
           state: geo?.region,
           city: geo?.city
         });
-        if (mergedUser) {
-          login({ user: mergedUser, token: accessToken });
+        if (mergedUser && sessionToken) {
+          login({ user: mergedUser, token: sessionToken });
         }
       } catch (err) {
         if (isActive) {
@@ -274,52 +211,10 @@ function Auth0SessionSync({
     };
   }, [
     auth0Loading,
-    getAuth0AccessToken,
     getIdTokenClaims,
     isAuthenticated,
     login,
     setLoading,
-    token,
-    user
-  ]);
-
-  // Refresh Auth0 access token shortly before expiration to keep the session alive.
-  useEffect(() => {
-    if (auth0Loading || !isAuthenticated || !token) {
-      return undefined;
-    }
-    const payload = decodeAuth0Payload(token);
-    if (!isAuth0TokenPayload(payload)) {
-      return undefined;
-    }
-    const expMs = Number.isFinite(payload?.exp) ? payload.exp * 1000 : null;
-    if (!expMs) {
-      return undefined;
-    }
-    const delay = Math.max(expMs - Date.now() - AUTH0_REFRESH_BUFFER_MS, AUTH0_REFRESH_MIN_DELAY_MS);
-    let isActive = true;
-    const timerId = setTimeout(async () => {
-      const nextToken = await getAuth0AccessToken();
-      if (!nextToken || !isActive) return;
-      const nextUser = user || buildAuth0FallbackUser(await getIdTokenClaims());
-      if (nextUser && isActive) {
-        login({ user: nextUser, token: nextToken });
-      }
-    }, delay);
-    refreshTimerRef.current = timerId;
-    return () => {
-      isActive = false;
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-    };
-  }, [
-    auth0Loading,
-    getAuth0AccessToken,
-    getIdTokenClaims,
-    isAuthenticated,
-    login,
     token,
     user
   ]);
@@ -345,6 +240,8 @@ export function AuthProvider({ children }) {
   const auth0StateRef = useRef({ isAuthenticated: false, logout: null });
   const [auth0Ready, setAuth0Ready] = useState(!AUTH0_ENABLED);
   const [auth0Authenticated, setAuth0Authenticated] = useState(false);
+  const profileRefreshTokenRef = useRef(null);
+  const sessionRefreshTimerRef = useRef(null);
 
   const persistRememberToken = useCallback((value) => {
     if (typeof window === 'undefined') return;
@@ -381,6 +278,70 @@ export function AuthProvider({ children }) {
     },
     [persistRememberToken]
   );
+
+  useEffect(() => {
+    if (!token || !user) {
+      profileRefreshTokenRef.current = null;
+      return undefined;
+    }
+    if (profileRefreshTokenRef.current === token) return undefined;
+    profileRefreshTokenRef.current = token;
+    let isActive = true;
+    api
+      .get('/users/me')
+      .then((response) => {
+        if (!isActive) return;
+        const profile = response.data?.data;
+        if (profile) {
+          login({ user: profile, token });
+        }
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        console.warn('Falha ao atualizar perfil:', error);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [login, token, user]);
+
+  // Refresh local session token before expiration to keep the user logged in.
+  useEffect(() => {
+    if (!token) {
+      return undefined;
+    }
+    const payload = decodeJwtPayload(token);
+    if (!payload || isAuth0TokenPayload(payload)) {
+      return undefined;
+    }
+    const expMs = Number.isFinite(payload?.exp) ? payload.exp * 1000 : null;
+    if (!expMs) {
+      return undefined;
+    }
+    const delay = Math.max(expMs - Date.now() - SESSION_REFRESH_BUFFER_MS, SESSION_REFRESH_MIN_DELAY_MS);
+    let isActive = true;
+    const timerId = setTimeout(async () => {
+      try {
+        const response = await api.get('/auth/session');
+        if (!isActive) return;
+        const session = response.data?.data;
+        if (session?.user && session?.token) {
+          login(session);
+        }
+      } catch (error) {
+        if (!isActive) return;
+        console.warn('Falha ao renovar sessão:', error);
+      }
+    }, delay);
+    sessionRefreshTimerRef.current = timerId;
+    return () => {
+      isActive = false;
+      if (sessionRefreshTimerRef.current) {
+        clearTimeout(sessionRefreshTimerRef.current);
+        sessionRefreshTimerRef.current = null;
+      }
+    };
+  }, [login, token]);
 
   const clearSession = useCallback(
     (options = {}) => {

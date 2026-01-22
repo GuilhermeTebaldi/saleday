@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import api from '../api/api.js';
 import { AUTH0_AUDIENCE, AUTH0_SCOPE } from '../config/auth0Config.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
@@ -7,7 +8,6 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
   const {
     loginWithRedirect,
     getIdTokenClaims,
-    getAccessTokenSilently,
     isAuthenticated,
     isLoading,
     error
@@ -46,41 +46,18 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
         if (claims?.email_verified === false) {
           throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
         }
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: AUTH0_AUDIENCE,
-            scope: AUTH0_SCOPE
-          }
-        });
-        if (!accessToken) {
-          throw new Error('Não foi possível recuperar o access token do Auth0.');
+        const idToken = claims?.__raw;
+        if (!idToken) {
+          throw new Error('Não foi possível recuperar o token do Auth0.');
+        }
+        const response = await api.post('/auth/auth0', { idToken, rememberMe: true });
+        const payload = response.data?.data;
+        if (!payload?.user || !payload?.token) {
+          throw new Error('Não foi possível concluir o login pelo Auth0.');
         }
         processedRef.current = true;
-        onLoginSuccess?.({
-          user: {
-            id: claims?.sub,
-            email: claims?.email,
-            username: claims?.nickname || claims?.name || claims?.email,
-            name: claims?.name
-          },
-          token: accessToken
-        });
+        onLoginSuccess?.(payload);
       } catch (err) {
-        const missingRefresh =
-          err?.error === 'missing_refresh_token' ||
-          /missing refresh token/i.test(err?.message || '');
-        if (missingRefresh) {
-          processedRef.current = false;
-          loginWithRedirect({
-            authorizationParams: {
-              audience: AUTH0_AUDIENCE,
-              scope: AUTH0_SCOPE,
-              prompt: 'consent'
-            }
-          }).catch(() => {
-            // ignore and surface the error message below
-          });
-        }
         const message =
           err?.response?.data?.message || err?.message || 'Não foi possível validar o login pelo Auth0.';
         if (mountedRef.current) {
@@ -95,16 +72,7 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     };
 
     exchangeToken();
-  }, [
-    isAuthenticated,
-    getIdTokenClaims,
-    getAccessTokenSilently,
-    loginWithRedirect,
-    onLoginError,
-    onLoginSuccess,
-    resumeKey,
-    syncing
-  ]);
+  }, [isAuthenticated, getIdTokenClaims, onLoginError, onLoginSuccess, resumeKey, syncing]);
 
   const handleAuth0Login = (connection) => {
     setBackendError('');
@@ -118,7 +86,6 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
       authorizationParams: {
         audience: AUTH0_AUDIENCE,
         scope: AUTH0_SCOPE,
-        prompt: 'consent',
         ...(connection ? { connection } : {})
       }
     };
