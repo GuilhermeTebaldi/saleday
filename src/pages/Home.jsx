@@ -626,11 +626,15 @@ const isEstateProduct = (product) =>
   isEstateCategory(product?.category || '') ||
   Boolean(
     product?.property_type ||
+      product?.propertyType ||
       product?.surface_area ||
+      product?.surfaceArea ||
+      product?.area ||
       product?.bedrooms ||
       product?.bathrooms ||
       product?.parking ||
-      product?.rent_type
+      product?.rent_type ||
+      product?.rentType
   );
 
 const isImovelLabel = (label) => ['imovel', 'imoveis'].includes(normalizeLabel(label));
@@ -644,6 +648,8 @@ const getFactIcon = (label, product) => {
 
   if (label.endsWith('m²')) return 'tape';
   if (isImovelLabel(label) && normalized === categoryLabel) return 'home';
+  if (startsWithLabel(label, 'tipo de imovel:')) return 'home';
+  if (startsWithLabel(label, 'tipo de aluguel:')) return 'home';
   if (includesLabel(label, 'quarto')) return 'bed';
   if (includesLabel(label, 'banheiro')) return 'bath';
   if (includesLabel(label, 'vaga')) return 'car';
@@ -981,6 +987,7 @@ const pickProductFacts = (product) => {
     }
   };
   const category = (product.category || '').toLowerCase();
+  const normalizedCategory = normalizeLabel(product.category);
   const addCategory = () => {
     if (!product.category) return;
     addFact(product.category);
@@ -1010,17 +1017,26 @@ const pickProductFacts = (product) => {
   const isEstate = isEstateProduct(product);
   const isFashion = isFashionCategory(category);
 
+  const propertyType = product.property_type || product.propertyType;
+  const rentType = product.rent_type || product.rentType;
+  const areaValue = product.surface_area ?? product.surfaceArea ?? product.area;
+  const isRentalCategory = normalizedCategory.includes('aluguel');
+  const isLandCategory = normalizedCategory.includes('terreno');
   const parking = formatNumberLabel(product.parking);
   const parkingLabel = parking !== null ? `${parking} vaga${parking > 1 ? 's' : ''}` : null;
 
   if (isEstate) {
-    const area = formatNumberLabel(product.surface_area);
+    if (isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
+    if (isLandCategory && propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
+    const area = formatNumberLabel(areaValue);
     if (area !== null) addFact(`${area} m²`);
     const bedrooms = formatNumberLabel(product.bedrooms);
     if (bedrooms !== null) addFact(`${bedrooms} quarto${bedrooms > 1 ? 's' : ''}`);
     const bathrooms = formatNumberLabel(product.bathrooms);
     if (bathrooms !== null) addFact(`${bathrooms} banheiro${bathrooms > 1 ? 's' : ''}`);
     if (parkingLabel) addFact(parkingLabel);
+    if (!isLandCategory && propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
+    if (!isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
   } else if (isFashion) {
     if (product.brand) addFact(`Marca: ${product.brand}`);
     if (product.model) addFact(`Modelo: ${product.model}`);

@@ -1218,29 +1218,39 @@ export default function ProductDetail() {
         `Olá! Tenho interesse no produto: ${product?.title || 'TempleSale'} - ${window.location.href}`
       )}`
     : '';
+  const propertyType = product.property_type ?? product.propertyType;
+  const surfaceArea = product.surface_area ?? product.surfaceArea ?? product.area;
+  const condoFee = product.condo_fee ?? product.condoFee;
+  const rentType = product.rent_type ?? product.rentType;
+  const serviceType = product.service_type ?? product.serviceType;
+  const serviceDuration = product.service_duration ?? product.serviceDuration;
+  const serviceRate = product.service_rate ?? product.serviceRate;
+  const serviceLocation = product.service_location ?? product.serviceLocation;
+  const jobTitle = product.job_title ?? product.jobTitle;
+  const jobType = product.job_type ?? product.jobType;
+  const jobSalary = product.job_salary ?? product.jobSalary;
+  const jobRequirements = product.job_requirements ?? product.jobRequirements;
+
   const propertySpecs = [
-    { label: 'Tipo de imóvel', value: product.property_type },
-    {
-      label: 'Área (m²)',
-      value: product.surface_area
-    },
+    { label: 'Tipo de imóvel', value: propertyType },
+    { label: 'Área (m²)', value: surfaceArea },
     { label: 'Quartos', value: product.bedrooms },
     { label: 'Banheiros', value: product.bathrooms },
     { label: 'Vagas', value: product.parking },
-    { label: 'Condomínio', value: product.condo_fee },
-    { label: 'Tipo de aluguel', value: product.rent_type }
+    { label: 'Condomínio', value: condoFee },
+    { label: 'Tipo de aluguel', value: rentType }
   ].filter((entry) => entry.value);
   const serviceSpecs = [
-    { label: 'Tipo de serviço', value: product.service_type },
-    { label: 'Duração / carga horária', value: product.service_duration },
-    { label: 'Valor por hora', value: product.service_rate },
-    { label: 'Local de atendimento', value: product.service_location }
+    { label: 'Tipo de serviço', value: serviceType },
+    { label: 'Duração / carga horária', value: serviceDuration },
+    { label: 'Valor por hora', value: serviceRate },
+    { label: 'Local de atendimento', value: serviceLocation }
   ].filter((entry) => entry.value);
   const jobSpecs = [
-    { label: 'Cargo', value: product.job_title },
-    { label: 'Tipo de vaga', value: product.job_type },
-    { label: 'Salário', value: product.job_salary },
-    { label: 'Requisitos', value: product.job_requirements }
+    { label: 'Cargo', value: jobTitle },
+    { label: 'Tipo de vaga', value: jobType },
+    { label: 'Salário', value: jobSalary },
+    { label: 'Requisitos', value: jobRequirements }
   ].filter((entry) => entry.value);
   const specEntries = [
     ...propertySpecs,
