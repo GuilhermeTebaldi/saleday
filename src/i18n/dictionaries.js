@@ -582,6 +582,7 @@ const ENTRIES = [
   { key: 'Detalhes do produto', en: 'Product details', es: 'Detalles del producto', it: 'Dettagli del prodotto', ja: '商品の詳細' },
   { key: 'Imóvel', en: 'Property', es: 'Propiedad', it: 'Immobile', ja: '不動産' },
   { key: 'Apartamento', en: 'Apartment', es: 'Apartamento', it: 'Appartamento', ja: 'アパート' },
+  { key: 'Terreno', en: 'Land', es: 'Terreno', it: 'Terreno', ja: '土地' },
   { key: 'Aluguel', en: 'Rent', es: 'Alquiler', it: 'Affitto', ja: '賃貸' },
   { key: 'Tipo de serviço', en: 'Service type', es: 'Tipo de servicio', it: 'Tipo di servizio', ja: 'サービスの種類' },
   { key: 'Duração / carga horária', en: 'Duration / hours', es: 'Duración / carga horaria', it: 'Durata / carico orario', ja: '期間／勤務時間' },

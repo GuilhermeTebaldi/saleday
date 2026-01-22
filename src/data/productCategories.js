@@ -1,5 +1,7 @@
 export const PRODUCT_CATEGORIES = [
   'Imóveis',
+  'Terreno',
+  'Aluguel',
   'Veículos',
   'Eletrônicos e Celulares',
   'Informática e Games',

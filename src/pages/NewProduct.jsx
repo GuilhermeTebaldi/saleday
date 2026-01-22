@@ -583,7 +583,12 @@ export default function NewProduct() {
   const [maxStepReached, setMaxStepReached] = useState(0);
   const isFloorplanCategory = useMemo(() => {
     const normalized = normalizeCategoryLabel(form.category);
-    return normalized.includes('moveis') || normalized.includes('imovel');
+    return (
+      normalized.includes('moveis') ||
+      normalized.includes('imovel') ||
+      normalized.includes('terreno') ||
+      normalized.includes('aluguel')
+    );
   }, [form.category]);
   const lastFloorplanCategoryRef = useRef(isFloorplanCategory);
   const suppressFloorplanToastRef = useRef(false);

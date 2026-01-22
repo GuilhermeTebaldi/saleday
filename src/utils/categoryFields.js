@@ -50,6 +50,7 @@ const CATEGORY_FIELD_CONFIG = {
     { name: 'model', label: 'Modelo', placeholder: 'Ex: Legion 5i' }
   ],
   Imóveis: REAL_ESTATE_CONFIG,
+  Terreno: REAL_ESTATE_CONFIG,
   Imóvel: REAL_ESTATE_CONFIG,
   Apartamento: REAL_ESTATE_CONFIG,
   Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true },

@@ -106,7 +106,12 @@ export default function EditProduct() {
   const [activeImageKindId, setActiveImageKindId] = useState(null);
   const isFloorplanCategory = useMemo(() => {
     const normalized = normalizeCategoryLabel(form.category);
-    return normalized.includes('moveis') || normalized.includes('imovel');
+    return (
+      normalized.includes('moveis') ||
+      normalized.includes('imovel') ||
+      normalized.includes('terreno') ||
+      normalized.includes('aluguel')
+    );
   }, [form.category]);
 
   const totalImages = existingImages.length + newImages.length;
