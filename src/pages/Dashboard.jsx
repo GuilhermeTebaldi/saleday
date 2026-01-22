@@ -1606,22 +1606,7 @@ export default function Dashboard() {
             </div>
 
             <div className="border-t border-slate-100 px-6 py-5">
-              {(!supportConversation?.subject || supportConversation?.subject === '') && (
-                <label className="block text-[11px] font-semibold uppercase tracking-[0.38em] text-slate-500">
-                  Assunto
-                  <input
-                    type="text"
-                    value={supportSubject}
-                    onChange={(event) => setSupportSubject(event.target.value)}
-                    disabled={supportSending}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Assunto opcional da conversa"
-                  />
-                  <span className="mt-1 text-[11px] font-normal text-slate-400">
-                    Ajuda o time a entender o que precisa.
-                  </span>
-                </label>
-              )}
+              
               {supportConversation?.subject && (
                 <p className="text-xs text-slate-500">
                   Assunto atual:{' '}
