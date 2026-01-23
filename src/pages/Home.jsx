@@ -47,6 +47,8 @@ const COUNTRY_THEMES = {
 
 const QUICK_CATEGORY_SHORTCUTS = [
   { id: 'imoveis', label: 'Imóveis', icon: 'home' },
+  { id: 'terreno', label: 'Terreno', icon: 'leaf' },
+  { id: 'aluguel', label: 'Aluguel', icon: 'rent' },
   { id: 'veiculos', label: 'Veículos', icon: 'car' },
   { id: 'eletronicos', label: 'Eletrônicos e Celulares', icon: 'device' },
   { id: 'informatica', label: 'Informática e Games', icon: 'game' },
@@ -60,7 +62,7 @@ const QUICK_CATEGORY_SHORTCUTS = [
   { id: 'livros', label: 'Livros, Papelaria e Cursos', icon: 'book' },
   { id: 'instrumentos', label: 'Instrumentos Musicais', icon: 'music' },
   { id: 'ferramentas', label: 'Ferramentas e Construção', icon: 'tools' },
-  { id: 'jardim', label: 'Jardim e Pet', icon: 'leaf' },
+  { id: 'jardim', label: 'Jardim e Pet', icon: 'paw' },
   { id: 'servicos', label: 'Serviços', icon: 'briefcase' },
   { id: 'empregos', label: 'Empregos', icon: 'id' },
   { id: 'outros', label: 'Outros', icon: 'dots' }
@@ -158,6 +160,28 @@ const renderQuickCategoryIcon = (icon) => {
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case 'rent':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="4"
+            y="3.5"
+            width="16"
+            height="18"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path
+            d="M8 8h8M8 11.5h8M8 15h5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
           />
         </svg>
       );
@@ -411,19 +435,36 @@ const renderQuickCategoryIcon = (icon) => {
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path
-            d="M5 19c7 0 12-5 14-12-6 2-11 7-12 14"
+            d="M3 18h18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M5 18l4-5 3 3 4-6 5 8"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          <circle cx="16.5" cy="7.5" r="1.4" fill="currentColor" />
+        </svg>
+      );
+    case 'paw':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="7.5" cy="9" r="1.6" fill="currentColor" />
+          <circle cx="11" cy="7.5" r="1.6" fill="currentColor" />
+          <circle cx="13.8" cy="9.2" r="1.5" fill="currentColor" />
+          <circle cx="16.2" cy="11.4" r="1.4" fill="currentColor" />
           <path
-            d="M7 17c3-1 6-4 7-7"
+            d="M7.2 15.2c0-2.2 2.2-3.6 4.6-3.6s4.6 1.4 4.6 3.6-2.1 4-4.6 4-4.6-1.8-4.6-4z"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
           />
         </svg>
       );
@@ -585,6 +626,12 @@ const normalizeLabel = (value) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+const QUICK_CATEGORY_ICON_MAP = new Map(
+  QUICK_CATEGORY_SHORTCUTS.map(({ label, icon }) => [normalizeLabel(label), icon])
+);
+
+const getCategoryFactIcon = (label) => QUICK_CATEGORY_ICON_MAP.get(normalizeLabel(label));
+
 const ESTATE_KEYWORDS = [
   'apto',
   'apartamento',
@@ -645,12 +692,13 @@ const includesLabel = (label, needle) => normalizeLabel(label).includes(needle);
 const getFactIcon = (label, product) => {
   const normalized = normalizeLabel(label);
   const categoryLabel = normalizeLabel(product?.category || '');
+  const categoryIcon = product?.category ? getCategoryFactIcon(product.category) : null;
 
   if (label.endsWith('m²')) return 'tape';
   if (isImovelLabel(label) && normalized === categoryLabel) return 'home';
   if (startsWithLabel(label, 'tipo de imovel:')) return 'home';
-  if (startsWithLabel(label, 'tipo de terreno:')) return 'home';
-  if (startsWithLabel(label, 'tipo de aluguel:')) return 'home';
+  if (startsWithLabel(label, 'tipo de terreno:')) return 'leaf';
+  if (startsWithLabel(label, 'tipo de aluguel:')) return 'rent';
   if (includesLabel(label, 'quarto')) return 'bed';
   if (includesLabel(label, 'banheiro')) return 'bath';
   if (includesLabel(label, 'vaga')) return 'car';
@@ -666,6 +714,7 @@ const getFactIcon = (label, product) => {
   if (startsWithLabel(label, 'vaga:')) return 'briefcase';
   if (startsWithLabel(label, 'salario:')) return 'money';
   if (startsWithLabel(label, 'requisitos:')) return 'list';
+  if (normalized === categoryLabel && categoryIcon) return categoryIcon;
   if (normalized === categoryLabel) return 'grid';
   return 'info';
 };
@@ -957,6 +1006,10 @@ const renderFactIcon = (type) => {
           <rect x="14" y="14" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
         </svg>
       );
+    case 'leaf':
+    case 'rent':
+    case 'sofa':
+      return renderQuickCategoryIcon(type);
     case 'info':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -1492,6 +1545,9 @@ export default function Home() {
       const label = item?.category ? String(item.category).trim() : '';
       if (!label) return;
       counts.set(label, (counts.get(label) || 0) + 1);
+    });
+    ['Terreno', 'Aluguel'].forEach((label) => {
+      if (!counts.has(label)) counts.set(label, 0);
     });
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -2089,7 +2145,7 @@ export default function Home() {
         ...item,
         total: counts.get(item.label) || 0
       }))
-      .filter((item) => item.total > 0);
+      .filter((item) => item.total > 0 || ['Terreno', 'Aluguel'].includes(item.label));
   }, [quickCategoryCache, products, activeCountryForShortcuts]);
   const activeFilters = [];
   if (searchSummary) {
