@@ -12,6 +12,7 @@ export const PRODUCT_CATEGORIES = [
   'Bebês e Crianças',
   'Esportes e Lazer',
   'Hobbies e Colecionáveis',
+  'Antiguidades',
   'Livros, Papelaria e Cursos',
   'Instrumentos Musicais',
   'Ferramentas e Construção',

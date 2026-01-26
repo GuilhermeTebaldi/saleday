@@ -36,6 +36,7 @@ import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/currency.js';
 import { PRODUCT_CONTEXT_PREFIX, buildProductContextPayload } from '../utils/productContext.js';
 import { isProductFree, getProductPriceLabel } from '../utils/product.js';
+import { getExtraFieldLabel } from '../utils/productSpecs.js';
 import { OFFER_PREFIX } from '../utils/offers.js';
 import { asStars } from '../utils/rating.js';
 import { buildProductImageEntries, parseImageList, toAbsoluteImageUrl } from '../utils/images.js';
@@ -1308,10 +1309,10 @@ export default function ProductDetail() {
     ...propertySpecs,
     ...serviceSpecs,
     ...jobSpecs,
-    { label: 'Marca', value: product.brand },
-    { label: 'Modelo', value: product.model },
-    { label: 'Cor', value: product.color },
-    { label: 'Ano', value: product.year }
+    { label: getExtraFieldLabel('brand', product.category), value: product.brand },
+    { label: getExtraFieldLabel('model', product.category), value: product.model },
+    { label: getExtraFieldLabel('color', product.category), value: product.color },
+    { label: getExtraFieldLabel('year', product.category), value: product.year }
   ].filter((entry) => entry.value);
   const highlightSource =
     propertySpecs.length > 0

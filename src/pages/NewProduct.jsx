@@ -10,6 +10,7 @@ import { COUNTRY_OPTIONS, normalizeCountryCode } from '../data/countries.js';
 import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 import { getCategoryDetailFields } from '../utils/categoryFields.js';
 import { normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
+import { getCategoryYearMin } from '../utils/productSpecs.js';
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
@@ -1519,7 +1520,7 @@ export default function NewProduct() {
       brand: base.brand?.trim() || null,
       model: base.model?.trim() || null,
       color: base.color?.trim() || null,
-      year: normalizeProductYear(base.year),
+      year: normalizeProductYear(base.year, undefined, getCategoryYearMin(base.category)),
       propertyType: base.propertyType?.trim() || null,
       area: base.area?.trim() || null,
       bedrooms: base.bedrooms?.trim() || null,
@@ -1574,9 +1575,11 @@ export default function NewProduct() {
       toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
       return;
     }
-    const normalizedYear = normalizeProductYear(form.year);
+    const yearMin = getCategoryYearMin(form.category);
+    const normalizedYear = normalizeProductYear(form.year, undefined, yearMin);
     if (form.year?.trim() && !normalizedYear) {
-      toast.error('Ano inválido. Use 4 dígitos entre 1900 e o ano atual.');
+      const currentYear = new Date().getFullYear();
+      toast.error(`Ano inválido. Use 4 dígitos entre ${yearMin} e ${currentYear}.`);
       focusMissingField('year');
       return;
     }

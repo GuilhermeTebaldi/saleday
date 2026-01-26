@@ -16,6 +16,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import { LocaleContext } from '../context/LocaleContext.jsx';
 import { getProductPriceLabel, isProductFree } from '../utils/product.js';
+import { getExtraFieldLabel, isAntiqueCategory } from '../utils/productSpecs.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
 import usePreventDrag from '../hooks/usePreventDrag.js';
@@ -59,6 +60,7 @@ const QUICK_CATEGORY_SHORTCUTS = [
   { id: 'bebes', label: 'Bebês e Crianças', icon: 'baby' },
   { id: 'esportes', label: 'Esportes e Lazer', icon: 'ball' },
   { id: 'hobbies', label: 'Hobbies e Colecionáveis', icon: 'star' },
+  { id: 'antiguidades', label: 'Antiguidades', icon: 'antique' },
   { id: 'livros', label: 'Livros, Papelaria e Cursos', icon: 'book' },
   { id: 'instrumentos', label: 'Instrumentos Musicais', icon: 'music' },
   { id: 'ferramentas', label: 'Ferramentas e Construção', icon: 'tools' },
@@ -385,6 +387,40 @@ const renderQuickCategoryIcon = (icon) => {
           />
         </svg>
       );
+    case 'antique':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M9 3h6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10 3v2c0 1-1 2-2 2v2c0 2 1.8 3.5 4 3.5s4-1.5 4-3.5V7c-1 0-2-1-2-2V3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 12h8l2 6H6l2-6z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 20h10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
     case 'book':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -703,9 +739,12 @@ const getFactIcon = (label, product) => {
   if (includesLabel(label, 'banheiro')) return 'bath';
   if (includesLabel(label, 'vaga')) return 'car';
   if (startsWithLabel(label, 'marca:')) return 'tag';
+  if (startsWithLabel(label, 'autor') || startsWithLabel(label, 'fabricante')) return 'tag';
   if (startsWithLabel(label, 'modelo:')) return 'box';
-  if (startsWithLabel(label, 'ano:')) return 'calendar';
+  if (startsWithLabel(label, 'periodo') || startsWithLabel(label, 'estilo')) return 'clock';
+  if (startsWithLabel(label, 'ano') || startsWithLabel(label, 'epoca')) return 'calendar';
   if (startsWithLabel(label, 'cor:')) return 'palette';
+  if (startsWithLabel(label, 'material') || startsWithLabel(label, 'acabamento')) return 'palette';
   if (startsWithLabel(label, 'servico:')) return 'briefcase';
   if (startsWithLabel(label, 'duracao:')) return 'clock';
   if (startsWithLabel(label, 'valor/h:')) return 'money';
@@ -1009,6 +1048,7 @@ const renderFactIcon = (type) => {
     case 'leaf':
     case 'rent':
     case 'sofa':
+    case 'antique':
       return renderQuickCategoryIcon(type);
     case 'info':
       return (
@@ -1070,6 +1110,7 @@ const pickProductFacts = (product) => {
 
   const isEstate = isEstateProduct(product);
   const isFashion = isFashionCategory(category);
+  const isAntique = isAntiqueCategory(product?.category);
 
   const propertyType = product.property_type || product.propertyType;
   const rentType = product.rent_type || product.rentType;
@@ -1099,6 +1140,13 @@ const pickProductFacts = (product) => {
     if (product.color) addFact(`Cor: ${product.color}`);
     if (!product.brand && !product.model && !product.color && product.year) {
       addFact(`Ano: ${product.year}`);
+    }
+  } else if (isAntique) {
+    if (product.brand) addFact(`${getExtraFieldLabel('brand', product.category)}: ${product.brand}`);
+    if (product.model) addFact(`${getExtraFieldLabel('model', product.category)}: ${product.model}`);
+    if (product.year) addFact(`${getExtraFieldLabel('year', product.category)}: ${product.year}`);
+    if (product.color && factPool.length < 3) {
+      addFact(`${getExtraFieldLabel('color', product.category)}: ${product.color}`);
     }
   } else {
     if (product.brand) addFact(`Marca: ${product.brand}`);

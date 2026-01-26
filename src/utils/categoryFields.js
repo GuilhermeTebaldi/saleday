@@ -37,6 +37,13 @@ const JOB_FIELDS = [
   { name: 'jobRequirements', label: 'Requisitos', placeholder: 'Ex: Ensino médio completo ou experiência' }
 ];
 
+const ANTIQUE_DETAILS = [
+  { name: 'brand', label: 'Autor / Fabricante', placeholder: 'Ex: Ateliê francês' },
+  { name: 'model', label: 'Estilo / Período', placeholder: 'Ex: Art Déco, Século XIX' },
+  { name: 'color', label: 'Material / Acabamento', placeholder: 'Ex: Madeira maciça, Bronze' },
+  { name: 'year', label: 'Ano / Época', placeholder: 'Ex: 1890', inputMode: 'numeric' }
+];
+
 const REAL_ESTATE_CONFIG = { fields: PROPERTY_DETAILS, skipDefaults: true };
 
 const CATEGORY_FIELD_CONFIG = {
@@ -59,6 +66,7 @@ const CATEGORY_FIELD_CONFIG = {
   Imóvel: REAL_ESTATE_CONFIG,
   Apartamento: REAL_ESTATE_CONFIG,
   Aluguel: { fields: RENTAL_EXTRA_DETAILS, skipDefaults: true },
+  Antiguidades: { fields: ANTIQUE_DETAILS, skipDefaults: true },
   Serviços: { fields: SERVICE_FIELDS, skipDefaults: true },
   Empregos: { fields: JOB_FIELDS, skipDefaults: true }
 };

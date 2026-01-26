@@ -12,6 +12,7 @@ import { getCurrencySettings, resolveCurrencyFromCountry } from '../utils/curren
 import LinkListEditor from '../components/LinkListEditor.jsx';
 import { buildLinkPayloadEntries, mapStoredLinksToForm } from '../utils/links.js';
 import { getProductPriceLabel, normalizeProductYear, sanitizeProductYearInput } from '../utils/product.js';
+import { getCategoryYearMin } from '../utils/productSpecs.js';
 import { parsePriceFlexible, sanitizePriceInput } from '../utils/priceInput.js';
 import { FREE_HELP_LINES, FREE_HELP_TITLE } from '../constants/freeModeHelp.js';
 import { buildProductImageEntries, parseImageList } from '../utils/images.js';
@@ -511,7 +512,11 @@ export default function EditProduct() {
     const lngNum = form.lng === '' ? null : Number(form.lng);
     const lat = Number.isFinite(latNum) ? latNum : null;
     const lng = Number.isFinite(lngNum) ? lngNum : null;
-    const normalizedYear = normalizeProductYear(form.year);
+    const normalizedYear = normalizeProductYear(
+      form.year,
+      undefined,
+      getCategoryYearMin(form.category)
+    );
 
     const payload = {
       title: form.title?.trim() || '',
@@ -614,9 +619,11 @@ export default function EditProduct() {
       toast.error(IMAGE_KIND_REQUIRED_MESSAGE);
       return;
     }
-    const normalizedYear = normalizeProductYear(form.year);
+    const yearMin = getCategoryYearMin(form.category);
+    const normalizedYear = normalizeProductYear(form.year, undefined, yearMin);
     if (form.year?.trim() && !normalizedYear) {
-      toast.error('Ano inválido. Use 4 dígitos entre 1900 e o ano atual.');
+      const currentYear = new Date().getFullYear();
+      toast.error(`Ano inválido. Use 4 dígitos entre ${yearMin} e ${currentYear}.`);
       return;
     }
 

@@ -1,4 +1,5 @@
 // Helpers para mapear campos de produto por categoria
+import { MIN_PRODUCT_YEAR } from './product.js';
 const PROPERTY_SPEC_FIELDS = [
   { key: 'property_type', label: 'Tipo de imóvel' },
   { key: 'surface_area', label: 'Área (m²)' },
@@ -14,11 +15,25 @@ const LAND_SPEC_FIELDS = [
   { key: 'surface_area', label: 'Área (m²)' }
 ];
 
+const DEFAULT_EXTRA_LABELS = {
+  brand: 'Marca',
+  model: 'Modelo',
+  color: 'Cor',
+  year: 'Ano'
+};
+
+const ANTIQUE_EXTRA_LABELS = {
+  brand: 'Autor / Fabricante',
+  model: 'Estilo / Período',
+  color: 'Material / Acabamento',
+  year: 'Ano / Época'
+};
+
 const EXTRA_SPEC_FIELDS = [
-  { key: 'brand', label: 'Marca' },
-  { key: 'model', label: 'Modelo' },
-  { key: 'color', label: 'Cor' },
-  { key: 'year', label: 'Ano' }
+  { key: 'brand', label: DEFAULT_EXTRA_LABELS.brand },
+  { key: 'model', label: DEFAULT_EXTRA_LABELS.model },
+  { key: 'color', label: DEFAULT_EXTRA_LABELS.color },
+  { key: 'year', label: DEFAULT_EXTRA_LABELS.year }
 ];
 
 const normalizeLabel = (value) =>
@@ -29,6 +44,18 @@ const normalizeLabel = (value) =>
     .replace(/[\u0300-\u036f]/g, '');
 
 const isLandCategory = (category) => normalizeLabel(category).includes('terreno');
+
+export const isAntiqueCategory = (category) => normalizeLabel(category).includes('antiguidad');
+
+export const getExtraFieldLabel = (key, category) => {
+  if (isAntiqueCategory(category)) {
+    return ANTIQUE_EXTRA_LABELS[key] || DEFAULT_EXTRA_LABELS[key] || key;
+  }
+  return DEFAULT_EXTRA_LABELS[key] || key;
+};
+
+export const getCategoryYearMin = (category) =>
+  isAntiqueCategory(category) ? 1500 : MIN_PRODUCT_YEAR;
 
 const cleanValue = (value) => {
   if (value === undefined || value === null) return '';
@@ -56,6 +83,10 @@ export function buildProductSpecEntries(product) {
     ? LAND_SPEC_FIELDS
     : PROPERTY_SPEC_FIELDS;
   appendFields(propertyFields, product, entries);
-  appendFields(EXTRA_SPEC_FIELDS, product, entries);
+  const extraFields = EXTRA_SPEC_FIELDS.map((field) => ({
+    ...field,
+    label: getExtraFieldLabel(field.key, product?.category)
+  }));
+  appendFields(extraFields, product, entries);
   return entries;
 }
