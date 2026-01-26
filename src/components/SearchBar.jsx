@@ -599,6 +599,9 @@ export default function SearchBar({
           aria-label="Fechar menu de filtros"
           onClick={() => {
             closeDropdowns();
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('templesale:close-hamburger'));
+            }
           }}
         >
           <X size={16} />
