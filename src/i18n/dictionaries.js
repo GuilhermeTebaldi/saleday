@@ -85,6 +85,7 @@ const ENTRIES = [
   },
   { key: '0 mensagens', en: '0 messages', es: '0 mensajes', it: '0 messaggi', ja: '0件のメッセージ' },
   { key: 'Carregando perguntas...', en: 'Loading questions...', es: 'Cargando preguntas...', it: 'Caricamento delle domande...', ja: '質問を読み込んでいます...' },
+  { key: 'Carregando anúncios da região...', en: 'Loading regional listings...', es: 'Cargando anuncios de la región...', it: 'Caricamento degli annunci della regione...', ja: '地域の出品を読み込んでいます...' },
   { key: 'Ainda não há perguntas para este anúncio.', en: 'There are no questions for this listing yet.', es: 'Aún no hay preguntas para este anuncio.', it: 'Non ci sono ancora domande per questo annuncio.', ja: 'この出品にはまだ質問がありません。' },
   { key: 'Nova pergunta pública', en: 'New public question', es: 'Nueva pregunta pública', it: 'Nuova domanda pubblica', ja: '新しい公開質問' },
   { key: 'Resposta pública registrada.', en: 'Public response recorded.', es: 'Respuesta pública registrada.', it: 'Risposta pubblica registrata.', ja: '公開回答が記録されました。' },
@@ -96,6 +97,7 @@ const ENTRIES = [
   { key: 'Favorite', en: 'Favorite', es: 'Favorito', it: 'Preferito', ja: 'お気に入り' },
 { key: 'Sair', en: 'Logout', es: 'Salir', it: 'Esci', ja: 'ログアウト' },
   { key: 'Carregando...', en: 'Loading...', es: 'Cargando...', it: 'Caricamento...', ja: '読み込み中...' },
+  { key: 'Carregando países...', en: 'Loading countries...', es: 'Cargando países...', it: 'Caricamento dei paesi...', ja: '国を読み込んでいます...' },
   { key: 'Cancelar', en: 'Cancel', es: 'Cancelar', it: 'Annulla', ja: 'キャンセル' },
   { key: 'Confirmar compra', en: 'Confirm purchase', es: 'Confirmar compra', it: 'Conferma acquisto', ja: '購入を確認' },
   {
@@ -135,6 +137,7 @@ const ENTRIES = [
   { key: 'Estamos preparando os melhores anúncios para você.', en: 'We are preparing the best listings for you.', es: 'Estamos preparando los mejores anuncios para ti.', it: 'Stiamo preparando i migliori annunci per te.', ja: '最高の出品を準備しています。' },
   { key: 'Aproximação baseada na cidade informada no anúncio.', en: 'Approximation based on the city provided in the listing.', es: 'Aproximación basada en la ciudad indicada en el anuncio.', it: 'Approssimazione basata sulla città indicata nell\'annuncio.', ja: '出品に記載された都市を元にした概算です。' },
   { key: 'Aproximação baseada nas coordenadas informadas no anúncio.', en: 'Approximation based on the coordinates provided in the listing.', es: 'Aproximación basada en las coordenadas indicadas en el anuncio.', it: 'Approssimazione basata sulle coordinate indicate nell\'annuncio.', ja: '出品に記載された座標を元にした概算です。' },
+  { key: 'Mais anúncios próximos ao endereço deste anúncio.', en: 'More listings close to this listing\'s address.', es: 'Más anuncios cercanos a la dirección de este anuncio.', it: 'Più annunci vicini all\'indirizzo di questo annuncio.', ja: 'この出品の住所付近の他の出品。' },
   {
     key: 'Faça perguntas rápidas ao anunciante e acompanhe as respostas publicamente no anúncio.',
     en: 'Ask quick questions to the advertiser and follow the answers publicly on the listing.',

@@ -244,6 +244,7 @@ export default function ProductDetail() {
   const [buyerInfo, setBuyerInfo] = useState(null);
   const [mapCoords, setMapCoords] = useState({ lat: null, lng: null, source: null });
   const [mapLoading, setMapLoading] = useState(false);
+  const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
   const [regionProducts, setRegionProducts] = useState([]);
   const [regionLoading, setRegionLoading] = useState(false);
   const [regionError, setRegionError] = useState('');
@@ -283,6 +284,9 @@ export default function ProductDetail() {
     }
     navigate('/');
   }, [navigate]);
+  const activateMapInteraction = useCallback(() => {
+    setMapInteractionEnabled(true);
+  }, []);
   const viewIncrementPending = useRef(false);
   const questionRefs = useRef(new Map());
   const replyInputRefs = useRef(new Map());
@@ -1975,15 +1979,37 @@ export default function ProductDetail() {
                         </a>
                       )}
                     </div>
-                    <div className="product-detail__map-frame">
+                    <div
+                      className={`product-detail__map-frame ${
+                        mapInteractionEnabled ? 'product-detail__map-frame--interactive' : ''
+                      }`}
+                    >
                       {hasMapLocation ? (
-                        <iframe
-                          title="Mapa do local do produto"
-                          src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
-                          className="product-detail__map-embed"
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                        />
+                        <>
+                          <iframe
+                            title="Mapa do local do produto"
+                            src={buildOpenStreetMapEmbedUrl(mapCoords.lat, mapCoords.lng)}
+                            className="product-detail__map-embed"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                          {!mapInteractionEnabled && (
+                            <button
+                              type="button"
+                              className="product-detail__map-guard"
+                              onClick={activateMapInteraction}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  activateMapInteraction();
+                                }
+                              }}
+                              aria-label="Ativar controles do mapa"
+                            >
+                              Tocar aqui para ativar o mapa
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <div className="product-detail__map-placeholder">
                           Buscando mapa pela cidade...

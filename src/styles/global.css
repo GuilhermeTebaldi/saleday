@@ -4512,7 +4512,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
 }
 
 .loading-bar__image {
-  width: min(240px, 70vw);
+  width: min(160px, 50vw);
   max-width: 100%;
   height: auto;
   display: block;
@@ -4525,11 +4525,11 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
 }
 
 .loading-bar--sm .loading-bar__image {
-  width: min(180px, 60vw);
+  width: min(120px, 40vw);
 }
 
 .loading-bar--lg .loading-bar__image {
-  width: min(320px, 80vw);
+  width: min(200px, 60vw);
 }
 
 .loading-bar--inline {
@@ -4538,7 +4538,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
 }
 
 .loading-bar--inline .loading-bar__image {
-  width: min(140px, 40vw);
+  width: min(80px, 25vw);
 }
 
 .loading-bar--inline .loading-bar__text {
@@ -5160,24 +5160,28 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   position: relative;
   width: 100%;
   margin: 0;
-  padding: 1rem 0 2.5rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem) 0.5rem;
   background: var(--ts-bg);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .product-detail-page::before {
   content: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1640px) {
   .product-detail-page {
     padding-top: 0;
+    padding-inline: 0.0rem;
   }
 }
 
 .product-detail-card {
   position: relative;
   z-index: 1;
-  width: min(1100px, 100%);
+  width: min(1440px, calc(100% - clamp(1rem, 4vw, 3rem)));
   max-width: 100%;
   margin: 0 auto;
   background: var(--ts-card);
@@ -5186,6 +5190,13 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   box-shadow: 0 28px 50px -40px rgba(0, 0, 0, 0.55);
   backdrop-filter: none;
   padding-top: calc(1rem + 2.5rem);
+}
+
+@media (min-width: 1440px) {
+  .product-detail-card {
+    width: calc(100% - 3rem);
+    max-width: none;
+  }
 }
 
 .product-detail-card > * + * {
@@ -6849,6 +6860,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--ts-surface);
+  position: relative;
 }
 
 .product-detail__map-embed {
@@ -6864,6 +6876,39 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   justify-content: center;
   font-size: 0.75rem;
   color: var(--ts-muted);
+}
+
+.product-detail__map-guard {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: none;
+  border-radius: inherit;
+  background: rgba(15, 23, 42, 0.65);
+  color: var(--ts-card);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.product-detail__map-guard:hover,
+.product-detail__map-guard:focus-visible {
+  background: rgba(15, 23, 42, 0.84);
+}
+
+.product-detail__map-guard:focus-visible {
+  outline: 2px solid rgba(214, 182, 118, 0.8);
+  outline-offset: 2px;
+}
+
+.product-detail__map-frame--interactive .product-detail__map-guard {
+  display: none;
 }
 
 .product-detail__image-stack {
@@ -8863,6 +8908,17 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   will-change: transform, opacity;
 }
 
+@keyframes templesale-menu-open {
+  from {
+    transform: translateX(-110%) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .home-search-toolbtn {
   width: 42px;
   height: 42px;
@@ -8903,6 +8959,23 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   color: var(--ts-text);
 }
 
+.home-search-country-loading {
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.home-search-country-loading .loading-bar__image {
+  width: 26px;
+  height: 26px;
+}
+
+.home-search-country-loading .loading-bar__text {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: inherit;
+}
+
 .nav-side-backdrop {
   position: fixed;
   inset: 0;
@@ -8935,6 +9008,7 @@ body.templesale-panel-open .home-search-toolbar {
   visibility: visible;
   pointer-events: auto;
   transition: transform 0.3s ease, opacity 0.3s ease;
+  animation: templesale-menu-open 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 body.templesale-panel-open .home-search-toolbar__close {
@@ -9127,6 +9201,7 @@ body.templesale-panel-open .nav-side-backdrop {
   body.templesale-panel-open .home-search-toolbar {
     gap: 0.2rem;
     padding: 0.6rem 0.85rem 0.8rem;
+    animation: templesale-menu-open 0.28s cubic-bezier(0.32, 0, 0.2, 1) forwards;
   }
 
   body.templesale-panel-open .home-search-toolbtn {

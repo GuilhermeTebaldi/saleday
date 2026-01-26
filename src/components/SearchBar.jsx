@@ -1,6 +1,6 @@
 // frontend/src/components/SearchBar.jsx
 //aqui é a barra com icones ! baixo da barra de logo
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
@@ -189,8 +189,7 @@ export default function SearchBar({
   const [q, setQ] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
-  const [panel, setPanel] = useState(null); // 'address' | 'seller' | 'country' | null
-  const [sellerName, setSellerName] = useState('');
+  const [panel, setPanel] = useState(null); // 'address' | 'country' | null
   const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
   const popRef = useRef(null);
   const fallbackCountry = (originCountry || 'BR').toString().trim().toUpperCase() || 'BR';
@@ -246,7 +245,6 @@ export default function SearchBar({
     if (resetSignal === undefined) return;
     setQ('');
     setAddress('');
-    setSellerName('');
     setPanel(null);
   }, [resetSignal]);
 
@@ -521,16 +519,14 @@ export default function SearchBar({
     }
   }
 
-  function searchSeller() {
-    const nameTrimmed = sellerName.trim();
-    if (!nameTrimmed) {
-      toast.error('Informe um nome para buscar.');
-      return;
-    }
-    const params = new URLSearchParams({ q: nameTrimmed });
-    navigate(`/sellers/search?${params.toString()}`);
+  const handleSellerSearchOpen = useCallback(() => {
     setPanel(null);
-  }
+    setCategoryPanelOpen(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('templesale:close-panel'));
+    }
+    navigate('/sellers/search');
+  }, [navigate]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -577,7 +573,6 @@ export default function SearchBar({
       if (target.closest('.home-search-category-panel')) return;
       if (target.closest('.home-search-country-dropdown')) return;
       if (target.closest('.home-search-address-panel')) return;
-      if (target.closest('.home-search-seller-panel')) return;
       setPanel(null);
       setCategoryPanelOpen(false);
       window.dispatchEvent(new Event('templesale:close-panel'));
@@ -739,10 +734,10 @@ export default function SearchBar({
         <button
           type="button"
           title="Buscar vendedores"
-          onClick={() => setPanel((p) => (p === 'seller' ? null : 'seller'))}
+          onClick={handleSellerSearchOpen}
           className={`${TOOLBAR_ICON_BTN}`}
-          aria-haspopup="dialog"
-          aria-expanded={panel === 'seller'}
+          aria-haspopup="false"
+          aria-expanded="false"
         >
           <User size={18} />
           <span className="home-search-toolbtn__label">Vendedor</span>
@@ -787,49 +782,8 @@ export default function SearchBar({
         </div>
       )}
 
-      {panel === 'seller' && (
-        <div className="home-search-seller-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.35)] p-4 flex flex-col gap-3 backdrop-blur-lg">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Buscar vendedores</p>
-            <button
-              type="button"
-              onClick={() => setPanel(null)}
-              className="p-1 rounded-full hover:bg-gray-100 transition"
-              aria-label="Fechar painel de vendedores"
-            >
-              <X size={16} className="text-gray-500" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-inner">
-            <User size={18} className="text-slate-500" />
-            <input
-              className="flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-gray-400"
-              placeholder="Nome do vendedor ou empresa"
-              value={sellerName}
-              onChange={(e) => setSellerName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchSeller()}
-              autoFocus
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setPanel(null)}
-              className="px-4 py-2 rounded-2xl border border-gray-200 bg-white text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
-            >
-              Fechar
-            </button>
-            <button
-              onClick={searchSeller}
-              className="px-4 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-semibold shadow-lg hover:shadow-xl transition"
-            >
-              Buscar vendedores
-            </button>
-          </div>
-        </div>
-      )}
-
       {categoryPanelOpen && (
-        <div className="home-search-seller-panel home-search-category-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
+        <div className="home-search-category-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
           <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
             <div>
               <p className="text-sm font-semibold text-slate-900">
@@ -888,13 +842,15 @@ export default function SearchBar({
         <div
           role="dialog"
           aria-label="Lista de países disponíveis"
-          className="home-search-seller-panel home-search-country-dropdown home-search-floating-panel z-[99999] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
+          className="home-search-country-dropdown home-search-floating-panel z-[99999] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
         >
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div>
               {countryLoading ? (
                 <>
-                  <LoadingBar message="Carregando países" className="text-gray-800 text-sm" size="sm" />
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-600">
+                    Carregando países...
+                  </p>
                   <p className="text-[11px] text-gray-400">
                     Aguarde enquanto atualizamos os países ativos
                   </p>
@@ -917,7 +873,11 @@ export default function SearchBar({
           </div>
           <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
             {countryLoading ? (
-              <LoadingBar message="Carregando países..." className="text-sm text-gray-500" size="sm" />
+              <LoadingBar
+                message="Carregando países..."
+                size="sm"
+                className="text-sm text-gray-500 home-search-country-loading"
+              />
             ) : countryOptions.length === 0 ? (
               <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
             ) : (

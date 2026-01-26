@@ -512,8 +512,7 @@ body.templesale-panel-open .nav-side-backdrop {
 
 body.templesale-dropdown-open .home-search-category-panel,
 body.templesale-dropdown-open .home-search-country-dropdown,
-body.templesale-dropdown-open .home-search-address-panel,
-body.templesale-dropdown-open .home-search-seller-panel {
+body.templesale-dropdown-open .home-search-address-panel {
   transform: none !important;
 }
 
@@ -532,8 +531,7 @@ body.templesale-dropdown-open .home-search-seller-panel {
 
 .home-search-country-dropdown,
 .home-search-category-panel,
-.home-search-address-panel,
-.home-search-seller-panel {
+.home-search-address-panel {
   z-index: 11000 !important;
   background-image: linear-gradient(180deg, rgba(10, 9, 8, 0.92), rgba(10, 9, 8, 0.72)),
     url('/novolayout/texture-3.jpg') !important;
@@ -549,10 +547,7 @@ body.templesale-dropdown-open .home-search-seller-panel {
 .home-search-category-panel button,
 .home-search-address-panel p,
 .home-search-address-panel span,
-.home-search-address-panel button,
-.home-search-seller-panel p,
-.home-search-seller-panel span,
-.home-search-seller-panel button {
+.home-search-address-panel button {
   color: var(--temple-text) !important;
 }
 
@@ -563,14 +558,9 @@ body.templesale-dropdown-open .home-search-seller-panel {
   border-radius: 20px !important;
 }
 
-.home-search-seller-panel {
-  width: min(320px, 88vw) !important;
-}
-
 .home-search-category-panel,
 .home-search-country-dropdown,
-.home-search-address-panel,
-.home-search-seller-panel {
+.home-search-address-panel {
   position: fixed !important;
   left: auto !important;
   right: auto !important;
@@ -580,15 +570,13 @@ body.templesale-dropdown-open .home-search-seller-panel {
 }
 
 .home-search-category-panel button,
-.home-search-address-panel button,
-.home-search-seller-panel button {
+.home-search-address-panel button {
   border-color: rgba(214, 182, 118, 0.25) !important;
   background: rgba(12, 10, 9, 0.75) !important;
 }
 
 .home-search-category-panel button:hover,
-.home-search-address-panel button:hover,
-.home-search-seller-panel button:hover {
+.home-search-address-panel button:hover {
   border-color: rgba(214, 182, 118, 0.6) !important;
   background: rgba(18, 15, 12, 0.85) !important;
 }
@@ -636,19 +624,12 @@ body.templesale-dropdown-open .home-search-seller-panel {
   color: var(--temple-text) !important;
 }
 
-.home-search-seller-panel input {
-  color: #0f172a !important;
-  caret-color: #0f172a;
-}
-
-.home-search-address-panel .border,
-.home-search-seller-panel .border {
+.home-search-address-panel .border {
   border-color: rgba(214, 182, 118, 0.25) !important;
   background: rgba(12, 10, 9, 0.75) !important;
 }
 
-.home-search-address-panel button.bg-blue-600,
-.home-search-seller-panel button.bg-emerald-600 {
+.home-search-address-panel button.bg-blue-600 {
   background: linear-gradient(180deg, rgba(214, 182, 118, 0.95), rgba(122, 96, 54, 0.9)) !important;
   color: #1b140a !important;
   border-color: rgba(255, 236, 196, 0.5) !important;
