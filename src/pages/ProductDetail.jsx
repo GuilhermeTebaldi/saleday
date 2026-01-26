@@ -1229,6 +1229,12 @@ export default function ProductDetail() {
     }
   }, [deletingProduct, product?.id, requireAuth, token]);
 
+  const handleEditProduct = useCallback(() => {
+    if (!requireAuth('Faça login para editar este anúncio.')) return;
+    if (!product?.id) return;
+    navigate(`/edit-product/${product.id}`);
+  }, [navigate, product?.id, requireAuth]);
+
   if (loading) {
     return (
       <div className="p-6 text-center" aria-busy="true">
@@ -1672,6 +1678,7 @@ export default function ProductDetail() {
                   {showOwnerMenu && (
                     <OwnerProductMenu
                       className={`absolute right-3 ${ownerMenuOffsetClass} z-20`}
+                      onEdit={handleEditProduct}
                       onDelete={handleDeleteProduct}
                       disabled={deletingProduct}
                     />

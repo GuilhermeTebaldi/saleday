@@ -384,6 +384,15 @@ export default function SellerProfile() {
     [deletingProductId, requireAuth, token]
   );
 
+  const handleEditProduct = useCallback(
+    (product) => {
+      if (!requireAuth('Faça login para editar este anúncio.')) return;
+      if (!product?.id) return;
+      navigate(`/edit-product/${product.id}`);
+    },
+    [navigate, requireAuth]
+  );
+
   if (loading) {
     return (
       <section className="ig-wrap">
@@ -848,6 +857,7 @@ export default function SellerProfile() {
                         ? ({ product }) => (
                             <OwnerProductMenu
                               className="absolute right-2 top-2 z-20"
+                              onEdit={() => handleEditProduct(product)}
                               onDelete={() => handleDeleteProduct(product)}
                               disabled={deletingProductId === product.id}
                               panelPlacement="top"
