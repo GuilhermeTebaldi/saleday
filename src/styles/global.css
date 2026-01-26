@@ -7666,7 +7666,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   max-width: min(1200px, 100%);
   width: 100%;
   margin: 0 auto 2rem;
-  background: transparent;
+  background: var(--ts-bg);
   padding: 0;
   border-radius: 0;
   border: none;

@@ -813,7 +813,7 @@ export default function Dashboard() {
 
 
   return (
-    <section className="dashboard min-h-screen bg-[var(--ts-bg)] px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-100">
+    <section className="dashboard min-h-screen bg-slate-950 px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <CloseBackButton />
         <div className="space-y-3">
