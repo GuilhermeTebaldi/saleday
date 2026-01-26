@@ -191,11 +191,17 @@ export default function SearchBar({
   const [loading, setLoading] = useState(false);
   const [panel, setPanel] = useState(null); // 'address' | 'country' | null
   const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
+  const [countryPanelOpen, setCountryPanelOpen] = useState(false);
   const popRef = useRef(null);
   const fallbackCountry = (originCountry || 'BR').toString().trim().toUpperCase() || 'BR';
   const [countryOptions, setCountryOptions] = useState([]);
   const [countryLoading, setCountryLoading] = useState(false);
   const [countryApplying, setCountryApplying] = useState(false);
+  const closeDropdowns = useCallback(() => {
+    setPanel(null);
+    setCategoryPanelOpen(false);
+    setCountryPanelOpen(false);
+  }, []);
 
   const activeCountry =
     geoScope?.type === 'country' && geoScope?.country
@@ -206,6 +212,7 @@ export default function SearchBar({
   const toggleCategoryPanel = () => {
     if (!hasCategoryOptions) return;
     setCategoryPanelOpen((prev) => !prev);
+    setCountryPanelOpen(false);
     setPanel(null);
   };
   const handleCategorySelection = (label) => {
@@ -255,13 +262,15 @@ export default function SearchBar({
   }, [hasCategoryOptions]);
 
   const toggleCountryPanel = () => {
-    setPanel((prev) => {
-      const next = prev === 'country' ? null : 'country';
-      if (next === 'country' && !countryOptions.length && !countryLoading) {
+    setCountryPanelOpen((prev) => {
+      const next = !prev;
+      if (next && !countryOptions.length && !countryLoading) {
         loadCountryOptions();
       }
       return next;
     });
+    setPanel(null);
+    setCategoryPanelOpen(false);
   };
 
   async function loadCountryOptions() {
@@ -520,20 +529,9 @@ export default function SearchBar({
   }
 
   const handleSellerSearchOpen = useCallback(() => {
-    setPanel(null);
-    setCategoryPanelOpen(false);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('templesale:close-panel'));
-    }
+    closeDropdowns();
     navigate('/sellers/search');
-  }, [navigate]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!panel && !categoryPanelOpen) {
-      window.dispatchEvent(new Event('templesale:close-panel'));
-    }
-  }, [panel, categoryPanelOpen]);
+  }, [closeDropdowns, navigate]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -559,23 +557,24 @@ export default function SearchBar({
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.body.classList.toggle('templesale-dropdown-open', Boolean(panel || categoryPanelOpen));
+    document.body.classList.toggle(
+      'templesale-dropdown-open',
+      Boolean(panel || categoryPanelOpen || countryPanelOpen)
+    );
     return () => document.body.classList.remove('templesale-dropdown-open');
-  }, [panel, categoryPanelOpen]);
+  }, [panel, categoryPanelOpen, countryPanelOpen]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    if (!panel && !categoryPanelOpen) return undefined;
+    if (!panel && !categoryPanelOpen && !countryPanelOpen) return undefined;
     const handleOutsideClick = (event) => {
       const target = event.target;
       if (!target) return;
       if (target.closest('.home-search-toolbar')) return;
-      if (target.closest('.home-search-category-panel')) return;
-      if (target.closest('.home-search-country-dropdown')) return;
+      if (target.closest('.home-search-toolbar__panel')) return;
+      if (target.closest('.home-search-country-panel')) return;
       if (target.closest('.home-search-address-panel')) return;
-      setPanel(null);
-      setCategoryPanelOpen(false);
-      window.dispatchEvent(new Event('templesale:close-panel'));
+      closeDropdowns();
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
@@ -588,10 +587,9 @@ export default function SearchBar({
         <div
           className="home-search-toolbar"
           onClick={(event) => {
-            if (event.target.closest('.home-search-toolbtn')) {
-              setTimeout(() => {
-                window.dispatchEvent(new Event('templesale:close-panel'));
-              }, 0);
+            const button = event.target.closest('.home-search-toolbtn');
+            if (button && button.dataset.keepPanel !== 'true') {
+              setTimeout(closeDropdowns, 0);
             }
           }}
         >
@@ -600,9 +598,7 @@ export default function SearchBar({
           className="home-search-toolbar__close"
           aria-label="Fechar menu de filtros"
           onClick={() => {
-            setPanel(null);
-            setCategoryPanelOpen(false);
-            window.dispatchEvent(new Event('templesale:close-panel'));
+            closeDropdowns();
           }}
         >
           <X size={16} />
@@ -637,27 +633,26 @@ export default function SearchBar({
               ) : (
                 <p className="home-search-toolbar__profile-meta">Perfil incompleto</p>
               )}
-              <Link
-                to="/edit-profile"
-                className="home-search-toolbar__profile-link"
-                onClick={() => {
-                  setPanel(null);
-                  setCategoryPanelOpen(false);
-                  window.dispatchEvent(new Event('templesale:close-panel'));
-                }}
-              >
+                <Link
+                  to="/edit-profile"
+                  className="home-search-toolbar__profile-link"
+                  onClick={() => {
+                    closeDropdowns();
+                  }}
+                >
                 Editar perfil
               </Link>
             </div>
           </div>
         )}
         {hasCategoryOptions && (
-          <div className="relative">
+          <div className="home-search-toolbar__dropdown home-search-toolbar__dropdown--filter">
             <button
               type="button"
               title="Filtrar categorias"
               onClick={toggleCategoryPanel}
               aria-haspopup="true"
+              data-keep-panel="true"
               aria-expanded={categoryPanelOpen}
               className={`${TOOLBAR_ICON_BTN} relative ${categoryPanelOpen ? 'bg-white border-gray-200 shadow-md' : ''}`}
             >
@@ -667,21 +662,147 @@ export default function SearchBar({
                 <span className="pointer-events-none absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500" />
               )}
             </button>
+            {categoryPanelOpen && (
+              <div className="home-search-toolbar__dropdown-panel home-search-filter-panel">
+                <div className="home-search-toolbar__panel-header">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {locationSummary ? `Disponíveis em ${locationSummary}` : 'Categorias'}
+                    </p>
+                    <p className="text-[11px] text-gray-400">
+                      {categoryFilter ? 'Filtre por categoria' : 'Selecione uma categoria'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryPanelOpen(false)}
+                    className="text-gray-500 hover:underline"
+                    aria-label="Fechar painel de categorias"
+                  >
+                    Fechar
+                  </button>
+                </div>
+                <div className="home-search-toolbar__panel-body">
+                  {categoryOptions.map(({ label, count }) => {
+                    const active = categoryFilter === label;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => handleCategorySelection(label)}
+                        disabled={categoryLoading}
+                        className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
+                          active
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
+                      >
+                        <span className="block text-sm font-semibold truncate">{label}</span>
+                        <span className="text-xs text-gray-500">{count} anúncios</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
-        <div className="relative">
-          
-          <button
-            type="button"
-            title="Filtrar por países"
-            onClick={toggleCountryPanel}
-            className={`${TOOLBAR_ICON_BTN}`}
-            aria-haspopup="dialog"
-            aria-expanded={panel === 'country'}
-          >
-            <Globe size={18} />
-            <span className="home-search-toolbtn__label">Catálogo</span>
-          </button>
+        <div
+          className={`home-search-toolbar__dropdown home-search-toolbar__dropdown--country${
+            countryPanelOpen ? ' is-open' : ''
+          }`}
+        >
+            <button
+              type="button"
+              title="Filtrar por países"
+              onClick={toggleCountryPanel}
+              data-keep-panel="true"
+              className={`${TOOLBAR_ICON_BTN}`}
+              aria-haspopup="dialog"
+              aria-expanded={countryPanelOpen}
+            >
+              <Globe size={18} />
+              <span className="home-search-toolbtn__label">Países</span>
+            </button>
+          {countryPanelOpen && (
+            <div className="home-search-toolbar__panel home-search-toolbar__dropdown-panel home-search-country-panel">
+              <div className="home-search-toolbar__panel-header">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Países</p>
+                <p className="text-[11px] text-gray-400">
+                  Somente países com anúncios ativos
+                </p>
+              </div>
+                <button
+                  type="button"
+                  onClick={() => setCountryPanelOpen(false)}
+                  className="text-gray-500 hover:underline"
+                  aria-label="Fechar painel de países"
+                >
+                  Fechar
+                </button>
+              </div>
+              <div className="home-search-toolbar__panel-body">
+                {countryLoading ? (
+                  <LoadingBar
+                    message="Carregando países..."
+                    size="sm"
+                    className="text-sm text-gray-500 home-search-country-loading"
+                  />
+                ) : countryOptions.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
+                ) : (
+                  countryOptions.map((item) => {
+                    const label = resolveCountryName(item.country);
+                    const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
+                    const isActive = activeCountry === item.country;
+                    const flagUrl = getFlagUrl(item.country);
+                    const theme = getCountryTheme(item.country);
+                    return (
+                      <button
+                        key={item.country}
+                        type="button"
+                        disabled={countryApplying}
+                        onClick={() => {
+                          applyCountryFilter(item.country);
+                          setCountryPanelOpen(false);
+                        }}
+                        className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
+                          isActive
+                            ? `${theme.border} ${theme.bg} ${theme.text} shadow-lg`
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        } ${countryLoading ? 'opacity-70 cursor-wait' : ''}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            {flagUrl ? (
+                              <img
+                                src={flagUrl}
+                                alt={label}
+                                className="w-5 h-5 rounded-sm object-cover border border-white/60 shadow-inner"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
+                                {item.country}
+                              </span>
+                            )}
+                            <p className="font-semibold text-sm truncate">{label}</p>
+                          </div>
+                          <p className="text-xs text-gray-500">{countLabel}</p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="mt-3 rounded-2xl border border-dashed border-gray-200 bg-white/60 p-3 text-xs text-gray-500">
+                {countryApplying
+                  ? 'Aplicando filtro...'
+                  : 'Escolha um país para ver todos os anúncios disponíveis.'}
+              </div>
+            </div>
+          )}
         </div>
         {false && (
           <button
@@ -698,12 +819,18 @@ export default function SearchBar({
         
         <button
           type="button"
-          title="GPS"
-          onClick={useGPSQuick}
+          title="Buscar produtos próximos"
+          onClick={() => {
+            closeDropdowns();
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('templesale:close-hamburger'));
+            }
+            useGPSQuick();
+          }}
           className={`${TOOLBAR_ICON_BTN}`}
         >
           <Crosshair size={18} />
-          <span className="home-search-toolbtn__label">GPS</span>
+          <span className="home-search-toolbtn__label">Próximos</span>
         </button>
         <button
           type="button"
@@ -731,14 +858,14 @@ export default function SearchBar({
           <MapIcon size={18} />
           <span className="home-search-toolbtn__label">Mapa</span>
         </button>
-        <button
-          type="button"
-          title="Buscar vendedores"
-          onClick={handleSellerSearchOpen}
-          className={`${TOOLBAR_ICON_BTN}`}
-          aria-haspopup="false"
-          aria-expanded="false"
-        >
+          <button
+            type="button"
+            title="Buscar vendedores"
+            onClick={handleSellerSearchOpen}
+            className={`${TOOLBAR_ICON_BTN}`}
+            aria-haspopup="false"
+            aria-expanded="false"
+          >
           <User size={18} />
           <span className="home-search-toolbtn__label">Vendedor</span>
         </button>
@@ -778,152 +905,6 @@ export default function SearchBar({
             >
               {loading ? 'Aplicando...' : 'Aplicar'}
             </button>
-          </div>
-        </div>
-      )}
-
-      {categoryPanelOpen && (
-        <div className="home-search-category-panel home-search-floating-panel z-[99999] rounded-3xl border border-gray-200 bg-gradient-to-b from-white/90 via-white/95 to-slate-50/80 shadow-[0_20px_45px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg">
-          <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {locationSummary ? `Disponíveis em ${locationSummary}` : 'Categorias'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {categoryFilter && (
-                <button
-                  type="button"
-                  onClick={() => handleCategorySelection(categoryFilter)}
-                  disabled={categoryLoading}
-                  className="text-emerald-600 hover:underline disabled:cursor-wait disabled:opacity-60"
-                >
-                  Limpar
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setCategoryPanelOpen(false)}
-                className="text-gray-500 hover:underline"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
-            {categoryOptions.map(({ label, count }) => {
-              const active = categoryFilter === label;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleCategorySelection(label)}
-                  disabled={categoryLoading}
-                  className={`w-full rounded-2xl border px-3 py-2 text-left transition shadow-sm duration-150 ${
-                    active
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                  } ${categoryLoading ? 'opacity-70 cursor-wait' : ''}`}
-                >
-                  <span className="block text-sm font-semibold truncate">
-                    {label}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {count} anúncios
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {panel === 'country' && (
-        <div
-          role="dialog"
-          aria-label="Lista de países disponíveis"
-          className="home-search-country-dropdown home-search-floating-panel z-[99999] rounded-3xl border border-gray-100 bg-gradient-to-b from-white/90 to-white/70 shadow-[0_25px_40px_rgba(15,23,42,0.25)] p-4 text-sm backdrop-blur-lg"
-        >
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div>
-              {countryLoading ? (
-                <>
-                  <p className="text-xs uppercase tracking-[0.3em] text-gray-600">
-                    Carregando países...
-                  </p>
-                  <p className="text-[11px] text-gray-400">
-                    Aguarde enquanto atualizamos os países ativos
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold text-sm text-gray-800">País do catálogo</p>
-                  <p className="text-[11px] text-gray-400">Somente países com anúncios ativos</p>
-                </>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPanel(null)}
-              className="p-1.5 rounded-full hover:bg-gray-100 transition"
-              aria-label="Fechar lista de países"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
-            {countryLoading ? (
-              <LoadingBar
-                message="Carregando países..."
-                size="sm"
-                className="text-sm text-gray-500 home-search-country-loading"
-              />
-            ) : countryOptions.length === 0 ? (
-              <p className="text-sm text-gray-500">Nenhum país com anúncios disponível.</p>
-            ) : (
-              countryOptions.map((item) => {
-                const label = resolveCountryName(item.country);
-                const countLabel = item.total === 1 ? '1 anúncio' : `${item.total} anúncios`;
-                const isActive = activeCountry === item.country;
-                const flagUrl = getFlagUrl(item.country);
-                const theme = getCountryTheme(item.country);
-                return (
-                  <button
-                    key={item.country}
-                    type="button"
-                    disabled={countryApplying}
-                    onClick={() => applyCountryFilter(item.country)}
-                    className={`w-full text-left p-3 rounded-2xl border transition shadow-sm hover:shadow-lg ${
-                      isActive
-                        ? `${theme.border} ${theme.bg} ${theme.text}`
-                        : 'border-gray-200 bg-white/80 text-gray-700 hover:border-gray-300'
-                    } duration-150`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        {flagUrl ? (
-                          <img
-                            src={flagUrl}
-                            alt={label}
-                            className="w-5 h-5 rounded-sm object-cover border border-white/60 shadow-inner"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="w-5 h-5 rounded-sm bg-gray-200 text-[10px] flex items-center justify-center text-gray-600">
-                            {item.country}
-                          </span>
-                        )}
-                        <p className="font-semibold text-sm truncate">{label}</p>
-                      </div>
-                      <p className="text-xs text-gray-500">{countLabel}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <div className="mt-3 rounded-2xl border border-dashed border-gray-200 bg-white/60 p-3 text-xs text-gray-500">
-            {countryApplying ? 'Aplicando filtro...' : 'Escolha um país para ver todos os anúncios disponíveis.'}
           </div>
         </div>
       )}

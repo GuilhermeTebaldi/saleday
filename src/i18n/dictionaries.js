@@ -22,6 +22,10 @@ const ENTRIES = [
   { key: 'Quartos', en: 'Bedrooms', es: 'Habitaciones', it: 'Camere', ja: '寝室' },
   { key: 'Banheiros', en: 'Bathrooms', es: 'Baños', it: 'Bagni', ja: 'バスルーム' },
   { key: 'Vagas', en: 'Parking spaces', es: 'Plazas de estacionamiento', it: 'Posti auto', ja: '駐車スペース' },
+  { key: 'Eu posso visitar?', en: 'Can I visit?', es: '¿Puedo visitar?', it: 'Posso visitare?', ja: '見学してもいいですか？' },
+  { key: 'Aceita permuta?', en: 'Do you accept swaps?', es: '¿Aceptas permuta?', it: 'Accetti permute?', ja: '交換は可能ですか？' },
+  { key: 'Me retorne no WhatsApp!', en: 'Get back to me on WhatsApp!', es: 'Respóndeme por WhatsApp!', it: 'Rispondimi su WhatsApp!', ja: 'WhatsAppでご連絡ください！' },
+  { key: 'Tenho interesse, está disponível?', en: 'I’m interested, is it available?', es: 'Me interesa, ¿está disponible?', it: 'Sono interessato, è disponibile?', ja: '興味があります、まだありますか？' },
   { key: 'Catálogo de', en: 'Catalog of', es: 'Catálogo de', it: 'Catalogo di', ja: 'カタログ・' },
   { key: 'Catálogo', en: 'Catalog', es: 'Catálogo', it: 'Catalogo', ja: 'カタログ' },
   { key: 'Vendedor:', en: 'Seller:', es: 'Vendedor:', it: 'Venditore:', ja: '出品者:' },
@@ -86,6 +90,7 @@ const ENTRIES = [
   { key: '0 mensagens', en: '0 messages', es: '0 mensajes', it: '0 messaggi', ja: '0件のメッセージ' },
   { key: 'Carregando perguntas...', en: 'Loading questions...', es: 'Cargando preguntas...', it: 'Caricamento delle domande...', ja: '質問を読み込んでいます...' },
   { key: 'Carregando anúncios da região...', en: 'Loading regional listings...', es: 'Cargando anuncios de la región...', it: 'Caricamento degli annunci della regione...', ja: '地域の出品を読み込んでいます...' },
+  { key: 'Aguarde enquanto atualizamos os países ativos', en: 'Please wait while we refresh the active countries.', es: 'Espere mientras actualizamos los países activos.', it: 'Attendere mentre aggiorniamo i paesi attivi.', ja: 'アクティブな国を更新していますので、しばらくお待ちください。' },
   { key: 'Ainda não há perguntas para este anúncio.', en: 'There are no questions for this listing yet.', es: 'Aún no hay preguntas para este anuncio.', it: 'Non ci sono ancora domande per questo annuncio.', ja: 'この出品にはまだ質問がありません。' },
   { key: 'Nova pergunta pública', en: 'New public question', es: 'Nueva pregunta pública', it: 'Nuova domanda pubblica', ja: '新しい公開質問' },
   { key: 'Resposta pública registrada.', en: 'Public response recorded.', es: 'Respuesta pública registrada.', it: 'Risposta pubblica registrata.', ja: '公開回答が記録されました。' },
@@ -138,6 +143,7 @@ const ENTRIES = [
   { key: 'Aproximação baseada na cidade informada no anúncio.', en: 'Approximation based on the city provided in the listing.', es: 'Aproximación basada en la ciudad indicada en el anuncio.', it: 'Approssimazione basata sulla città indicata nell\'annuncio.', ja: '出品に記載された都市を元にした概算です。' },
   { key: 'Aproximação baseada nas coordenadas informadas no anúncio.', en: 'Approximation based on the coordinates provided in the listing.', es: 'Aproximación basada en las coordenadas indicadas en el anuncio.', it: 'Approssimazione basata sulle coordinate indicate nell\'annuncio.', ja: '出品に記載された座標を元にした概算です。' },
   { key: 'Mais anúncios próximos ao endereço deste anúncio.', en: 'More listings close to this listing\'s address.', es: 'Más anuncios cercanos a la dirección de este anuncio.', it: 'Più annunci vicini all\'indirizzo di questo annuncio.', ja: 'この出品の住所付近の他の出品。' },
+  { key: 'Nenhum anúncio disponível nesta região ainda.', en: 'No listings available in this region yet.', es: 'No hay anuncios disponibles en esta región todavía.', it: 'Ancora nessun annuncio disponibile in questa regione.', ja: 'この地域ではまだ出品がありません。' },
   {
     key: 'Faça perguntas rápidas ao anunciante e acompanhe as respostas publicamente no anúncio.',
     en: 'Ask quick questions to the advertiser and follow the answers publicly on the listing.',
@@ -196,6 +202,7 @@ const ENTRIES = [
     ja: '運用チームと話して、リアルタイムの履歴を確認しましょう。'
   },
   { key: 'Tempo real', en: 'Real time', es: 'Tiempo real', it: 'Tempo reale', ja: 'リアルタイム' },
+  { key: 'Atualizado em tempo real', en: 'Updated in real time', es: 'Actualizado en tiempo real', it: 'Aggiornato in tempo reale', ja: 'リアルタイムで更新済み' },
   {
     key: 'Conversar com o suporte',
     en: 'Chat with support',
@@ -211,12 +218,13 @@ const ENTRIES = [
     it: 'Condividi ciò di cui hai bisogno e segui le risposte in tempo reale.',
     ja: '必要なことを共有し、リアルタイムで回答を追跡しましょう。'
   },
+  { key: 'Conversa direta', en: 'Direct conversation', es: 'Conversación directa', it: 'Conversazione diretta', ja: '直接の会話' },
   { key: 'Ajuda a entender o que precisa.', en: 'Help you understand what you need.', es: 'Ayuda a entender lo que necesitas.', it: 'Ti aiuta a capire ciò di cui hai bisogno.', ja: '必要なことを理解するためのサポートです。' },
   { key: 'Assunto', en: 'Subject', es: 'Asunto', it: 'Oggetto', ja: '件名' },
   { key: 'Nova conversa', en: 'New conversation', es: 'Nueva conversación', it: 'Nuova conversazione', ja: '新しい会話' },
   { key: 'Ajuda o time a entender o que precisa.', en: 'Helps the team understand what you need.', es: 'Ayuda al equipo a comprender lo que necesitas.', it: 'Aiuta il team a capire ciò che ti serve.', ja: 'チームが必要なことを理解するのに役立ちます。' },
   {
-    key: 'Aqui vão aparecer as mensagens trocadas with o suporte. Envie a primeira agora!',
+    key: 'Aqui vão aparecer as mensagens trocadas com o suporte. Envie a primeira agora!',
     en: 'Messages exchanged with support will appear here. Send the first one now!',
     es: 'Aquí aparecerán los mensajes con el soporte. ¡Envía el primero ahora!',
     it: 'Qui appariranno i messaggi con il supporto. Invia subito il primo!',

@@ -510,6 +510,20 @@ body.templesale-panel-open .nav-side-backdrop {
   pointer-events: auto;
 }
 
+.home-search-toolbar__panel {
+  background: rgba(10, 9, 8, 0.88);
+  border-color: var(--temple-border) !important;
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.65);
+}
+
+.home-search-toolbar__panel-header button {
+  color: #fdf8ef;
+}
+
+.home-search-toolbar__panel-body .text-gray-500 {
+  color: #d6c6b0;
+}
+
 body.templesale-dropdown-open .home-search-category-panel,
 body.templesale-dropdown-open .home-search-country-dropdown,
 body.templesale-dropdown-open .home-search-address-panel {
@@ -613,6 +627,27 @@ body.templesale-dropdown-open .home-search-address-panel {
 
 .home-search-country-dropdown__footer {
   color: var(--temple-muted);
+}
+
+.home-search-toolbar__dropdown-panel.home-search-country-panel {
+  background: rgba(10, 9, 8, 0.9);
+  border-radius: 1rem;
+  padding: 0.35rem;
+  border: 1px solid var(--temple-border);
+  box-shadow: none;
+}
+
+.home-search-country-panel .home-search-toolbar__panel {
+  background: rgba(10, 9, 8, 0.92);
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.75rem;
+}
+
+.home-search-country-panel .home-search-toolbar__panel-header,
+.home-search-country-panel .home-search-toolbar__panel-body {
+  padding: 0;
+  gap: 0.35rem;
 }
 
 .home-search-panel__field {

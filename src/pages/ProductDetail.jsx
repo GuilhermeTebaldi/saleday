@@ -26,6 +26,7 @@ import {
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
+import { LocaleContext } from '../context/LocaleContext.jsx';
 import ImageViewerModal from '../components/ImageViewerModal.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
 import SoldBadge from '../components/SoldBadge.jsx';
@@ -43,6 +44,7 @@ import useImageViewer from '../hooks/useImageViewer.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getPhoneActions } from '../utils/phone.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
+import { DICTS } from '../i18n/dictionaries.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -166,7 +168,7 @@ const QUESTION_PAGE_SIZE = 4;
 const MESSAGE_LIMIT = 200;
 const REGION_RESULT_LIMIT = 6;
 const REGION_BOUNDS_DELTA = 0.03;
-const QUICK_QUESTION_PRESETS = [
+const QUICK_QUESTION_KEYS = [
   'Eu posso visitar?',
   'Aceita permuta?',
   'Me retorne no WhatsApp!',
@@ -253,7 +255,12 @@ export default function ProductDetail() {
   const [floatingBarHeight, setFloatingBarHeight] = useState(0);
   const floatingBarRef = useRef(null);
   const { user, token } = useContext(AuthContext);
+  const { locale } = useContext(LocaleContext);
   const promptLogin = useLoginPrompt();
+  const quickQuestionPresets = useMemo(() => {
+    const dict = DICTS[locale] || DICTS['pt-BR'];
+    return QUICK_QUESTION_KEYS.map((key) => dict[key] ?? key);
+  }, [locale]);
   const requireAuth = useCallback(
     (message) => {
       if (token) return true;
@@ -2092,7 +2099,7 @@ export default function ProductDetail() {
                       <div className="product-detail__qa-quick">
                         <p className="product-detail__qa-quick-title">Sugestões rápidas</p>
                         <div className="product-detail__qa-quick-list">
-                          {QUICK_QUESTION_PRESETS.map((preset) => (
+                          {quickQuestionPresets.map((preset) => (
                             <button
                               key={preset}
                               type="button"

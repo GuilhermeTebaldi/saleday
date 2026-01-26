@@ -184,16 +184,16 @@ export default function Header() {
   }, [navPanelOpen]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleCloseHamburger = () => setNavPanelOpen(false);
+    window.addEventListener('templesale:close-hamburger', handleCloseHamburger);
+    return () => window.removeEventListener('templesale:close-hamburger', handleCloseHamburger);
+  }, []);
+
+  useEffect(() => {
     if (isHome) return;
     if (navPanelOpen) setNavPanelOpen(false);
   }, [isHome, navPanelOpen]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const handleClosePanel = () => setNavPanelOpen(false);
-    window.addEventListener('templesale:close-panel', handleClosePanel);
-    return () => window.removeEventListener('templesale:close-panel', handleClosePanel);
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
