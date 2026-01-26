@@ -1682,7 +1682,7 @@ export default function NewProduct() {
   };
 
   return (
-    <section className="relative min-h-screen bg-[var(--ts-bg)] py-10 px-0 text-[var(--ts-surface)]">
+    <section className="relative min-h-screen bg-[var(--ts-bg)] pt-4 sm:pt-6 lg:pt-10 pb-10 px-0 text-[var(--ts-surface)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -top-32 right-0 h-72 w-72 rounded-full bg-[rgba(31,143,95,0.18)] blur-3xl" />
         <div className="absolute -bottom-36 -left-24 h-72 w-72 rounded-full bg-[rgba(200,178,106,0.2)] blur-3xl" />

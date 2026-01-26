@@ -510,20 +510,6 @@ body.templesale-panel-open .nav-side-backdrop {
   pointer-events: auto;
 }
 
-.home-search-toolbar__panel {
-  background: rgba(10, 9, 8, 0.88);
-  border-color: var(--temple-border) !important;
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.65);
-}
-
-.home-search-toolbar__panel-header button {
-  color: #fdf8ef;
-}
-
-.home-search-toolbar__panel-body .text-gray-500 {
-  color: #d6c6b0;
-}
-
 body.templesale-dropdown-open .home-search-category-panel,
 body.templesale-dropdown-open .home-search-country-dropdown,
 body.templesale-dropdown-open .home-search-address-panel {
@@ -590,7 +576,8 @@ body.templesale-dropdown-open .home-search-address-panel {
 }
 
 .home-search-category-panel button:hover,
-.home-search-address-panel button:hover {
+.home-search-address-panel button:hover,
+.home-search-seller-panel button:hover {
   border-color: rgba(214, 182, 118, 0.6) !important;
   background: rgba(18, 15, 12, 0.85) !important;
 }
@@ -629,27 +616,6 @@ body.templesale-dropdown-open .home-search-address-panel {
   color: var(--temple-muted);
 }
 
-.home-search-toolbar__dropdown-panel.home-search-country-panel {
-  background: rgba(10, 9, 8, 0.9);
-  border-radius: 1rem;
-  padding: 0.35rem;
-  border: 1px solid var(--temple-border);
-  box-shadow: none;
-}
-
-.home-search-country-panel .home-search-toolbar__panel {
-  background: rgba(10, 9, 8, 0.92);
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0.75rem;
-}
-
-.home-search-country-panel .home-search-toolbar__panel-header,
-.home-search-country-panel .home-search-toolbar__panel-body {
-  padding: 0;
-  gap: 0.35rem;
-}
-
 .home-search-panel__field {
   background: rgba(12, 10, 9, 0.7);
   border: 1px solid rgba(214, 182, 118, 0.25);
@@ -659,12 +625,19 @@ body.templesale-dropdown-open .home-search-address-panel {
   color: var(--temple-text) !important;
 }
 
-.home-search-address-panel .border {
+.home-search-seller-panel input {
+  color: #0f172a !important;
+  caret-color: #0f172a;
+}
+
+.home-search-address-panel .border,
+.home-search-seller-panel .border {
   border-color: rgba(214, 182, 118, 0.25) !important;
   background: rgba(12, 10, 9, 0.75) !important;
 }
 
-.home-search-address-panel button.bg-blue-600 {
+.home-search-address-panel button.bg-blue-600,
+.home-search-seller-panel button.bg-emerald-600 {
   background: linear-gradient(180deg, rgba(214, 182, 118, 0.95), rgba(122, 96, 54, 0.9)) !important;
   color: #1b140a !important;
   border-color: rgba(255, 236, 196, 0.5) !important;

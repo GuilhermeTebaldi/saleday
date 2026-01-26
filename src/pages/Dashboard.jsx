@@ -323,7 +323,7 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
     </div>
     <div className="flex-1 min-w-0">
       <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Painel do usuário</p>
-      <h1 className="dashboard-title mt-1 text-2xl font-semibold text-[var(--ts-text)] truncate">
+      <h1 className="dashboard-title mt-1 text-2xl font-semibold text-[var(--ts-text)]">
         {user?.username || user?.email}
       </h1>
       <p className="text-sm text-[var(--ts-muted)] truncate">{user?.email}</p>
@@ -813,7 +813,7 @@ export default function Dashboard() {
 
 
   return (
-    <section className="dashboard min-h-screen bg-slate-950 px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-100">
+    <section className="dashboard min-h-screen bg-white px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <CloseBackButton />
         <div className="space-y-3">

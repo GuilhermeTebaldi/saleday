@@ -31,6 +31,9 @@
   --ts-text: #1A1D21;
   --ts-muted: #6E7278;
   --ts-cta: #1F8F5F;
+  --temple-font: 'Source Serif 4', 'Times New Roman', serif;
+  --temple-display: 'Cinzel', 'Times New Roman', serif;
+  --temple-text: #f2e8d7;
 }
 
 body {
@@ -38,6 +41,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, var(--templesale-ice) 0%, #ffffff 45%, var(--templesale-ice-2) 100%);
+  overflow-x: hidden;
 }
 
 body.is-splashing {
@@ -312,18 +316,20 @@ button {
   gap: 0.75rem;
   color: #f8fafc;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
   line-height: 1;
   position: relative;
+  font-family: var(--temple-display);
 }
 
 .app-logo__text {
   color: #f8fafc;
   font-weight: 700;
   font-size: 1.8rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
   line-height: 1;
   display: inline-block;
+  text-transform: uppercase;
 }
 
 .app-logo__word-wrap {
@@ -338,15 +344,16 @@ button {
   position: relative;
   display: inline-flex;
   align-items: center;
-  font-family: 'Montserrat', 'Sora', sans-serif;
-  font-size: clamp(1.2rem, 0.95rem + 1.8vw, 2.1rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--temple-display);
+  font-size: clamp(1.25rem, 1.1rem + 1vw, 2rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
   line-height: 1;
   white-space: nowrap;
-  text-shadow: 0 6px 16px rgba(0, 0, 0, 0.65);
+  text-transform: uppercase;
+  color: var(--temple-text);
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.75);
 }
-
 .app-logo__word-main {
   display: inline-flex;
   align-items: baseline;
@@ -405,10 +412,23 @@ button {
 .app-shell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
   flex: 1;
-  justify-content: space-between;
   min-width: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  z-index: 1;
+  max-width: min(360px, calc(100vw - 5rem));
+}
+
+.app-shell > * {
+  pointer-events: auto;
 }
 
 .app-logo__mark {
@@ -434,6 +454,23 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .app-logo__mark {
     animation: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    max-width: min(260px, calc(100vw - 5rem));
+    left: 48%;
+    transform: translateX(-58%);
+  }
+
+  .app-logo__word {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    letter-spacing: 0.1em;
+  }
+
+  .app-logo__word-wrap {
+    transform: scale(0.78);
   }
 }
 
@@ -3816,6 +3853,8 @@ body.templesale-header-search-open .home-search-bar {
   .app-shell {
     gap: 1rem;
     flex: none;
+    justify-content: flex-start;
+    padding-left: 0.0rem;
   }
 
   .app-logo__mark {
@@ -3842,6 +3881,16 @@ body.templesale-header-search-open .home-search-bar {
     width: 40px;
     height: 40px;
     border-radius: 12px;
+  }
+
+  .app-logo {
+    max-width: min(260px, 70vw);
+    text-align: left;
+    margin: 0;
+  }
+
+  .app-logo__word-wrap {
+    transform: scale(1);
   }
 
   .nav-notifications__drawer {
@@ -7663,22 +7712,29 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
 
 .dashboard {
   flex: 1;
-  max-width: min(1200px, 100%);
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto 2rem;
-  background: var(--ts-bg);
+  margin: 0 0 2rem;
+  background: #ffffff;
+  color: var(--ts-text);
   padding: 0;
   border-radius: 0;
+  box-sizing: border-box;
   border: none;
   box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  overflow-x: hidden;
 }
 
 .dashboard-title {
   font-family: var(--home-title-font);
   letter-spacing: 0.02em;
+  width: 100%;
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .dashboard-actions {
