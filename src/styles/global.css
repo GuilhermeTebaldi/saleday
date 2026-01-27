@@ -2103,8 +2103,9 @@ body.templesale-header-search-open .home-search-bar {
 .home-grid {
   display: grid;
   margin: 0 auto;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+  gap: 18px;
+  padding: 0 12px;
   align-content: start;
   align-items: stretch;
 }
@@ -2113,6 +2114,7 @@ body.templesale-header-search-open .home-search-bar {
   .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    padding: 0 8px;
   }
 }
 
@@ -2121,50 +2123,45 @@ body.templesale-header-search-open .home-search-bar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: var(--ts-card);
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  background: #ffffff;
   color: var(--ts-text);
   width: 100%;
   height: auto;
-  box-shadow: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 8px 22px -18px rgba(15, 23, 42, 0.28);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .home-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--ts-gold);
-  opacity: 0.55;
-  z-index: 2;
-  pointer-events: none;
+  display: none;
 }
 
 .home-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -20px rgba(15, 23, 42, 0.32);
+  border-color: rgba(15, 23, 42, 0.08);
 }
 
 
 .home-card__media {
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
   position: relative;
   overflow: hidden;
   flex: 0 0 auto;
   border: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
   box-shadow: none;
-  background: var(--ts-surface);
+  background: #f5f5f5;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
-@supports not (aspect-ratio: 1 / 1) {
+@supports not (aspect-ratio: 4 / 5) {
   .home-card__media {
     height: 0;
-    padding-top: 100%;
+    padding-top: 125%;
   }
 }
 
@@ -2183,6 +2180,8 @@ body.templesale-header-search-open .home-search-bar {
   user-select: none;
   background: #fff;
   transition: none;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .home-card__media-gallery.prevent-drag,
@@ -2206,18 +2205,18 @@ body.templesale-header-search-open .home-search-bar {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: min(40px, 12%);
-  height: min(40px, 12%);
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   text-shadow: none;
-  background: rgba(14, 17, 22, 0.6);
-  border: 1px solid rgba(200, 178, 106, 0.35);
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   cursor: pointer;
   pointer-events: auto;
   padding: 0;
@@ -2296,55 +2295,57 @@ body.templesale-header-search-open .home-search-bar {
 @media (max-width: 640px) {
   .home-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr) !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+    padding: 0 2px;
   }
 
   .home-card {
     min-width: 0 !important;
     border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    background: var(--ts-card);
-    box-shadow: none;
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    background: #ffffff;
+    box-shadow: 0 14px 36px -30px rgba(15, 23, 42, 0.35);
     overflow: hidden;
   }
 
   .home-card__media {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 5;
     border-radius: 0;
     box-shadow: none;
   }
 
   .home-card__content {
-    padding: 1.05rem 1.1rem 1.45rem;
-    border-top: 0;
-    background: transparent;
+    padding: 0.85rem 0.9rem 1rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.05);
+    background: #ffffff;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.3rem;
     border-bottom-left-radius: 16px;
     border-bottom-right-radius: 16px;
   }
 
   .home-card__title {
-    font-size: 1rem;
-    color: var(--ts-text);
-    letter-spacing: 0.02em;
+    font-size: 0.94rem;
+    color: #111827;
+    letter-spacing: 0.01em;
     font-weight: 600;
     font-family: var(--home-title-font);
   }
 
   .home-card__price {
-    font-size: 1.375rem;
-    color: var(--ts-cta);
+    font-size: 1.12rem;
+    color: #0f172a;
     font-weight: 700;
     text-shadow: none;
   }
 
   .home-card__location {
-    color: var(--ts-muted);
-    font-size: 0.75rem;
+    color: #6b7280;
+    font-size: 0.72rem;
     text-transform: none;
+    letter-spacing: 0.02em;
   }
 
   .home-card__media-gallery {
@@ -2353,25 +2354,15 @@ body.templesale-header-search-open .home-search-bar {
   }
 
   .home-card__media-arrow {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
-    background: rgba(14, 17, 22, 0.6);
-    border: 1px solid rgba(200, 178, 106, 0.35);
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
   }
 
   .home-card__media-indicator {
-    bottom: 12px;
-  }
-
-  .home-card__contact {
-    gap: 0.35rem;
-  }
-
-  .home-card__contact-btn {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.6rem;
-    min-height: 44px;
+    bottom: 10px;
   }
 }
 
@@ -2540,10 +2531,13 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__content {
-  padding: 1.1rem 1.25rem 1.6rem;
-  display: grid;
-  gap: 0.65rem;
-  min-height: 96px;
+  padding: 0.95rem 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: #ffffff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .home-card__facts {
@@ -2603,24 +2597,27 @@ body.templesale-header-search-open .home-search-bar {
 .home-card__title {
   margin: 0;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.94rem;
   line-height: 1.25;
-  letter-spacing: 0.02em;
-  color: var(--ts-text);
+  letter-spacing: 0.01em;
+  color: #111827;
   font-family: var(--home-title-font);
   text-transform: none;
   text-shadow: none;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .home-card__price {
   font-weight: 700;
-  font-size: 1.375rem;
-  color: var(--ts-cta);
-  margin-top: 0.2rem;
+  font-size: 1.18rem;
+  color: #0f172a;
+  margin: 0 0 0.1rem;
+  letter-spacing: 0.01em;
 }
 
 .home-card__price.is-free {
@@ -2658,9 +2655,61 @@ body.templesale-header-search-open .home-search-bar {
 }
 
 .home-card__location {
-  font-size: 0.75rem;
-  color: var(--ts-muted);
+  font-size: 0.8rem;
+  color: #6b7280;
   font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.home-card--gallery {
+  gap: 0;
+}
+
+.home-card--gallery .home-card__badge,
+.home-card--gallery .home-card__likes-badge,
+.home-card--gallery .home-card__favorite,
+.home-card--gallery .home-card__facts,
+.home-card--gallery .home-card__description,
+.home-card--gallery .home-card__meta-row,
+.home-card--gallery .home-card__contact {
+  display: none !important;
+}
+
+.home-card__media--portrait {
+  aspect-ratio: 4 / 5;
+}
+
+@supports not (aspect-ratio: 4 / 5) {
+  .home-card__media--portrait {
+    height: 0;
+    padding-top: 125%;
+  }
+}
+
+.home-card__content--gallery {
+  padding: 0.9rem 1rem 1rem;
+  gap: 0.28rem;
+  background: #ffffff;
+}
+
+.home-card__price--gallery {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.home-card__location--gallery {
+  font-size: 0.8rem;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+}
+
+.home-card__title--gallery {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #1f2937;
+  -webkit-line-clamp: 1;
 }
 
 .home-card__contact {
@@ -3235,7 +3284,8 @@ body.templesale-header-search-open .home-search-bar {
   }
 
   .home-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
     justify-content: center;
   }
 

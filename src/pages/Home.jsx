@@ -1,12 +1,11 @@
 // frontend/src/pages/Home.jsx
 // Página inicial com destaques, busca e feed de produtos.
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, PhoneCall } from 'lucide-react';
 import SearchBar from '../components/SearchBar.jsx';
 import MapSearch from '../components/MapSearch.jsx';
+import ProductCardHome from '../components/ProductCardHome.jsx';
 import { buildProductImageEntries, getPrimaryImageEntry } from '../utils/images.js';
 import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 
@@ -16,7 +15,6 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import GeoContext from '../context/GeoContext.jsx';
 import { LocaleContext } from '../context/LocaleContext.jsx';
 import { getProductPriceLabel, isProductFree } from '../utils/product.js';
-import { getExtraFieldLabel, isAntiqueCategory } from '../utils/productSpecs.js';
 import { getCountryLabel, normalizeCountryCode } from '../data/countries.js';
 import { getProductKey, mergeProductLists } from '../utils/productCollections.js';
 import usePreventDrag from '../hooks/usePreventDrag.js';
@@ -25,8 +23,6 @@ import { usePurchaseNotifications } from '../context/PurchaseNotificationsContex
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getCurrentPath } from '../components/ScrollRestoration.jsx';
-import { getPhoneActions } from '../utils/phone.js';
-import { buildProductMessageLink } from '../utils/messageLinks.js';
 import LoadingBar from '../components/LoadingBar.jsx';
 
 const regionDisplay =
@@ -83,16 +79,6 @@ const resolveCountryName = (code) => {
   if (!code) return '';
   const normalized = String(code).trim().toUpperCase();
   return getCountryLabel(normalized) || regionDisplay?.of(normalized) || normalized;
-};
-const formatPostDate = (value, locale = 'pt-BR') => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return '';
-  return new Intl.DateTimeFormat(locale, {
-    locale,
-    day: '2-digit',
-    month: 'short',
-  }).format(date);
 };
 const isActive = (p) => (p?.status || 'active') !== 'sold';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
@@ -642,703 +628,12 @@ const writeStoredMapCenter = (center) => {
   }
 };
 
-const buildProductImageSources = (product) => {
-  const entries = buildProductImageEntries(product);
-  if (!entries.length) return [IMG_PLACEHOLDER];
-  return entries.map((entry) => entry.url);
-};
-
-const formatNumberLabel = (value) => {
-  if (value === null || value === undefined || value === '') return null;
-  const num = Number(value);
-  if (!Number.isFinite(num)) return null;
-  return num;
-};
-
 const normalizeLabel = (value) =>
   String(value || '')
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-
-const QUICK_CATEGORY_ICON_MAP = new Map(
-  QUICK_CATEGORY_SHORTCUTS.map(({ label, icon }) => [normalizeLabel(label), icon])
-);
-
-const getCategoryFactIcon = (label) => QUICK_CATEGORY_ICON_MAP.get(normalizeLabel(label));
-
-const ESTATE_KEYWORDS = [
-  'apto',
-  'apartamento',
-  'imovel',
-  'imoveis',
-  'casas',
-  'casa',
-  'aluguel',
-  'flat',
-  'kitnet',
-  'terreno',
-  'quarto',
-  'quartos',
-  'temporada',
-  'ape'
-];
-
-const FASHION_KEYWORDS = [
-  'moda',
-  'roupa',
-  'vestuario',
-  'vestidos',
-  'fashion',
-  'camisa',
-  'jeans',
-  'saia',
-  'terno',
-  'acessorio',
-  'acessorios'
-];
-
-const isEstateCategory = (category) =>
-  ESTATE_KEYWORDS.some((keyword) => normalizeLabel(category).includes(keyword));
-
-const isFashionCategory = (category) =>
-  FASHION_KEYWORDS.some((keyword) => normalizeLabel(category).includes(keyword));
-
-const isEstateProduct = (product) =>
-  isEstateCategory(product?.category || '') ||
-  Boolean(
-    product?.property_type ||
-      product?.propertyType ||
-      product?.surface_area ||
-      product?.surfaceArea ||
-      product?.area ||
-      product?.bedrooms ||
-      product?.bathrooms ||
-      product?.parking ||
-      product?.rent_type ||
-      product?.rentType
-  );
-
-const isImovelLabel = (label) => ['imovel', 'imoveis'].includes(normalizeLabel(label));
-
-const startsWithLabel = (label, prefix) => normalizeLabel(label).startsWith(prefix);
-const includesLabel = (label, needle) => normalizeLabel(label).includes(needle);
-
-const getFactIcon = (label, product) => {
-  const normalized = normalizeLabel(label);
-  const categoryLabel = normalizeLabel(product?.category || '');
-  const categoryIcon = product?.category ? getCategoryFactIcon(product.category) : null;
-
-  if (label.endsWith('m²')) return 'tape';
-  if (isImovelLabel(label) && normalized === categoryLabel) return 'home';
-  if (startsWithLabel(label, 'tipo de imovel:')) return 'home';
-  if (startsWithLabel(label, 'tipo de terreno:')) return 'leaf';
-  if (startsWithLabel(label, 'tipo de aluguel:')) return 'rent';
-  if (includesLabel(label, 'quarto')) return 'bed';
-  if (includesLabel(label, 'banheiro')) return 'bath';
-  if (includesLabel(label, 'vaga')) return 'car';
-  if (startsWithLabel(label, 'marca:')) return 'tag';
-  if (startsWithLabel(label, 'autor') || startsWithLabel(label, 'fabricante')) return 'tag';
-  if (startsWithLabel(label, 'modelo:')) return 'box';
-  if (startsWithLabel(label, 'periodo') || startsWithLabel(label, 'estilo')) return 'clock';
-  if (startsWithLabel(label, 'ano') || startsWithLabel(label, 'epoca')) return 'calendar';
-  if (startsWithLabel(label, 'cor:')) return 'palette';
-  if (startsWithLabel(label, 'material') || startsWithLabel(label, 'acabamento')) return 'palette';
-  if (startsWithLabel(label, 'servico:')) return 'briefcase';
-  if (startsWithLabel(label, 'duracao:')) return 'clock';
-  if (startsWithLabel(label, 'valor/h:')) return 'money';
-  if (startsWithLabel(label, 'local:')) return 'map';
-  if (startsWithLabel(label, 'cargo:')) return 'briefcase';
-  if (startsWithLabel(label, 'vaga:')) return 'briefcase';
-  if (startsWithLabel(label, 'salario:')) return 'money';
-  if (startsWithLabel(label, 'requisitos:')) return 'list';
-  if (normalized === categoryLabel && categoryIcon) return categoryIcon;
-  if (normalized === categoryLabel) return 'grid';
-  return 'info';
-};
-
-// Map fact strings to visual metadata without changing existing fact selection logic.
-const getFactPresentation = (fact, product) => {
-  const label = String(fact || '').trim();
-  if (!label) return { icon: 'info', label: '', ariaLabel: '' };
-
-  return { icon: getFactIcon(label, product), label, ariaLabel: label };
-};
-
-const renderFactIcon = (type) => {
-  switch (type) {
-    case 'home':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M3 11.5L12 4l9 7.5M5 10.5V20h14v-9.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M9 20v-5h6v5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      );
-    case 'tag':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M7 4h6l5 5-7.8 7.8a2 2 0 0 1-2.8 0L4.2 13a2 2 0 0 1 0-2.8L7 4z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="11" cy="8" r="1.2" fill="currentColor" />
-        </svg>
-      );
-    case 'tape':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M6.5 7.5h7a4 4 0 0 1 4 4v6H6.5a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M11 7.5v3m-2 0v-2m4 2v-2m4 9H9"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'bed':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M4 11.5h16a3 3 0 0 1 3 3V19H1v-4.5a3 3 0 0 1 3-3z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 11.5V7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v4.5M14 11.5V8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'bath':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M5 12h14a2 2 0 0 1 2 2v1a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-1a2 2 0 0 1 2-2z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M7 12V7a2.5 2.5 0 0 1 5 0v2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'car':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M5 12.2l1.6-3.7c.3-.7 1-1.2 1.8-1.2h7.2c.8 0 1.5.5 1.8 1.2L19 12.2c.2.5.7.8 1.2.8h.3c.8 0 1.5.7 1.5 1.5V17c0 .8-.7 1.5-1.5 1.5H19"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M5 18H3.5C2.7 18 2 17.3 2 16.5V14.5c0-.8.7-1.5 1.5-1.5h.3c.5 0 1-.3 1.2-.8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M7 12.2h10"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="7.5" cy="18" r="1.5" fill="currentColor" />
-          <circle cx="16.5" cy="18" r="1.5" fill="currentColor" />
-        </svg>
-      );
-    case 'briefcase':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M4 8h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <path
-            d="M3 13h18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'calendar':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect
-            x="3"
-            y="5"
-            width="18"
-            height="16"
-            rx="2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path
-            d="M8 3v4M16 3v4M3 10h18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'palette':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M12 3a9 9 0 1 0 0 18c1.7 0 2.5-.8 2.5-2 0-1.3-1.2-1.8-2.4-1.8h-1.2a2.3 2.3 0 0 1-2.3-2.3 2.3 2.3 0 0 1 2.3-2.3h6a4 4 0 0 0 0-8h-1.2A8.9 8.9 0 0 0 12 3z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <circle cx="8.5" cy="9" r="1" fill="currentColor" />
-          <circle cx="12" cy="7.5" r="1" fill="currentColor" />
-          <circle cx="15.5" cy="9.5" r="1" fill="currentColor" />
-        </svg>
-      );
-    case 'box':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M4 7.5L12 4l8 3.5v9L12 20l-8-3.5v-9z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4 7.5l8 3.5 8-3.5M12 11v9"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'clock':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path
-            d="M12 7v5l3 2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'money':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect
-            x="3"
-            y="6.5"
-            width="18"
-            height="11"
-            rx="2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path
-            d="M6 9.5h2M16 14.5h2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    case 'map':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <circle cx="12" cy="11" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      );
-    case 'list':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            d="M6 7h13M6 12h13M6 17h13"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <circle cx="3" cy="7" r="1" fill="currentColor" />
-          <circle cx="3" cy="12" r="1" fill="currentColor" />
-          <circle cx="3" cy="17" r="1" fill="currentColor" />
-        </svg>
-      );
-    case 'grid':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect x="4" y="4" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="14" y="4" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="4" y="14" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="14" y="14" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </svg>
-      );
-    case 'leaf':
-    case 'rent':
-    case 'sofa':
-    case 'antique':
-      return renderQuickCategoryIcon(type);
-    case 'info':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path
-            d="M12 10.5v6M12 7.5h.01"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
-    default:
-      return null;
-  }
-};
-
-const pickProductFacts = (product) => {
-  if (!product) return [];
-  const factPool = [];
-  const addFact = (text) => {
-    if (text) {
-      const normalized = String(text).trim();
-      if (!normalized) return;
-      if (!factPool.includes(normalized)) {
-        factPool.push(normalized);
-      }
-    }
-  };
-  const category = (product.category || '').toLowerCase();
-  const normalizedCategory = normalizeLabel(product.category);
-  const addCategory = () => {
-    if (!product.category) return;
-    addFact(product.category);
-  };
-
-  addCategory();
-  const serviceType = product.service_type || product.serviceType;
-  const serviceDuration = product.service_duration || product.serviceDuration;
-  const serviceRate = product.service_rate || product.serviceRate;
-  const serviceLocation = product.service_location || product.serviceLocation;
-
-  if (serviceType) addFact(`Serviço: ${serviceType}`);
-  if (serviceDuration) addFact(`Duração: ${serviceDuration}`);
-  if (serviceRate) addFact(`Valor/h: ${serviceRate}`);
-  if (serviceLocation) addFact(`Local: ${serviceLocation}`);
-
-  const jobTitle = product.job_title || product.jobTitle;
-  const jobType = product.job_type || product.jobType;
-  const jobSalary = product.job_salary || product.jobSalary;
-  const jobRequirements = product.job_requirements || product.jobRequirements;
-
-  if (jobTitle) addFact(`Cargo: ${jobTitle}`);
-  if (jobType) addFact(`Vaga: ${jobType}`);
-  if (jobSalary) addFact(`Salário: ${jobSalary}`);
-  if (jobRequirements) addFact(`Requisitos: ${jobRequirements}`);
-
-  const isEstate = isEstateProduct(product);
-  const isFashion = isFashionCategory(category);
-  const isAntique = isAntiqueCategory(product?.category);
-
-  const propertyType = product.property_type || product.propertyType;
-  const rentType = product.rent_type || product.rentType;
-  const areaValue = product.surface_area ?? product.surfaceArea ?? product.area;
-  const isRentalCategory = normalizedCategory.includes('aluguel');
-  const isLandCategory = normalizedCategory.includes('terreno');
-  const parking = formatNumberLabel(product.parking);
-  const parkingLabel = parking !== null ? `${parking} vaga${parking > 1 ? 's' : ''}` : null;
-
-  if (isEstate) {
-    if (isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
-    if (isLandCategory && propertyType) addFact(`Tipo de terreno: ${propertyType}`);
-    const area = formatNumberLabel(areaValue);
-    if (area !== null) addFact(`${area} m²`);
-    if (!isLandCategory) {
-      const bedrooms = formatNumberLabel(product.bedrooms);
-      if (bedrooms !== null) addFact(`${bedrooms} quarto${bedrooms > 1 ? 's' : ''}`);
-      const bathrooms = formatNumberLabel(product.bathrooms);
-      if (bathrooms !== null) addFact(`${bathrooms} banheiro${bathrooms > 1 ? 's' : ''}`);
-      if (parkingLabel) addFact(parkingLabel);
-      if (propertyType) addFact(`Tipo de imóvel: ${propertyType}`);
-    }
-    if (!isRentalCategory && rentType) addFact(`Tipo de aluguel: ${rentType}`);
-  } else if (isFashion) {
-    if (product.brand) addFact(`Marca: ${product.brand}`);
-    if (product.model) addFact(`Modelo: ${product.model}`);
-    if (product.color) addFact(`Cor: ${product.color}`);
-    if (!product.brand && !product.model && !product.color && product.year) {
-      addFact(`Ano: ${product.year}`);
-    }
-  } else if (isAntique) {
-    if (product.brand) addFact(`${getExtraFieldLabel('brand', product.category)}: ${product.brand}`);
-    if (product.model) addFact(`${getExtraFieldLabel('model', product.category)}: ${product.model}`);
-    if (product.year) addFact(`${getExtraFieldLabel('year', product.category)}: ${product.year}`);
-    if (product.color && factPool.length < 3) {
-      addFact(`${getExtraFieldLabel('color', product.category)}: ${product.color}`);
-    }
-  } else {
-    if (product.brand) addFact(`Marca: ${product.brand}`);
-    if (product.model) addFact(`Modelo: ${product.model}`);
-    if (product.year) addFact(`Ano: ${product.year}`);
-    if (product.color && factPool.length < 3) addFact(`Cor: ${product.color}`);
-  }
-
-  if (!isEstate && parkingLabel) {
-    if (factPool.length < 3) {
-      addFact(parkingLabel);
-    } else if (!factPool.includes(parkingLabel)) {
-      factPool[factPool.length - 1] = parkingLabel;
-    }
-  }
-
-  const maxFacts = 5;
-  return factPool.slice(0, maxFacts);
-};
-
-const ProductImageGallery = ({ images = [], imageKinds = [], alt = '', productId, galleryKey }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const pointerStartX = useRef(null);
-  const clickBlocked = useRef(false);
-
-  const imageSources = images.length ? images : [IMG_PLACEHOLDER];
-  const totalImages = imageSources.length;
-  const currentImage = imageSources[currentIndex] ?? IMG_PLACEHOLDER;
-  const currentKind = imageKinds[currentIndex] ?? null;
-
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [productId, galleryKey]);
-
-  useEffect(() => {
-    setCurrentIndex((prev) => Math.min(prev, totalImages - 1));
-  }, [totalImages]);
-
-  const wrapIndex = useCallback(
-    (value) => {
-      if (!totalImages) return 0;
-      const next = value % totalImages;
-      return next < 0 ? next + totalImages : next;
-    },
-    [totalImages]
-  );
-
-  const goNext = useCallback(() => {
-    setCurrentIndex((prev) => wrapIndex(prev + 1));
-  }, [wrapIndex]);
-
-  const goPrev = useCallback(() => {
-    setCurrentIndex((prev) => wrapIndex(prev - 1));
-  }, [wrapIndex]);
-
-  const captureStart = useCallback((clientX) => {
-    if (clientX === null || clientX === undefined) return;
-    pointerStartX.current = clientX;
-  }, []);
-
-  const handleSwipeEnd = useCallback(
-    (clientX) => {
-      if (pointerStartX.current === null || clientX === null || clientX === undefined) {
-        return;
-      }
-      const delta = clientX - pointerStartX.current;
-      pointerStartX.current = null;
-      if (Math.abs(delta) < 25) return;
-      clickBlocked.current = true;
-      if (delta < 0) {
-        goNext();
-      } else {
-        goPrev();
-      }
-    },
-    [goNext, goPrev]
-  );
-
-  const handlePointerDown = useCallback(
-    (event) => {
-      if (event?.pointerType === 'mouse' || event?.pointerType === 'pen') {
-        event.preventDefault();
-      }
-      captureStart(event.clientX);
-    },
-    [captureStart]
-  );
-
-  const handlePointerUp = useCallback(
-    (event) => {
-      handleSwipeEnd(event.clientX);
-    },
-    [handleSwipeEnd]
-  );
-
-  const handleTouchStart = useCallback(
-    (event) => {
-      const touch = event.touches?.[0];
-      if (touch) {
-        captureStart(touch.clientX);
-      }
-    },
-    [captureStart]
-  );
-
-  const handleTouchEnd = useCallback(
-    (event) => {
-      const touch = event.changedTouches?.[0];
-      if (touch) {
-        handleSwipeEnd(touch.clientX);
-      }
-    },
-    [handleSwipeEnd]
-  );
-
-  const handlePointerLeave = useCallback(() => {
-    pointerStartX.current = null;
-  }, []);
-
-  const handleClick = useCallback((event) => {
-    if (!clickBlocked.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-    clickBlocked.current = false;
-  }, []);
-
-  return (
-    <div
-      className="home-card__media-gallery prevent-drag"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onClick={handleClick}
-    >
-      <div
-        key={currentImage}
-        role="img"
-        aria-label={alt || 'Foto do anúncio'}
-        className="home-card__image w-full h-full object-cover home-card__image-bg"
-        style={{
-          backgroundImage: `url(${JSON.stringify(currentImage)})`
-        }}
-      />
-      {currentKind === IMAGE_KIND.ILLUSTRATIVE && (
-        <span className="home-card__illustrative-badge">
-          {IMAGE_KIND_BADGE_LABEL}
-        </span>
-      )}
-
-      {totalImages > 1 && (
-        <>
-          <button
-            type="button"
-            className="home-card__media-arrow home-card__media-arrow--left"
-            aria-label="Foto anterior"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              goPrev();
-            }}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="home-card__media-arrow home-card__media-arrow--right"
-            aria-label="Próxima foto"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              goNext();
-            }}
-          >
-            ›
-          </button>
-          <div className="home-card__media-indicator" aria-hidden="true">
-            {imageSources.map((_, index) => (
-              <span
-                key={index}
-                className={`home-card__media-indicator-dot ${
-                  index === currentIndex ? 'is-active' : ''
-                }`}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 const normalizeCenter = (candidate) => {
   if (!candidate) return null;
@@ -1426,13 +721,6 @@ const buildQuickCategoryCounts = (list = [], activeCountry) => {
 export default function Home() {
   const { token, user } = useContext(AuthContext);
   const promptLogin = useLoginPrompt();
-  const requireAuth = useCallback(
-    (message) => {
-      if (token) return true;
-      return promptLogin(message);
-    },
-    [promptLogin, token]
-  );
   const {
     lat: detectedLat,
     lng: detectedLng,
@@ -1462,7 +750,6 @@ export default function Home() {
     () => normalizedMarketCountry || DEFAULT_COUNTRY,
     [normalizedMarketCountry]
   );
-  const homeLocale = useMemo(() => locale || 'pt-BR', [locale]);
   const [geoScope, setGeoScope] = useState(() =>
     initialHomeSnapshot?.geoScope || { type: 'country', country: preferredCountry }
   );
@@ -1489,7 +776,6 @@ export default function Home() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState(false);
   const [drawerTab, setDrawerTab] = useState('favorites'); // 'favorites' | 'orders'
-  const [activePhoneActions, setActivePhoneActions] = useState(null);
 
   const {
     orders: buyerOrders,
@@ -1558,9 +844,6 @@ export default function Home() {
     writeStoredMapCenter(center);
   }, []);
   const mapOpenRef = useRef(null);
-  const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
-  const [pulseTarget, setPulseTarget] = useState(null);
-  const pulseTimerRef = useRef(null);
 
   // pedidos confirmados do comprador
   const [searchSummary, setSearchSummary] = useState(() => initialHomeSnapshot?.searchSummary ?? null);
@@ -1825,14 +1108,6 @@ export default function Home() {
     };
   }, [token]);
 
-  useEffect(() => {
-    return () => {
-      if (pulseTimerRef.current) {
-        clearTimeout(pulseTimerRef.current);
-      }
-    };
-  }, []);
-
   // NOVO: carregar pedidos confirmados do comprador
   const openFavoritesDrawer = useCallback(() => {
     setDrawerTab('favorites');
@@ -1843,52 +1118,6 @@ export default function Home() {
   const registerClick = useCallback((productId) => {
     if (!productId) return;
     api.put(`/products/${productId}/click`).catch(() => {});
-  }, []);
-
-  const handleOpenConversation = useCallback(
-    (event, product, chatMeta) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!product?.id) return;
-      if (!requireAuth('Faça login para conversar com o vendedor.')) return;
-      const sellerId = chatMeta?.sellerId;
-      if (sellerId && user?.id && Number(user.id) === Number(sellerId)) {
-        toast.error('Você é o vendedor deste anúncio.');
-        return;
-      }
-      const messageLink = buildProductMessageLink({
-        product,
-        sellerId,
-        sellerName: chatMeta?.sellerName,
-        productImage: chatMeta?.productImage,
-        productPrice: chatMeta?.productPrice,
-        productLocation: chatMeta?.productLocation
-      });
-      navigate(messageLink);
-    },
-    [navigate, requireAuth, user?.id]
-  );
-
-  const handleOpenPhoneActions = useCallback((event, product, phoneActions) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!phoneActions || !product?.id) return;
-    const productUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/product/${product.id}`
-        : '';
-    const title = product?.title || 'Produto TempleSale';
-    const whatsappContactLink = `${phoneActions.whatsappHref}?text=${encodeURIComponent(
-      `Olá! Tenho interesse no produto: ${title}${productUrl ? ` - ${productUrl}` : ''}`
-    )}`;
-    setActivePhoneActions({
-      phoneActions,
-      whatsappContactLink
-    });
-  }, []);
-
-  const handleClosePhoneActions = useCallback(() => {
-    setActivePhoneActions(null);
   }, []);
 
   const registerView = useCallback(async (productId) => {
@@ -2215,18 +1444,6 @@ export default function Home() {
     activeFilters.push({ id: 'free', label: 'Somente gratuitos' });
   }
 
-  const triggerFavoritePulse = useCallback((id) => {
-    if (!id) return;
-    if (pulseTimerRef.current) {
-      clearTimeout(pulseTimerRef.current);
-    }
-    setPulseTarget(id);
-    pulseTimerRef.current = setTimeout(() => {
-      setPulseTarget(null);
-      pulseTimerRef.current = null;
-    }, 520);
-  }, []);
-
   function toggleFavorite(id) {
     if (!id) return;
     if (!token) {
@@ -2278,7 +1495,6 @@ export default function Home() {
             ? 'Produto adicionado aos favoritos.'
             : 'Produto removido dos favoritos.'
         );
-        triggerFavoritePulse(targetId);
       })
     
       .catch((err) => {
@@ -2330,73 +1546,7 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDrawer]);
 
-  const heroSubtitle = token
-    ? '.'
-    : 'Crie sua conta para favoritar produtos, falar com vendedores e confirmar compras.';
-
-  const sellerAlertLabel =
-    token && buyerOrders.length
-      ? `${buyerOrders.length} compra${buyerOrders.length > 1 ? 's' : ''} confirmada${buyerOrders.length > 1 ? 's' : ''
-        }`
-      : '';
-
-  const favoriteCountLabel =
-    favoriteIds.length === 1
-      ? '1 favorito'
-      : `${favoriteIds.length} favoritos`;
-
   const hasProfile = Boolean(token);
-  const phoneActionsPortal =
-    activePhoneActions && typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-4 pt-10 md:items-center"
-            onClick={handleClosePhoneActions}
-          >
-            <div
-              className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <header className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Contato do vendedor
-                  </p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {activePhoneActions.phoneActions.display}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClosePhoneActions}
-                  className="rounded-full bg-gray-100 p-2 text-gray-500 transition hover:bg-gray-200"
-                  aria-label="Fechar"
-                >
-                  ×
-                </button>
-              </header>
-
-              <div className="mt-4 grid gap-2">
-                <a
-                  href={activePhoneActions.phoneActions.telHref}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
-                >
-                  <PhoneCall size={18} /> Ligar agora
-                </a>
-                <a
-                  href={activePhoneActions.whatsappContactLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                >
-                  <MessageCircle size={18} /> WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      : null;
 
   let content;
 
@@ -2476,7 +1626,7 @@ export default function Home() {
             <p>Experimente ajustar os filtros ou explorar outras localidades no mapa.</p>
           </div>
         ) : (
-          <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px sm:gap-1 w-full">
+          <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 w-full">
             {displayedProducts.map((product) => {
               const productImageEntries = buildProductImageEntries(product);
               const productImages = productImageEntries.length
@@ -2486,192 +1636,27 @@ export default function Home() {
                 ? productImageEntries.map((entry) => entry.kind)
                 : [null];
               const galleryKey = productImages.join('|');
-              const freeTag = isProductFree(product);
-              const productId = normalizeId(product.id);
-              const isFavorited = favoriteSet.has(productId);
-              const isPulsed = pulseTarget === productId;
-              const likeCount = getProductLikes(product);
               const countryLabel = resolveCountryName(product.country);
               const locationParts = [product.city, countryLabel].filter(Boolean);
-              const cardFacts = pickProductFacts(product);
-              const postTimestamp =
-                product.posted_at ||
-                product.postedAt ||
-                product.postedAtDate ||
-                product.created_at ||
-                product.updated_at ||
-                '';
-              const postedAtLabel = formatPostDate(postTimestamp, homeLocale);
               const priceLabel = getProductPriceLabel(product);
-              const sellerId =
-                product.user_id ?? product.userId ?? product.seller_id ?? product.sellerId;
-              const sellerName =
-                product.seller_name ?? product.sellerName ?? product.username ?? '';
-              const phoneActions = getPhoneActions(
-                product.seller_phone ?? product.sellerPhone ?? ''
-              );
-              const showChatAction = true;
-              const showPhoneAction = Boolean(phoneActions);
-              const showContactBar = showChatAction || showPhoneAction;
-              const contactPriceLabel = getProductPriceLabel({
-                price: product?.price,
-                country: product?.country
-              });
-              const contactLocationLabel = [product.city, product.state, product.country]
-                .filter(Boolean)
-                .join(', ');
-              const primaryImage = productImageEntries[0]?.url || product.image_url || '';
-              const chatMeta = {
-                sellerId,
-                sellerName,
-                productImage: primaryImage,
-                productPrice: contactPriceLabel,
-                productLocation: contactLocationLabel
-              };
-              
+              const locationLabel = locationParts.join(' • ');
 
               return (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    data-product-id={product.id}
-                    onClick={() => registerClick(product.id)}
-                    draggable="false"
-                    onDragStart={(event) => event.preventDefault()}
-                    className="home-card block relative w-full h-full group overflow-hidden"
->
-                    <div className="home-card__media w-full aspect-square relative overflow-hidden">
-                      <ProductImageGallery
-                        images={productImages}
-                        imageKinds={productImageKinds}
-                        alt={product.title}
-                        productId={product.id}
-                        galleryKey={galleryKey}
-                      />
-
-                      {freeTag && (
-                      <span className="home-card__badge absolute top-2 left-2 bg-green-600 text-white text-[11px] px-2 py-[2px] rounded-md shadow">
-                        Grátis
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      aria-label={
-                        isFavorited
-                          ? 'Remover dos favoritos'
-                          : 'Adicionar aos favoritos'
-                      }
-                      aria-pressed={isFavorited}
-                      disabled={pendingFavorite === product.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFavorite(product.id);
-                      }}
-                      className={`home-card__likes-badge ${
-                        pendingFavorite === product.id ? 'is-loading' : ''
-                      } ${isFavorited ? 'is-active' : ''} ${isPulsed ? 'is-pulsed' : ''}`}
-                    >
-                      <span className="home-card__likes-icon" aria-hidden="true">♥</span>
-                      <span className="home-card__metric-value">{likeCount}</span>
-                    </button>
-                  </div>
-
-                    <div className="home-card__content">
-                      <div className="home-card__title-bar" aria-label="Nome do produto">
-                        <p className="home-card__title text-sm font-semibold text-gray-800 line-clamp-2">
-                          {product.title}
-                        </p>
-                      </div>
-                      <p
-                        className={`home-card__price text-base font-bold ${
-                          freeTag ? 'text-green-600' : 'text-gray-900'
-                        }`}
-                      >
-                        {priceLabel}
-                      </p>
-                      {product.description && (() => {
-                        const description = String(product.description || '').trim();
-                        if (!description) return null;
-                        const showMore = description.length > 200;
-                        return (
-                          <p className="home-card__description home-card__description--clamped">
-                            {description}
-                            {showMore && (
-                              <span className="home-card__description-more">... ver mais</span>
-                            )}
-                          </p>
-                        );
-                      })()}
-                      {cardFacts.length > 0 && (
-                        <div className="home-card__facts">
-                          {cardFacts.map((fact, index) => {
-                            const presentation = getFactPresentation(fact, product);
-                            return (
-                              <span
-                                key={`${fact}-${index}`}
-                                className="home-card__fact-pill"
-                                title={presentation.ariaLabel || undefined}
-                              >
-                                {presentation.icon && (
-                                  <span className="home-card__fact-icon" aria-hidden="true">
-                                    {renderFactIcon(presentation.icon)}
-                                  </span>
-                                )}
-                                <span className="home-card__fact-text">{presentation.label}</span>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
-                    <div className="home-card__meta-row">
-                      <p className="home-card__location text-xs text-gray-500">
-                        {locationParts.join(' • ')}
-                      </p>
-                      {postedAtLabel && (
-                        <span className="home-card__date-label text-xs font-semibold text-gray-400">
-                          {postedAtLabel}
-                        </span>
-                      )}
-                    </div>
-                    {showContactBar && (
-                      <div className="home-card__contact" aria-label="Contato com vendedor">
-                        {/* Contato rapido com vendedor */}
-                        {showChatAction && (
-                          <button
-                            type="button"
-                            className="home-card__contact-btn home-card__contact-btn--chat"
-                            onClick={(event) =>
-                              handleOpenConversation(event, product, chatMeta)
-                            }
-                          >
-                            <MessageCircle size={14} /> Contatar
-                          </button>
-                        )}
-                        {showPhoneAction && (
-                          <button
-                            type="button"
-                            className="home-card__contact-btn home-card__contact-btn--phone"
-                            onClick={(event) =>
-                              handleOpenPhoneActions(event, product, phoneActions)
-                            }
-                          >
-                            <PhoneCall size={14} /> Telefone
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                  </div>
-                </Link>
+                <ProductCardHome
+                  key={product.id}
+                  product={product}
+                  images={productImages}
+                  imageKinds={productImageKinds}
+                  galleryKey={galleryKey}
+                  priceLabel={priceLabel}
+                  locationLabel={locationLabel}
+                  onClick={() => registerClick(product.id)}
+                />
               );
             })}
           </div>
         )}
       </section>
-
-      {phoneActionsPortal}
 
       <AnimatePresence>
         {activeDrawer && (

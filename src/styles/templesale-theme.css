@@ -879,49 +879,48 @@ body.templesale-dropdown-open .home-search-address-panel {
 }
 
 .home-card {
-  border: 1px solid var(--temple-border);
-  background-image: linear-gradient(180deg, rgba(12, 10, 9, 0.75), rgba(12, 10, 9, 0.45)),
-    url('/novolayout/texture-2.jpg');
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(214, 182, 118, 0.24);
+  background: #ffffff;
+  box-shadow: 0 18px 40px -34px rgba(12, 10, 9, 0.45);
+  border-radius: 12px;
 }
 
 .home-card__media-gallery {
-  background: rgba(10, 9, 8, 0.65);
+  background: #ffffff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .home-card__title-bar {
-  background: rgba(12, 10, 9, 0.9);
-  border-color: rgba(214, 182, 118, 0.35);
-  padding: 0.6rem 0.9rem;
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
 }
 
 .home-card__title {
   font-family: var(--temple-display);
-  color: #f7efe0;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  color: #1a1d21;
+  font-size: 0.95rem;
+  letter-spacing: 0.015em;
+  text-transform: none;
 }
 
 .home-card__content {
-  background-image: linear-gradient(180deg, rgba(12, 10, 9, 0.78), rgba(12, 10, 9, 0.55)),
-    url('/novolayout/texture-3.jpg');
-  background-size: cover;
-  background-position: center;
+  background: #ffffff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .home-card__price {
-  color: var(--temple-gold);
+  color: #b8862b;
   text-shadow: none;
   font-size: 1.1rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.015em;
   font-weight: 700;
 }
 
 .home-card__price.is-free {
-  color: #e5d4a1;
+  color: #2f855a;
 }
 
 .home-card__facts {
@@ -941,60 +940,57 @@ body.templesale-dropdown-open .home-search-address-panel {
 
 .home-card__location,
 .home-card__date-label {
-  color: var(--temple-muted);
+  color: #6b7280;
 }
 
 .home-card__favorite {
-  background: rgba(10, 9, 8, 0.75);
+  background: rgba(255, 255, 255, 0.9);
   color: rgba(214, 182, 118, 0.55);
-  border: 1px solid rgba(214, 182, 118, 0.35);
+  border: 1px solid rgba(214, 182, 118, 0.25);
 }
 
 .home-card__favorite:hover {
   color: var(--temple-gold);
-  background: rgba(12, 10, 9, 0.9);
-  box-shadow: 0 12px 24px -14px rgba(214, 182, 118, 0.6);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.45);
 }
 
 .home-card__favorite.is-active {
   color: var(--temple-gold);
-  background: rgba(214, 182, 118, 0.15);
-  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.6);
+  background: rgba(214, 182, 118, 0.12);
+  box-shadow: 0 12px 24px -18px rgba(214, 182, 118, 0.45);
 }
 
 .home-card__likes-badge {
-  background: rgba(10, 9, 8, 0.7);
-  color: var(--temple-text);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f1f1f;
   border: 1px solid rgba(214, 182, 118, 0.25);
 }
 
 .home-card__likes-badge:hover:not(.is-loading) {
-  background: rgba(12, 10, 9, 0.85);
-  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.45);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 12px 24px -18px rgba(214, 182, 118, 0.4);
 }
 
 .home-card__likes-badge.is-active {
-  background: rgba(214, 182, 118, 0.18);
-  box-shadow: 0 12px 24px -16px rgba(214, 182, 118, 0.6);
+  background: rgba(214, 182, 118, 0.15);
+  box-shadow: 0 12px 24px -18px rgba(214, 182, 118, 0.55);
 }
 
 .home-card__likes-icon {
-  color: var(--temple-gold);
+  color: #d97706;
 }
 
 .home-grid-section {
-  background-image: linear-gradient(180deg, rgba(10, 9, 8, 0.8), rgba(10, 9, 8, 0.6)),
-    url('/novolayout/texture-2.jpg');
-  background-size: cover;
-  background-position: center;
-  padding: 1rem 0.75rem 1.5rem;
-  border-radius: 16px;
-  border: 1px solid rgba(214, 182, 118, 0.2);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
 }
 
 .home-grid {
-  gap: 0.75rem !important;
+  gap: 1.5rem !important;
 }
 
 .product-detail-card,
