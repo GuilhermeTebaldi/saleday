@@ -1,10 +1,17 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
-import { AUTH0_DOMAIN, AUTH0_ENABLED, AUTH0_REDIRECT_URI } from '../config/auth0Config.js';
+import {
+  AUTH0_AUDIENCE,
+  AUTH0_DOMAIN,
+  AUTH0_ENABLED,
+  AUTH0_REDIRECT_URI,
+  AUTH0_SCOPE
+} from '../config/auth0Config.js';
 import { normalizeCountryCode } from '../data/countries.js';
 import { detectCountryFromTimezone } from '../utils/timezoneCountry.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
+import { getFreshAuth0IdToken } from '../utils/auth0Tokens.js';
 
 const REMEMBER_TOKEN_KEY = 'templesale.rememberToken';
 const SESSION_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -106,6 +113,7 @@ function Auth0SessionSync({
   const {
     isAuthenticated,
     isLoading: auth0Loading,
+    getAccessTokenSilently,
     getIdTokenClaims,
     logout: auth0Logout
   } = useAuth0();
@@ -144,8 +152,16 @@ function Auth0SessionSync({
 
     const exchangeToken = async () => {
       try {
+        const idToken = await getFreshAuth0IdToken({
+          getAccessTokenSilently,
+          getIdTokenClaims,
+          authorizationParams: { audience: AUTH0_AUDIENCE, scope: AUTH0_SCOPE },
+          onLoginRequired: () =>
+            auth0Logout?.({ logoutParams: { returnTo: AUTH0_REDIRECT_URI } })
+        });
+
         const claims = await getIdTokenClaims();
-        const idToken = claims?.__raw;
+
         if (!idToken) {
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
@@ -211,6 +227,7 @@ function Auth0SessionSync({
     };
   }, [
     auth0Loading,
+    getAccessTokenSilently,
     getIdTokenClaims,
     isAuthenticated,
     login,

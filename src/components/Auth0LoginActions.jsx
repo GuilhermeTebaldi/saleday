@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import api from '../api/api.js';
 import { AUTH0_AUDIENCE, AUTH0_SCOPE } from '../config/auth0Config.js';
+import { getFreshAuth0IdToken } from '../utils/auth0Tokens.js';
 import { clearSessionExpired, isSessionExpired } from '../utils/sessionExpired.js';
 
 export default function Auth0LoginActions({ onLoginSuccess, onLoginError, renderButtons, className = '' }) {
   const {
     loginWithRedirect,
+    getAccessTokenSilently,
     getIdTokenClaims,
     isAuthenticated,
     isLoading,
@@ -42,11 +44,18 @@ export default function Auth0LoginActions({ onLoginSuccess, onLoginError, render
     const exchangeToken = async () => {
       setSyncing(true);
       try {
+        const idToken = await getFreshAuth0IdToken({
+          getAccessTokenSilently,
+          getIdTokenClaims,
+          authorizationParams: { audience: AUTH0_AUDIENCE, scope: AUTH0_SCOPE },
+          onLoginRequired: () => loginWithRedirect({ authorizationParams: { audience: AUTH0_AUDIENCE, scope: AUTH0_SCOPE } })
+        });
+
         const claims = await getIdTokenClaims();
+
         if (claims?.email_verified === false) {
           throw new Error('Confirme o e-mail no Auth0 antes de continuar.');
         }
-        const idToken = claims?.__raw;
         if (!idToken) {
           throw new Error('Não foi possível recuperar o token do Auth0.');
         }
