@@ -1,0 +1,18 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.9"/>
+      <stop offset="35%" stop-color="#1e293b" stop-opacity="0.92"/>
+      <stop offset="70%" stop-color="#f59e0b" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="goldGlow" cx="85%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="520" fill="url(#gold)"/>
+  <circle cx="1280" cy="150" r="360" fill="url(#goldGlow)"/>
+  <path d="M0 350 C300 300 520 420 820 360 C1100 300 1360 380 1600 330 L1600 520 L0 520 Z" fill="rgba(251, 191, 36, 0.22)"/>
+  <path d="M0 400 C260 350 520 440 820 400 C1140 360 1380 430 1600 380 L1600 520 L0 520 Z" fill="rgba(245, 158, 11, 0.25)"/>
+</svg>

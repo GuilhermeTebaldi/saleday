@@ -9,7 +9,7 @@ import { LocaleContext } from '../context/LocaleContext.jsx';
 import { asStars } from '../utils/rating.js';
 import { getProductPriceLabel } from '../utils/product.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
-import { Share2 } from 'lucide-react';
+import { Share2, MoreHorizontal } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import SellerProductGrid from '../components/SellerProductGrid.jsx';
 import OwnerProductMenu from '../components/OwnerProductMenu.jsx';
@@ -86,6 +86,158 @@ const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0
     }
   });
 
+const COVER_THEMES = [
+  {
+    id: 'aurora',
+    name: 'Aurora azul',
+    gradient: 'linear-gradient(125deg, #0ea5e9 0%, #2563eb 42%, #0f172a 100%)',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0'
+  },
+  {
+    id: 'sunset',
+    name: 'Pôr do sol',
+    gradient: 'linear-gradient(120deg, #fb923c 0%, #ef4444 45%, #7c2d12 100%)',
+    foreground: '#0f172a',
+    muted: '#0b172b'
+  },
+  {
+    id: 'forest',
+    name: 'Mata tropical',
+    gradient: 'linear-gradient(118deg, #0f766e 0%, #22c55e 48%, #bef264 100%)',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0'
+  },
+  {
+    id: 'midnight',
+    name: 'Noite urbana',
+    gradient: 'linear-gradient(135deg, #0f172a 0%, #1f2937 55%, #020617 100%)',
+    foreground: '#f8fafc',
+    muted: '#cbd5e1'
+  },
+  {
+    id: 'sand',
+    name: 'Areia e sol',
+    gradient: 'linear-gradient(120deg, #fbbf24 0%, #f97316 45%, #f59e0b 100%)',
+    foreground: '#0f172a',
+    muted: '#111827'
+  },
+  {
+    id: 'oceano',
+    name: 'Oceano claro',
+    gradient: 'linear-gradient(120deg, #67e8f9 0%, #22d3ee 35%, #0ea5e9 70%, #0284c7 100%)',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0'
+  },
+  {
+    id: 'magenta',
+    name: 'Magenta neon',
+    gradient: 'linear-gradient(120deg, #111827 0%, #6d28d9 40%, #db2777 80%)',
+    foreground: '#fdf2f8',
+    muted: '#e9d5ff'
+  },
+  {
+    id: 'grafite',
+    name: 'Grafite',
+    gradient: 'linear-gradient(125deg, #111827 0%, #1f2937 45%, #374151 100%)',
+    foreground: '#e5e7eb',
+    muted: '#cbd5e1'
+  },
+  {
+    id: 'candy',
+    name: 'Candy',
+    gradient: 'linear-gradient(125deg, #fce7f3 0%, #a5f3fc 35%, #c4b5fd 70%, #fcd34d 100%)',
+    foreground: '#0f172a',
+    muted: '#0b172b'
+  },
+  {
+    id: 'gold-image',
+    name: 'Dourado (img)',
+    image: '/modelosdecapa/modelo-dourado.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#f8fafc'
+  },
+  {
+    id: 'gold-light-image',
+    name: 'Dourado claro (img)',
+    image: '/modelosdecapa/modelo-dourado-claro.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#f8fafc'
+  },
+  {
+    id: 'safira-image',
+    name: 'Safira (img)',
+    image: '/modelosdecapa/modelo-safira.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0'
+  },
+  {
+    id: 'sunset-image',
+    name: 'Pôr do sol (img)',
+    image: '/modelosdecapa/modelo-por-do-sol.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#f8fafc'
+  },
+  {
+    id: 'carbono-image',
+    name: 'Carbono (img)',
+    image: '/modelosdecapa/modelo-carbono.svg',
+    foreground: '#e5e7eb',
+    muted: '#cbd5e1'
+  },
+  {
+    id: 'forest-image',
+    name: 'Mata tropical (img)',
+    image: '/modelosdecapa/modelo-verde.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0'
+  },
+];
+
+const DEFAULT_COVER_THEME = 'forest';
+
+const resolveCoverTheme = (themeId) =>
+  COVER_THEMES.find((theme) => theme.id === themeId) ||
+  COVER_THEMES.find((theme) => theme.id === DEFAULT_COVER_THEME) ||
+  COVER_THEMES[0];
+
+const FALLBACK_COVER_TEMPLATES = [
+  { id: 'modelo-verde', filename: 'modelo-verde.svg', url: '/modelosdecapa/modelo-verde.svg' },
+  { id: 'modelo-dourado', filename: 'modelo-dourado.svg', url: '/modelosdecapa/modelo-dourado.svg' },
+  { id: 'modelo-dourado-claro', filename: 'modelo-dourado-claro.svg', url: '/modelosdecapa/modelo-dourado-claro.svg' },
+  { id: 'modelo-safira', filename: 'modelo-safira.svg', url: '/modelosdecapa/modelo-safira.svg' },
+  { id: 'modelo-por-do-sol', filename: 'modelo-por-do-sol.svg', url: '/modelosdecapa/modelo-por-do-sol.svg' },
+  { id: 'modelo-carbono', filename: 'modelo-carbono.svg', url: '/modelosdecapa/modelo-carbono.svg' }
+];
+
+const buildCoverStyle = (imageUrl, themeId) => {
+  const theme = resolveCoverTheme(themeId);
+  const img = imageUrl || theme?.image || '';
+  const gradient = theme?.gradient || COVER_THEMES[0].gradient;
+  if (img) {
+    return {
+      backgroundImage: `linear-gradient(120deg, rgba(10, 18, 38, 0.7), rgba(8, 47, 73, 0.4)), url('${img}')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      opacity: 1
+    };
+  }
+  return {
+    backgroundImage: gradient,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    opacity: 0.96
+  };
+};
+
 function getInitial(name) {
   if (!name) return 'U';
   const c = name.trim().charAt(0);
@@ -120,6 +272,7 @@ export default function SellerProfile() {
   const [deletingProductId, setDeletingProductId] = useState(null);
   const [companyMapOpen, setCompanyMapOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -141,6 +294,34 @@ export default function SellerProfile() {
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const avatarMenuRef = useRef(null);
   const avatarFileInputRef = useRef(null);
+  const coverFileInputRef = useRef(null);
+  const [coverEditorOpen, setCoverEditorOpen] = useState(false);
+  const [coverTemplates, setCoverTemplates] = useState([]);
+  const [coverTemplatesLoading, setCoverTemplatesLoading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+  const mappedCoverTemplates = useMemo(
+    () =>
+      (coverTemplates || []).map((item, index) => ({
+        id: item.id || item.filename || `template-${index}`,
+        name: item.filename || item.name || 'Modelo',
+        image: item.url
+      })),
+    [coverTemplates]
+  );
+  const themeOptions = useMemo(
+    () => [...COVER_THEMES, ...mappedCoverTemplates],
+    [mappedCoverTemplates]
+  );
+
+  useEffect(() => {
+    const update = () => setIsDesktop(window.innerWidth >= 768);
+    if (typeof window === 'undefined') return undefined;
+    window.addEventListener('resize', update);
+    update();
+    return () => window.removeEventListener('resize', update);
+  }, []);
   const {
     isOpen: isAvatarViewerOpen,
     src: avatarViewerSrc,
@@ -220,6 +401,121 @@ export default function SellerProfile() {
       }
     },
     [isSelf, token, reloadSellerProfile]
+  );
+
+  const updateCover = useCallback(
+    async ({ theme, templateUrl, file, removeImage = false }) => {
+      if (!isSelf) return;
+      if (!requireAuth('Faça login para personalizar a capa.')) return;
+      setCoverUploading(true);
+      try {
+        const payload = new FormData();
+        if (theme) payload.append('cover_theme', theme);
+        if (templateUrl) payload.append('cover_template', templateUrl);
+        if (removeImage) payload.append('removeCover', 'true');
+        if (file) payload.append('cover', file);
+
+        const response = await api.put('/users/me', payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const updated = response.data?.data;
+        if (updated) {
+          setSeller((prev) => ({ ...(prev || {}), ...updated }));
+          toast.success('Capa atualizada.');
+        } else {
+          toast.success('Preferências salvas.');
+        }
+        setCoverEditorOpen(false);
+      } catch (err) {
+        const msg = err?.response?.data?.message || 'Erro ao atualizar capa.';
+        toast.error(msg);
+      } finally {
+        setCoverUploading(false);
+        if (coverFileInputRef.current) {
+          coverFileInputRef.current.value = '';
+        }
+        await reloadSellerProfile();
+      }
+    },
+    [isSelf, requireAuth, token, setSeller, reloadSellerProfile]
+  );
+
+  const handleApplyCoverTheme = useCallback(
+    (themeId) => updateCover({ theme: themeId, removeImage: true }),
+    [updateCover]
+  );
+
+  const handleSelectCoverTemplate = useCallback(
+    (theme) => {
+      const templateUrl = typeof theme === 'string' ? theme : theme?.image;
+      const themeId = typeof theme === 'object' ? theme.id : undefined;
+      return updateCover({ templateUrl, theme: themeId });
+    },
+    [updateCover]
+  );
+
+  const handleCoverFileChange = useCallback(
+    async (event) => {
+      if (!isSelf) return;
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type?.startsWith('image/')) {
+        toast.error('Selecione um arquivo de imagem válido.');
+        return;
+      }
+      const maxBytes = 4 * 1024 * 1024;
+      let processed = file;
+      if (file.size > maxBytes) {
+        try {
+          processed = await compressImageToMaxSize(file, maxBytes, 0.5);
+          if (processed.size > maxBytes) {
+            toast.error('A imagem de capa precisa ter até 4MB.');
+            return;
+          }
+        } catch (err) {
+          toast.error('Erro ao processar a imagem. Tente outra foto.');
+          return;
+        }
+      }
+      await updateCover({ file: processed });
+    },
+    [isSelf, updateCover]
+  );
+
+  const handleRemoveCover = useCallback(
+    () => updateCover({ removeImage: true }),
+    [updateCover]
+  );
+
+  // dados de capa e avatar (sempre calculados para manter ordem de hooks)
+  const rawAvatar =
+    seller?.profile_image_url ||
+    seller?.avatar_url ||
+    seller?.profile_image ||
+    seller?.avatar ||
+    '';
+  const avatarUrl = rawAvatar ? makeAbsolute(rawAvatar) : '';
+  const rawCoverImage = seller?.cover_image_url || seller?.cover_url || '';
+  const coverImageUrl = rawCoverImage ? makeAbsolute(rawCoverImage) : '';
+  const coverThemeId = seller?.cover_theme || DEFAULT_COVER_THEME;
+  const coverStyle = useMemo(
+    () => buildCoverStyle(coverImageUrl, coverThemeId),
+    [coverImageUrl, coverThemeId]
+  );
+  const activeTheme = useMemo(() => resolveCoverTheme(coverThemeId), [coverThemeId]);
+  const coverVars = useMemo(
+    () =>
+      !isDesktop
+        ? undefined
+        : {
+            '--cover-foreground': activeTheme?.foreground || '#f8fafc',
+            '--cover-foreground-muted': activeTheme?.muted || '#e2e8f0',
+            '--cover-card-bg': activeTheme?.cardBg || 'transparent',
+            '--cover-card-border': activeTheme?.cardBorder || 'transparent',
+            '--cover-chip-bg': activeTheme?.chipBg || 'rgba(255, 255, 255, 0.92)',
+            '--cover-chip-text': activeTheme?.chipText || '#0f172a'
+          },
+    [activeTheme, isDesktop]
   );
 
   // métricas vindas direto do seller
@@ -362,6 +658,12 @@ export default function SellerProfile() {
   }, [isSelf, showAvatarMenu]);
 
   useEffect(() => {
+    if (!isSelf && coverEditorOpen) {
+      setCoverEditorOpen(false);
+    }
+  }, [coverEditorOpen, isSelf]);
+
+  useEffect(() => {
     if (!shareMenuOpen || typeof document === 'undefined') return undefined;
     const handleClickOutside = (event) => {
       if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
@@ -371,6 +673,30 @@ export default function SellerProfile() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [shareMenuOpen]);
+
+  useEffect(() => {
+    if (!coverEditorOpen) return undefined;
+    let active = true;
+    setCoverTemplatesLoading(true);
+    api
+      .get('/uploads/covers/templates')
+      .then((res) => {
+        if (!active) return;
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        const safeList = list.length > 0 ? list : FALLBACK_COVER_TEMPLATES;
+        setCoverTemplates(safeList);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCoverTemplates(FALLBACK_COVER_TEMPLATES);
+      })
+      .finally(() => {
+        if (active) setCoverTemplatesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [coverEditorOpen]);
 
   // enviar review (aqui continua chamando POST /users/:id/reviews
   // se seu backend também não tem isso ainda você pode remover todo esse bloco e o modal)
@@ -529,15 +855,6 @@ export default function SellerProfile() {
       </section>
     );
   }
-
-  // avatar
-  const rawAvatar =
-    seller.profile_image_url ||
-    seller.avatar_url ||
-    seller.profile_image ||
-    seller.avatar ||
-    '';
-  const avatarUrl = rawAvatar ? makeAbsolute(rawAvatar) : '';
 
   const initials = getInitial(seller.username || seller.email || 'U');
   const city = seller.city || '';
@@ -699,12 +1016,41 @@ export default function SellerProfile() {
         alt={avatarViewerAlt}
         onClose={closeAvatarViewer}
       />
+      <input
+        ref={coverFileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleCoverFileChange}
+      />
       <section className="ig-wrap ig-wrap--wide min-h-[calc(100vh-64px)] bg-gradient-to-b from-slate-50 to-slate-100 py-6 px-3">
         <CloseBackButton />
-        <div className="seller-card max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative">
-          <div className="seller-hero__cover" aria-hidden="true" />
+        <div
+          className={`seller-card max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative ${
+            isDesktop ? 'seller-card--desktop' : ''
+          }`}
+          style={coverVars}
+        >
+          <div
+            className={`seller-hero__cover ${isDesktop ? 'is-desktop' : ''}`}
+            aria-hidden="true"
+            style={coverStyle}
+          />
+          {isSelf && (
+            <div className="seller-cover__actions">
+              <button
+                type="button"
+                className="seller-cover__btn"
+                onClick={() => setCoverEditorOpen(true)}
+                disabled={coverUploading}
+              >
+                <MoreHorizontal size={20} />
+                <span className="sr-only">Editar capa</span>
+              </button>
+            </div>
+          )}
           {/* HEADER / INFO PRINCIPAL */}
-          <header className="seller-hero flex flex-col md:flex-row md:items-start gap-6 p-6 relative z-[1]">
+          <header className={`seller-hero flex flex-col md:flex-row md:items-start gap-6 p-6 relative z-[1] ${isDesktop ? 'seller-hero--desktop' : ''}`}>
             {/* Avatar */}
             <div className="seller-avatar-area flex justify-center md:block">
               <div className="relative" ref={avatarMenuRef}>
@@ -1282,6 +1628,112 @@ export default function SellerProfile() {
           </section>
         </div>
       </section>
+
+      {coverEditorOpen && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="cover-editor__backdrop"
+            onClick={() => {
+              if (!coverUploading) setCoverEditorOpen(false);
+            }}
+          >
+            <div
+              className="cover-editor"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="cover-editor__header">
+                <div>
+                  <p className="cover-editor__eyebrow">Capa do perfil</p>
+               
+                  
+                </div>
+                <button
+                  type="button"
+                  className="cover-editor__close"
+                  onClick={() => setCoverEditorOpen(false)}
+                  disabled={coverUploading}
+                >
+                  Fechar
+                </button>
+              </div>
+
+              <div className="cover-editor__section">
+                <div className="cover-editor__section-heading">
+                  <span className="cover-editor__section-title">Temas de cor</span>
+                </div>
+                {coverTemplatesLoading && (
+                  <p className="cover-editor__muted">Carregando modelos...</p>
+                )}
+                <div className="cover-editor__grid cover-editor__grid--themes">
+                  {themeOptions.map((theme) => {
+                    const style = theme.image
+                      ? {
+                          backgroundImage: `linear-gradient(120deg, rgba(10, 18, 38, 0.55), rgba(8, 47, 73, 0.35)), url('${theme.image}')`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
+                        }
+                      : { backgroundImage: theme.gradient };
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        className={`cover-theme-card ${coverThemeId === theme.id ? 'is-active' : ''} ${
+                          theme.image ? 'cover-theme-card--image' : ''
+                        }`}
+                        style={style}
+                        onClick={() =>
+                          theme.image
+                            ? handleSelectCoverTemplate(theme)
+                            : handleApplyCoverTheme(theme.id)
+                        }
+                        disabled={coverUploading}
+                      >
+                        <span className="cover-theme-card__name">{theme.name}</span>
+                        {theme.image ? (
+                          <span className="cover-theme-card__thumb">
+                            <img src={theme.image} alt={theme.name} />
+                          </span>
+                        ) : null}
+                        {coverThemeId === theme.id && (
+                          <span className="cover-theme-card__badge">Ativo</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="cover-editor__section">
+                <div className="cover-editor__section-heading">
+                  <span className="cover-editor__section-title">Sua imagem</span>
+                 
+                </div>
+                <div className="cover-editor__actions">
+                  <button
+                    type="button"
+                    className="cover-editor__primary"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    disabled={coverUploading}
+                  >
+                    {coverUploading ? 'Enviando...' : 'Enviar da galeria'}
+                  </button>
+                  {coverImageUrl && (
+                    <button
+                      type="button"
+                      className="cover-editor__secondary"
+                      onClick={handleRemoveCover}
+                      disabled={coverUploading}
+                    >
+                      Remover imagem
+                    </button>
+                  )}
+                </div>
+                
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* modal de avaliação */}
       {rateOpen && (

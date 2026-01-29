@@ -1,0 +1,18 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="safira-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0b1b3a" />
+      <stop offset="45%" stop-color="#0d4f8c" />
+      <stop offset="80%" stop-color="#15a3d3" />
+      <stop offset="100%" stop-color="#5ee7ff" />
+    </linearGradient>
+    <radialGradient id="safira-glow" cx="40%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="520" fill="url(#safira-bg)" />
+  <circle cx="600" cy="120" r="360" fill="url(#safira-glow)" />
+  <path d="M0 340 C260 300 560 370 820 330 C1100 290 1320 360 1600 310 L1600 520 L0 520 Z" fill="rgba(14, 116, 144, 0.26)" />
+  <path d="M0 400 C240 360 520 440 820 400 C1120 360 1340 430 1600 380 L1600 520 L0 520 Z" fill="rgba(13, 79, 140, 0.24)" />
+</svg>

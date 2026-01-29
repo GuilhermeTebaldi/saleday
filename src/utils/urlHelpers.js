@@ -6,10 +6,15 @@ export function makeAbsolute(urlLike) {
   if (!trimmed) return '';
   if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:image/')) return trimmed;
   const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const base =
-    api.defaults?.baseURL ||
-    import.meta.env.VITE_API_BASE_URL ||
-    `${window.location.protocol}//${window.location.host}`;
+  const preferWindowForPublic =
+    typeof window !== 'undefined' && path.startsWith('/modelosdecapa/');
+  const base = preferWindowForPublic
+    ? `${window.location.protocol}//${window.location.host}`
+    : api.defaults?.baseURL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      (typeof window !== 'undefined'
+        ? `${window.location.protocol}//${window.location.host}`
+        : '');
   try {
     return new URL(path, base).toString();
   } catch {
