@@ -38,6 +38,54 @@ const buildOpenStreetMapLink = (lat, lng) =>
     lng
   )}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
 
+const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0.4) =>
+  new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Falha ao ler o arquivo de imagem.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Falha ao carregar a imagem.'));
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Contexto de canvas indisponível.'));
+          let { width, height } = img;
+          const maxDimension = 2000;
+          if (width > maxDimension || height > maxDimension) {
+            const scale = Math.min(maxDimension / width, maxDimension / height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          let quality = 0.9;
+          const mimeType = file.type === 'image/png' ? 'image/jpeg' : file.type || 'image/jpeg';
+          const attempt = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) return reject(new Error('Falha ao gerar blob da imagem.'));
+                if (blob.size <= maxBytes || quality <= minQuality) {
+                  return resolve(new File([blob], file.name, { type: mimeType, lastModified: Date.now() }));
+                }
+                quality -= 0.1;
+                attempt();
+              },
+              mimeType,
+              quality
+            );
+          };
+          attempt();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      reject(err);
+    }
+  });
+
 function getInitial(name) {
   if (!name) return 'U';
   const c = name.trim().charAt(0);
@@ -71,6 +119,7 @@ export default function SellerProfile() {
   const shareMenuRef = useRef(null);
   const [deletingProductId, setDeletingProductId] = useState(null);
   const [companyMapOpen, setCompanyMapOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -91,6 +140,7 @@ export default function SellerProfile() {
   const [errMsg, setErrMsg] = useState('');
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const avatarMenuRef = useRef(null);
+  const avatarFileInputRef = useRef(null);
   const {
     isOpen: isAvatarViewerOpen,
     src: avatarViewerSrc,
@@ -98,18 +148,79 @@ export default function SellerProfile() {
     openViewer: openAvatarViewer,
     closeViewer: closeAvatarViewer
   } = useImageViewer();
+  const isSelf = user && Number(user.id) === Number(id);
 
+  const reloadSellerProfile = useCallback(async () => {
+    try {
+      const sellerRes = await api.get(`/users/${id}`);
+      if (sellerRes.data?.data) {
+        setSeller(sellerRes.data.data);
+      }
+    } catch {
+      // manter estado atual em caso de falha
+    }
+  }, [id]);
   // modal avaliar
   const [rateOpen, setRateOpen] = useState(false);
   const [stars, setStars] = useState(5);
   const [comment, setComment] = useState('');
   const [sendingReview, setSendingReview] = useState(false);
 
-  const isSelf = user && Number(user.id) === Number(id);
   const showReviewActions = Boolean(user && !isSelf);
   const isReviewButtonEnabled = Boolean(reviewStatus.data?.canReview);
   const reviewButtonDisabled = !isReviewButtonEnabled || reviewStatus.loading;
   const isSellerOnline = isSelf || Boolean(seller?.is_online);
+  const handleAvatarFileChange = useCallback(
+    async (event) => {
+      if (!isSelf) return;
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type?.startsWith('image/')) {
+        toast.error('Selecione um arquivo de imagem válido.');
+        return;
+      }
+      const maxBytes = 2 * 1024 * 1024;
+      let processed = file;
+      if (file.size > maxBytes) {
+        try {
+          processed = await compressImageToMaxSize(file, maxBytes);
+          if (processed.size > maxBytes) {
+            toast.error('Não foi possível reduzir a foto para 2MB. Use uma imagem menor.');
+            return;
+          }
+        } catch (err) {
+          toast.error('Erro ao processar a imagem. Tente outra foto.');
+          return;
+        }
+      }
+      setAvatarUploading(true);
+      try {
+        const payload = new FormData();
+        payload.append('avatar', processed);
+        const response = await api.put('/users/me', payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const updated = response.data?.data;
+        if (updated) {
+          setSeller((prev) => ({ ...(prev || {}), ...updated }));
+          toast.success('Foto atualizada.');
+          setShowAvatarMenu(false);
+        } else {
+          toast.success('Foto enviada.');
+        }
+      } catch (err) {
+        const msg = err?.response?.data?.message || 'Erro ao atualizar foto.';
+        toast.error(msg);
+      } finally {
+        setAvatarUploading(false);
+        if (avatarFileInputRef.current) {
+          avatarFileInputRef.current.value = '';
+        }
+        await reloadSellerProfile();
+      }
+    },
+    [isSelf, token, reloadSellerProfile]
+  );
 
   // métricas vindas direto do seller
   const avgRating = useMemo(
@@ -260,17 +371,6 @@ export default function SellerProfile() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [shareMenuOpen]);
-
-  const reloadSellerProfile = useCallback(async () => {
-    try {
-      const sellerRes = await api.get(`/users/${id}`);
-      if (sellerRes.data?.data) {
-        setSeller(sellerRes.data.data);
-      }
-    } catch {
-      // manter estado atual em caso de falha
-    }
-  }, [id]);
 
   // enviar review (aqui continua chamando POST /users/:id/reviews
   // se seu backend também não tem isso ainda você pode remover todo esse bloco e o modal)
@@ -632,14 +732,29 @@ export default function SellerProfile() {
                   </span>
                 )}
                 {isSelf && showAvatarMenu && (
-                  <div className="absolute left-1/2 top-full z-10 mt-2 w-48 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white py-2 shadow-lg">
+                  <div className="avatar-menu-pop absolute left-1/2 -translate-x-1/2 top-full z-10 mt-2 w-56 rounded-2xl border border-slate-200 bg-white py-3 px-3 shadow-lg flex flex-col gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 text-white text-sm font-semibold px-4 py-2 shadow-sm hover:bg-slate-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      disabled={avatarUploading}
+                    >
+                      {avatarUploading ? 'Enviando...' : 'Trocar foto'}
+                    </button>
                     <Link
                       to="/edit-profile"
-                      className="mx-2 inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-3 py-1 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="inline-flex w-full items-center justify-center rounded-full border border-slate-200 text-slate-700 text-sm font-semibold px-4 py-2 hover:bg-slate-50 transition"
                       onClick={() => setShowAvatarMenu(false)}
                     >
-                      Editar foto
+                      Editar perfil
                     </Link>
+                    <input
+                      ref={avatarFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarFileChange}
+                    />
                   </div>
                 )}
               </div>
@@ -717,26 +832,36 @@ export default function SellerProfile() {
                   >
                     Mensagem
                   </button>
-                  <div className="w-full md:w-auto flex flex-col gap-1">
-                    <button
-                      type="button"
-                      className={`seller-actions__secondary w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 text-slate-700 text-xs px-4 py-1.5 transition ${
-                        reviewButtonDisabled
-                          ? 'cursor-not-allowed opacity-60'
-                          : 'hover:bg-slate-50'
-                      }`}
-                      disabled={reviewButtonDisabled}
-                      onClick={() => {
-                        if (reviewButtonDisabled) return;
-                        setRateOpen(true);
-                      }}
-                    >
-                      Avaliar vendedor
-                    </button>
+                  <div className="seller-actions__secondary-row w-full md:w-auto flex flex-col gap-2">
+                    <div className="flex w-full gap-2">
+                      <button
+                        type="button"
+                        className={`seller-actions__secondary flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 text-slate-700 text-xs px-3 py-1.5 transition ${
+                          reviewButtonDisabled
+                            ? 'cursor-not-allowed opacity-60'
+                            : 'hover:bg-slate-50'
+                        }`}
+                        disabled={reviewButtonDisabled}
+                        onClick={() => {
+                          if (reviewButtonDisabled) return;
+                          setRateOpen(true);
+                        }}
+                      >
+                        Avaliar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShareMenuOpen((prev) => !prev)}
+                        className="seller-share-btn flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+                      >
+                        <Share2 size={14} className="text-slate-500" />
+                        Compartilhar
+                      </button>
+                    </div>
                     {!reviewStatus.loading &&
                       reviewStatus.data &&
                       !reviewStatus.data.canReview && (
-                        <span className="text-[11px] text-slate-500 text-right">
+                        <span className="seller-actions__hint text-[10px] text-slate-500 text-right">
                           Avaliação liberada após confirmar nova compra com este vendedor.
                         </span>
                       )}
@@ -744,15 +869,7 @@ export default function SellerProfile() {
                 </>
               )}
 
-              <div ref={shareMenuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShareMenuOpen((prev) => !prev)}
-                  className="seller-share-btn inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
-                >
-                  <Share2 size={14} className="text-slate-500" />
-                  Compartilhar perfil
-                </button>
+              <div ref={shareMenuRef} className="relative seller-share-wrapper">
                 {shareMenuOpen && (
                   <div className="absolute right-0 z-20 mt-2 w-64 space-y-2 rounded-2xl border border-slate-200 bg-white py-3 px-3 shadow-lg">
                     <div className="space-y-1 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 px-3 py-2 text-white shadow">
@@ -826,9 +943,18 @@ export default function SellerProfile() {
                     <p className="seller-company-card__description">{companyDescription}</p>
                   )}
                   <div className="seller-company-card__meta">
-                    <span className="seller-company-card__coords">
+                    <span className="seller-company-card__coords seller-company-card__coords-chip">
                       {companyLat.toFixed(5)}, {companyLng.toFixed(5)}
                     </span>
+                  </div>
+                  <div className="seller-company-card__actions-mobile">
+                    <button
+                      type="button"
+                      className="seller-company-card__map-btn seller-company-card__map-btn--mobile"
+                      onClick={() => setCompanyMapOpen(true)}
+                    >
+                      Ver mapa
+                    </button>
                   </div>
                 </div>
                 <div
@@ -930,13 +1056,13 @@ export default function SellerProfile() {
 
           {/* GRID / COMENTÁRIOS */}
           <section className="p-4 md:p-6">
-            <div className="seller-tabs flex flex-wrap gap-2 mb-6">
+            <div className="seller-tabs flex flex-wrap gap-2 md:gap-3 mb-6 md:items-center md:justify-center">
               <button
                 type="button"
                 onClick={() => setActiveTab('products')}
                 className={`seller-tab ${activeTab === 'products' ? 'is-active' : ''}`}
               >
-                Publicações do vendedor
+                Publicações
               </button>
               <button
                 type="button"

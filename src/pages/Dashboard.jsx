@@ -308,7 +308,7 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
         </div>
       </button>
       {avatarMenuOpen && (
-        <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2 z-50">
+        <div className="dashboard-avatar-menu absolute right-0 top-full mt-3 z-50">
           <PrimaryButton
             as={Link}
             to="/edit-profile"

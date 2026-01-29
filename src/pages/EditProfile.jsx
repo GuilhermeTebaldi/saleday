@@ -213,6 +213,19 @@ export default function EditProfile() {
     phoneCountryIndex.byCode[DEFAULT_PHONE_COUNTRY_CODE] ||
     sortedPhoneCountries[0] ||
     null;
+  const hasCompanyName = (form.company_name || '').trim().length > 0;
+  const hasCompanyCoords = (() => {
+    const latStr = String(form.company_lat ?? '').trim();
+    const lngStr = String(form.company_lng ?? '').trim();
+    if (!latStr || !lngStr) return false;
+    const lat = Number(latStr);
+    const lng = Number(lngStr);
+    return Number.isFinite(lat) && Number.isFinite(lng);
+  })();
+  const shouldShowCompanyHint = hasCompanyName || hasCompanyCoords;
+  const missingCompanyFields = [];
+  if (!hasCompanyName) missingCompanyFields.push('Nome da empresa');
+  if (!hasCompanyCoords) missingCompanyFields.push('Local da empresa');
 
   const applyInitialPhoneState = useCallback(
     (sourcePhone) => {
@@ -883,9 +896,11 @@ export default function EditProfile() {
                 <h3 className="text-base font-semibold text-slate-900">Dados públicos da loja</h3>
               </div>
             </div>
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Para aparecer no seu perfil público, preencha o <strong>Nome da empresa</strong> e salve uma localização no mapa.
-            </p>
+            {shouldShowCompanyHint && missingCompanyFields.length > 0 && (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
+                Para exibir sua loja no perfil público, falta preencher: <strong>{missingCompanyFields.join(' e ')}</strong>.
+              </p>
+            )}
 
             <div className="edit-profile-grid">
               <label>
