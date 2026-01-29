@@ -4,35 +4,13 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import api from '../api/api.js';
 import Auth0LoginActions from '../components/Auth0LoginActions.jsx';
-import {
-  AUTH0_CONNECTION_APPLE,
-  AUTH0_CONNECTION_FACEBOOK,
-  AUTH0_CONNECTION_GOOGLE,
-  AUTH0_ENABLED
-} from '../config/auth0Config.js';
+import { AUTH0_CONNECTION_GOOGLE, AUTH0_ENABLED } from '../config/auth0Config.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { sanitizeNextPath } from '../utils/authRedirect.js';
 
+const SHOW_SIGNUP_LINK = false; // Toggle to true if we want the signup CTA visible again.
+
 const SOCIAL_PROVIDERS = [
-  {
-    key: 'apple',
-    label: 'Entrar com Apple',
-    connection: AUTH0_CONNECTION_APPLE || 'apple',
-    Icon: function AppleIcon() {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M16.59 12.29c.02 1.65.96 2.94 2.05 3.62-.24.7-.56 1.35-.95 1.96-.8 1.24-1.63 2.47-2.94 2.5-1.27.03-1.68-.75-3.13-.75-1.45 0-1.91.72-3.11.78-1.27.05-2.24-1.31-3.05-2.55-1.66-2.45-2.93-6.91-1.22-9.93.85-1.5 2.38-2.45 4.04-2.47 1.26-.02 2.45.83 3.12.83.67 0 2.18-1.02 3.67-.87.62.03 2.37.25 3.49 1.89-.09.06-2.09 1.23-2.07 3.99z"
-          />
-          <path
-            fill="currentColor"
-            d="M15.29 3.72c.67-.82 1.12-1.96 1-3.12-1 .04-2.2.67-2.91 1.49-.64.74-1.2 1.93-1.05 3.07 1.12.09 2.28-.57 2.96-1.44z"
-          />
-        </svg>
-      );
-    }
-  },
   {
     key: 'google',
     label: 'Entrar com Google',
@@ -55,21 +33,6 @@ const SOCIAL_PROVIDERS = [
           <path
             fill="#4285F4"
             d="M20.53 11.2c0-.56-.07-1.1-.17-1.61h-7.88v3.7h5.16c-.33 1-1.03 1.85-1.98 2.43l2.86 2.35c1.67-1.55 2.61-3.85 2.61-6.87z"
-          />
-        </svg>
-      );
-    }
-  },
-  {
-    key: 'facebook',
-    label: 'Entrar com Facebook',
-    connection: AUTH0_CONNECTION_FACEBOOK || 'facebook',
-    Icon: function FacebookIcon() {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            fill="#1877F2"
-            d="M13.64 20.5V13.6h2.36l.38-2.96h-2.74v-1.9c0-.86.24-1.44 1.48-1.44h1.58V4.6c-.27-.04-1.2-.12-2.28-.12-2.26 0-3.81 1.38-3.81 3.92v2.24H8.16v2.96h2.45v6.9h3.03z"
           />
         </svg>
       );
@@ -257,9 +220,11 @@ export default function Login() {
           )}
         </div>
 
-        <p className="login-choice__signup">
-          Não possui conta? <Link to="/register">Cadastre-se aqui</Link>
-        </p>
+        {SHOW_SIGNUP_LINK && (
+          <p className="login-choice__signup">
+            Não possui conta? <Link to="/register">Cadastre-se aqui</Link>
+          </p>
+        )}
         <p className="login-choice__terms">
           Ao logar, você afirma que leu e concorda com os nossos{' '}
           <Link to="/politica-de-privacidade#termos" target="_blank" rel="noreferrer">

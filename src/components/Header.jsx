@@ -137,6 +137,7 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
+  const SHOW_REGISTER_LINK = false; // keep code path for future tests without showing the CTA now.
   const showProfileAlert = useCallback((payload) => {
     setProfileAlert(payload);
     setProfileAlertVisible(false);
@@ -1303,7 +1304,7 @@ export default function Header() {
         ) : (
           <>
             <Link to="/login" className="nav-link">Login</Link>
-            <Link to="/register" className="nav-link">Cadastre-se</Link>
+            {SHOW_REGISTER_LINK && <Link to="/register" className="nav-link">Cadastre-se</Link>}
           </>
         )}
       </nav>
