@@ -1,0 +1,27 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="onda-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#ecfeff"/>
+    </linearGradient>
+    <linearGradient id="onda-1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="onda-2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a5f3fc" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#bfdbfe" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#onda-bg)"/>
+
+  <path d="M0 240 C260 210 540 280 820 240 C1100 200 1320 260 1600 210 L1600 520 L0 520 Z" fill="url(#onda-1)"/>
+  <path d="M0 320 C260 290 540 360 820 320 C1100 280 1320 340 1600 300 L1600 520 L0 520 Z" fill="url(#onda-2)"/>
+
+  <g opacity="0.18" fill="#0ea5e9">
+    <circle cx="180" cy="110" r="18"/>
+    <circle cx="1380" cy="140" r="14"/>
+    <circle cx="1220" cy="80" r="10"/>
+  </g>
+</svg>

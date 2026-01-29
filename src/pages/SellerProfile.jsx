@@ -179,6 +179,86 @@ const COVER_THEMES = [
     overlay: 'linear-gradient(120deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12))'
   },
   {
+    id: 'cubos-azul-image',
+    name: 'Cubos azul (img)',
+    image: '/modelosdecapa/modelo-cubos-azul.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12))'
+  },
+  {
+    id: 'cubos-rosas-image',
+    name: 'Cubos rosas (img)',
+    image: '/modelosdecapa/modelo-cubos-rosas.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12))'
+  },
+  {
+    id: 'onda-image',
+    name: 'Onda (img)',
+    image: '/modelosdecapa/modelo-onda.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.14))'
+  },
+  {
+    id: 'aurora-lines-image',
+    name: 'Aurora linhas (img)',
+    image: '/modelosdecapa/modelo-aurora-lines.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#f8fafc',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.35), rgba(0,0,0,0.25))'
+  },
+  {
+    id: 'retro-grid-image',
+    name: 'Retro grid (img)',
+    image: '/modelosdecapa/modelo-retro-grid.svg',
+    foreground: '#f8fafc',
+    muted: '#e2e8f0',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#f8fafc',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.38), rgba(0,0,0,0.18))'
+  },
+  {
+    id: 'glaranja-image',
+    name: 'Gradiente laranja (img)',
+    image: '/modelosdecapa/modelo-gradiente-laranja.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255,255,255,0.28), rgba(255,255,255,0.16))'
+  },
+  {
+    id: 'matrix-image',
+    name: 'Matrix (img)',
+    image: '/modelosdecapa/modelo-matrix.svg',
+    foreground: '#c7f9cc',
+    muted: '#a7f3d0',
+    chipBg: 'rgba(15, 23, 42, 0.9)',
+    chipText: '#bbf7d0',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.45), rgba(0,0,0,0.25))'
+  },
+  {
+    id: 'paper-image',
+    name: 'Paper clean (img)',
+    image: '/modelosdecapa/modelo-paper.svg',
+    foreground: '#0f172a',
+    muted: '#334155',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12))'
+  },
+  {
     id: 'safira-image',
     name: 'Safira (img)',
     image: '/modelosdecapa/modelo-safira.svg',

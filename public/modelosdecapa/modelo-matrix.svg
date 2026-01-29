@@ -1,0 +1,26 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="matrix-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="matrix-code" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="520" fill="url(#matrix-bg)"/>
+  <g opacity="0.35">
+    <rect x="120" y="40" width="6" height="240" fill="url(#matrix-code)"/>
+    <rect x="240" y="10" width="6" height="260" fill="url(#matrix-code)"/>
+    <rect x="360" y="80" width="6" height="280" fill="url(#matrix-code)"/>
+    <rect x="520" y="30" width="6" height="250" fill="url(#matrix-code)"/>
+    <rect x="660" y="60" width="6" height="270" fill="url(#matrix-code)"/>
+    <rect x="820" y="40" width="6" height="260" fill="url(#matrix-code)"/>
+    <rect x="980" y="70" width="6" height="270" fill="url(#matrix-code)"/>
+    <rect x="1140" y="20" width="6" height="260" fill="url(#matrix-code)"/>
+    <rect x="1300" y="90" width="6" height="280" fill="url(#matrix-code)"/>
+    <rect x="1460" y="50" width="6" height="260" fill="url(#matrix-code)"/>
+  </g>
+  <rect y="320" width="1600" height="200" fill="rgba(2, 6, 23, 0.75)"/>
+</svg>

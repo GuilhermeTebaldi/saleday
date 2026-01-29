@@ -1,0 +1,45 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="45%" stop-color="#ffe4e6"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="cubePink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+    <linearGradient id="cubePeach" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="cubeMint" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <filter id="shadow2" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#bg2)"/>
+
+  <g opacity="0.16">
+    <circle cx="280" cy="120" r="80" fill="#f9a8d4"/>
+    <circle cx="1340" cy="100" r="90" fill="#fed7aa"/>
+    <circle cx="1180" cy="420" r="120" fill="#a5f3fc"/>
+  </g>
+
+  <g filter="url(#shadow2)">
+    <rect x="620" y="190" width="210" height="210" rx="24" fill="url(#cubePink)"/>
+    <rect x="1020" y="210" width="150" height="150" rx="20" fill="url(#cubePeach)"/>
+    <rect x="890" y="120" width="120" height="120" rx="18" fill="url(#cubeMint)"/>
+  </g>
+
+  <g opacity="0.14">
+    <circle cx="520" cy="320" r="18" fill="#fb7185"/>
+    <circle cx="1180" cy="260" r="14" fill="#f97316"/>
+    <circle cx="940" cy="360" r="10" fill="#0ea5e9"/>
+    <circle cx="760" cy="140" r="12" fill="#22c55e"/>
+  </g>
+</svg>

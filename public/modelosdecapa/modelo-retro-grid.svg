@@ -1,0 +1,33 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rg-sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0b132b"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="rg-sun" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#rg-sky)"/>
+  <circle cx="800" cy="180" r="120" fill="url(#rg-sun)" opacity="0.9"/>
+
+  <g stroke="#22d3ee" stroke-width="1.2" opacity="0.45">
+    <path d="M0 320 L1600 320"/>
+    <path d="M0 360 L1600 360"/>
+    <path d="M0 400 L1600 400"/>
+    <path d="M0 440 L1600 440"/>
+    <path d="M0 480 L1600 480"/>
+  </g>
+
+  <g stroke="#22d3ee" stroke-width="1" opacity="0.35">
+    <path d="M200 520 L600 320"/>
+    <path d="M400 520 L720 320"/>
+    <path d="M600 520 L840 320"/>
+    <path d="M800 520 L960 320"/>
+    <path d="M1000 520 L1080 320"/>
+    <path d="M1200 520 L1200 320"/>
+    <path d="M1400 520 L1320 320"/>
+  </g>
+</svg>

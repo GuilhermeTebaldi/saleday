@@ -1,0 +1,28 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="al-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1224"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="al-band1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="al-band2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.45"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#al-bg)"/>
+
+  <path d="M0 170 Q400 140 800 190 T1600 170 L1600 260 Q1200 300 800 260 T0 260 Z" fill="url(#al-band1)" />
+  <path d="M0 310 Q380 340 800 300 T1600 330 L1600 390 Q1160 440 800 400 T0 390 Z" fill="url(#al-band2)" />
+
+  <g stroke="rgba(255,255,255,0.12)" stroke-width="1">
+    <path d="M0 110 L1600 240" />
+    <path d="M0 210 L1600 340" />
+    <path d="M0 310 L1600 440" />
+  </g>
+</svg>

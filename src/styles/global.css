@@ -11953,6 +11953,23 @@ body.templesale-panel-open .nav-side-backdrop {
     right: 12px;
   }
 }
+
+@media (min-width: 768px) {
+  .cover-editor__grid--themes {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .cover-editor__grid--themes .cover-theme-card {
+    scroll-snap-align: start;
+  }
+}
 .seller-hero--desktop .seller-identity__name,
 .seller-hero--desktop .seller-identity__username,
 .seller-hero--desktop .seller-meta__location,
