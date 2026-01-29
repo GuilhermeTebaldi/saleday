@@ -19,6 +19,24 @@ import CloseBackButton from '../components/CloseBackButton.jsx';
 import ImageViewerModal from '../components/ImageViewerModal.jsx';
 import useImageViewer from '../hooks/useImageViewer.js';
 import LoadingBar from '../components/LoadingBar.jsx';
+import { createPortal } from 'react-dom';
+
+const buildOpenStreetMapEmbedUrl = (lat, lng) => {
+  const delta = 0.01;
+  const minLat = lat - delta;
+  const maxLat = lat + delta;
+  const minLng = lng - delta;
+  const maxLng = lng + delta;
+  const bbox = `${minLng},${minLat},${maxLng},${maxLat}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(
+    bbox
+  )}&layer=mapnik&marker=${encodeURIComponent(`${lat},${lng}`)}`;
+};
+
+const buildOpenStreetMapLink = (lat, lng) =>
+  `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(
+    lng
+  )}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
 
 function getInitial(name) {
   if (!name) return 'U';
@@ -52,6 +70,7 @@ export default function SellerProfile() {
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const [deletingProductId, setDeletingProductId] = useState(null);
+  const [companyMapOpen, setCompanyMapOpen] = useState(false);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -427,6 +446,58 @@ export default function SellerProfile() {
   const locationStr =
     [city, state, country].filter(Boolean).join(', ') ||
     'Localização não informada';
+  const companyName = (seller.company_name || '').trim();
+  const companyDescription = (seller.company_description || '').trim();
+  const companyAddress = (seller.company_address || '').trim();
+  const companyCity = (seller.company_city || '').trim();
+  const companyState = (seller.company_state || '').trim();
+  const companyCountry = (seller.company_country || '').trim();
+  const companyLat = Number(seller.company_lat);
+  const companyLng = Number(seller.company_lng);
+  const hasCompanyCoords = Number.isFinite(companyLat) && Number.isFinite(companyLng);
+  const hasNonZeroCoords =
+    hasCompanyCoords && !(Math.abs(companyLat) < 0.00001 && Math.abs(companyLng) < 0.00001);
+  const companyLocationStr =
+    [companyAddress, companyCity, companyState, companyCountry].filter(Boolean).join(', ') ||
+    (hasCompanyCoords ? `${companyLat.toFixed(5)}, ${companyLng.toFixed(5)}` : 'Localização da empresa não informada');
+  const hasCompanyLocationLabel =
+    Boolean(companyLocationStr) && companyLocationStr !== 'Localização da empresa não informada';
+  const companyMapUrl = hasNonZeroCoords ? buildOpenStreetMapEmbedUrl(companyLat, companyLng) : '';
+  const companyMapLink = hasNonZeroCoords ? buildOpenStreetMapLink(companyLat, companyLng) : '';
+  const hasCompanyProfile = Boolean(companyName) && hasNonZeroCoords && hasCompanyLocationLabel;
+  const showCatalogSection = false; // toggle visualização do bloco de catálogo
+  const summaryStats = (() => {
+    const items = [];
+    if (products.length > 0) {
+      items.push({
+        label: products.length === 1 ? 'Publicação' : 'Publicações',
+        value: products.length,
+        color: 'text-blue-700'
+      });
+    }
+    if (hasRatings) {
+      items.push({
+        label: 'Nota média',
+        value: avgRating.toFixed(1),
+        color: 'text-yellow-600'
+      });
+    }
+    if (salesCount > 0) {
+      items.push({
+        label: salesCount === 1 ? 'Venda' : 'Vendas',
+        value: salesCount,
+        color: 'text-green-600'
+      });
+    }
+    if (purchasesCount > 0) {
+      items.push({
+        label: purchasesCount === 1 ? 'Compra' : 'Compras',
+        value: purchasesCount,
+        color: 'text-blue-600'
+      });
+    }
+    return items;
+  })();
   const avatarLabel = sellerDisplayName ? `Foto de ${sellerDisplayName}` : 'Foto do vendedor';
   const handleAvatarClick = () => {
     if (!isSelf) {
@@ -530,15 +601,16 @@ export default function SellerProfile() {
       />
       <section className="ig-wrap ig-wrap--wide min-h-[calc(100vh-64px)] bg-gradient-to-b from-slate-50 to-slate-100 py-6 px-3">
         <CloseBackButton />
-        <div className="max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="seller-card max-w-[1400px] w-full mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative">
+          <div className="seller-hero__cover" aria-hidden="true" />
           {/* HEADER / INFO PRINCIPAL */}
-          <header className="flex flex-col md:flex-row md:items-center gap-6 p-6">
+          <header className="seller-hero flex flex-col md:flex-row md:items-start gap-6 p-6 relative z-[1]">
             {/* Avatar */}
-            <div className="flex justify-center md:block">
+            <div className="seller-avatar-area flex justify-center md:block">
               <div className="relative" ref={avatarMenuRef}>
                 <button
                   type="button"
-                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className="seller-avatar focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                   onClick={handleAvatarClick}
                   aria-label={isSelf ? 'Editar foto do perfil' : 'Foto do perfil'}
                 >
@@ -546,16 +618,16 @@ export default function SellerProfile() {
                     <img
                       src={avatarUrl}
                       alt={seller.username || 'Usuário'}
-                      className="h-24 w-24 md:h-28 md:w-28 rounded-full object-cover border-2 border-slate-200 shadow-sm"
+                      className="seller-avatar__img"
                     />
                   ) : (
-                    <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-slate-200 flex items-center justify-center text-3xl font-semibold text-slate-700 border border-slate-300">
+                    <div className="seller-avatar__placeholder">
                       {initials}
                     </div>
                   )}
                 </button>
                 {isSellerOnline && (
-                  <span className="absolute -bottom-1 -right-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-[10px] font-medium text-white shadow">
+                  <span className="seller-avatar__status absolute -bottom-1 -right-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-[10px] font-medium text-white shadow">
                     • Online agora
                   </span>
                 )}
@@ -574,42 +646,38 @@ export default function SellerProfile() {
             </div>
 
             {/* Nome, rating e localização */}
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-xl md:text-2xl font-semibold text-slate-900 truncate">
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="seller-identity">
+                <h1 className="seller-identity__name text-2xl md:text-[28px] font-semibold text-slate-900 truncate">
                   {seller.username || 'Vendedor'}
                 </h1>
-                <p className="text-xs md:text-sm text-slate-500 truncate">
+                <p className="seller-identity__username text-xs md:text-sm text-slate-500 truncate">
                   @{(seller.username || seller.email || 'usuario').toLowerCase()}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="text-lg text-amber-400">
-                    {'★'.repeat(full)}
-                    {half ? '☆' : ''}
-                    {'✩'.repeat(empty)}
-                  </span>
-                  <span className="text-xs text-slate-600">
-                    {hasRatings ? (
-                      <>
-                        {avgRating.toFixed(1)} / 5
-                        <span className="text-slate-400">
-                          {' '}
-                          · {ratingCount}{' '}
-                          {ratingCount === 1 ? 'avaliação' : 'avaliações'}
-                        </span>
-                      </>
-                    ) : (
-                      'Nenhuma venda'
-                    )}
-                  </span>
-                </div>
+              <div className="seller-meta flex flex-wrap items-center gap-3 text-sm">
+                {hasRatings && (
+                  <div className="seller-meta__rating flex items-center gap-2">
+                    <span className="text-lg text-amber-400 leading-none">
+                      {'★'.repeat(full)}
+                      {half ? '☆' : ''}
+                      {'✩'.repeat(empty)}
+                    </span>
+                    <span className="text-xs text-slate-600">
+                      {avgRating.toFixed(1)} / 5
+                      <span className="text-slate-400">
+                        {' '}
+                        · {ratingCount}{' '}
+                        {ratingCount === 1 ? 'avaliação' : 'avaliações'}
+                      </span>
+                    </span>
+                  </div>
+                )}
 
                 <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
-                <p className="flex items-center gap-1 text-xs md:text-sm text-slate-500">
+                <p className="seller-meta__location flex items-center gap-2 text-xs md:text-sm text-slate-500">
                   <span
                     className={`inline-block h-2 w-2 rounded-full ${
                       isSellerOnline ? 'bg-emerald-400' : 'bg-slate-300'
@@ -618,15 +686,33 @@ export default function SellerProfile() {
                   {locationStr}
                 </p>
               </div>
+
+              {summaryStats.length > 0 && (
+                <div className="seller-stats bg-white border border-slate-200 px-3 md:px-6 py-3 shadow-sm w-full min-h-[96px] rounded-2xl">
+                  <div className="seller-stats__grid grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+                    {summaryStats.map((item) => (
+                      <div className="seller-stat" key={item.label}>
+                        <span className={`seller-stat__value text-sm font-extrabold leading-none ${item.color}`}>
+                          {item.value}
+                        </span>
+                        <span className="seller-stat__label">
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* Ações principais */}
-            <div className="flex flex-col gap-2 w-full md:w-auto md:items-end">
+            <div className="seller-actions seller-actions__stack flex flex-col gap-3 w-full md:w-auto md:items-end">
               {showReviewActions && (
                 <>
                   <button
                     type="button"
-                    className="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 text-white text-sm px-4 py-2 shadow-sm hover:bg-slate-800 transition"
+                    className="seller-actions__primary w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 text-white text-sm px-4 py-2 shadow-sm hover:bg-slate-800 transition"
                     onClick={handleOpenSellerChat}
                   >
                     Mensagem
@@ -634,7 +720,7 @@ export default function SellerProfile() {
                   <div className="w-full md:w-auto flex flex-col gap-1">
                     <button
                       type="button"
-                      className={`w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 text-slate-700 text-xs px-4 py-1.5 transition ${
+                      className={`seller-actions__secondary w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 text-slate-700 text-xs px-4 py-1.5 transition ${
                         reviewButtonDisabled
                           ? 'cursor-not-allowed opacity-60'
                           : 'hover:bg-slate-50'
@@ -662,7 +748,7 @@ export default function SellerProfile() {
                 <button
                   type="button"
                   onClick={() => setShareMenuOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
+                  className="seller-share-btn inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm hover:bg-slate-50 focus-visible:outline-none focus-visible:ring focus-visible:ring-slate-400"
                 >
                   <Share2 size={14} className="text-slate-500" />
                   Compartilhar perfil
@@ -718,63 +804,108 @@ export default function SellerProfile() {
               </div>
 
               {isSelf && (
-                <span className="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-600 px-3 py-1 mt-1">
+                <span className="seller-self-badge inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-600 px-3 py-1">
                 Este é o seu perfil público
                 </span>
               )}
             </div>
           </header>
 
-        {/* BARRA DE RESUMO */}
-        <div className="bg-white border-t border-slate-200 px-3 py-3 shadow-sm w-full min-h-[110px]">
-          <div className="grid grid-cols-4 gap-2 w-full">
+          {hasCompanyProfile && (
+            <section className="seller-company-card">
+              <div className="seller-company-card__row">
+                <div className="seller-company-card__info">
+                  <div className="seller-company-card__header">
+                    <div>
+                      <p className="seller-company-card__eyebrow">Empresa / Loja</p>
+                      <p className="seller-company-card__title">{companyName}</p>
+                    </div>
+                  </div>
+                  <p className="seller-company-card__location">{companyLocationStr}</p>
+                  {companyDescription && (
+                    <p className="seller-company-card__description">{companyDescription}</p>
+                  )}
+                  <div className="seller-company-card__meta">
+                    <span className="seller-company-card__coords">
+                      {companyLat.toFixed(5)}, {companyLng.toFixed(5)}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="seller-company-card__map seller-company-card__map--thumb"
+                  onClick={() => setCompanyMapOpen(true)}
+                  aria-label="Abrir mapa da empresa"
+                >
+                  <iframe
+                    title="Mapa da empresa"
+                    src={companyMapUrl}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <button
+                    type="button"
+                    className="seller-company-card__map-btn seller-company-card__map-btn--overlay"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCompanyMapOpen(true);
+                    }}
+                  >
+                    Ver mapa
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
 
-            {/* PUBLICAÇÕES */}
-            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-              <span className="text-sm font-extrabold text-blue-700 leading-none">
-                {products.length}
-              </span>
-              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-                {products.length === 1 ? 'Publicação' : 'Publicações'}
-              </span>
-            </div>
+          {companyMapOpen && hasCompanyProfile && typeof document !== 'undefined' &&
+            createPortal(
+              <div
+                className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-4 py-6"
+                onClick={() => setCompanyMapOpen(false)}
+              >
+                <div
+                  className="w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Mapa da empresa</p>
+                      <p className="text-sm font-semibold text-slate-900">{companyName || 'Empresa'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                      onClick={() => setCompanyMapOpen(false)}
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                  <div className="aspect-video w-full">
+                    <iframe
+                      title="Mapa ampliado da empresa"
+                      src={companyMapUrl}
+                      className="h-full w-full"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                  <div className="px-4 py-3 text-sm text-slate-600 flex items-center justify-between gap-3">
+                    <span className="truncate">{companyLocationStr}</span>
+                    <a
+                      href={companyMapLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sky-700 font-semibold text-xs"
+                    >
+                      Abrir no OpenStreetMap ↗
+                    </a>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
 
-            {/* NOTA MÉDIA */}
-            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-              <span className="text-sm font-extrabold text-yellow-600 leading-none">
-                {hasRatings ? avgRating.toFixed(1) : '—'}
-              </span>
-              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-                Nota média
-              </span>
-            </div>
-
-            {/* VENDAS */}
-            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-              <span className="text-sm font-extrabold text-green-600 leading-none">
-                {salesCount}
-              </span>
-              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-                {salesCount === 1 ? 'Venda' : 'Vendas'}
-              </span>
-            </div>
-
-            {/* COMPRAS */}
-            <div className="flex flex-col items-center rounded-lg bg-slate-50 py-2">
-              <span className="text-sm font-extrabold text-blue-600 leading-none">
-                {purchasesCount}
-              </span>
-              <span className="text-[10px] tracking-wide text-slate-500 mt-0.5 leading-tight">
-                {purchasesCount === 1 ? 'Compra' : 'Compras'}
-              </span>
-            </div>
-
-          </div>
-          
-        </div>
-
-
-        {isSelf && (
+        {isSelf && showCatalogSection && (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
@@ -799,26 +930,18 @@ export default function SellerProfile() {
 
           {/* GRID / COMENTÁRIOS */}
           <section className="p-4 md:p-6">
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="seller-tabs flex flex-wrap gap-2 mb-6">
               <button
                 type="button"
                 onClick={() => setActiveTab('products')}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide uppercase transition ${
-                  activeTab === 'products'
-                    ? 'bg-slate-900 text-white shadow'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                className={`seller-tab ${activeTab === 'products' ? 'is-active' : ''}`}
               >
                 Publicações do vendedor
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('comments')}
-                className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide uppercase transition ${
-                  activeTab === 'comments'
-                    ? 'bg-slate-900 text-white shadow'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                className={`seller-tab ${activeTab === 'comments' ? 'is-active' : ''}`}
               >
                 Comentários
               </button>
@@ -895,7 +1018,7 @@ export default function SellerProfile() {
                       : 'Este vendedor ainda não recebeu comentários de compradores.'}
                   </p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="seller-comments space-y-3">
                     {reviews.map((review) => {
                       const reviewerName = review.reviewer_name || 'Cliente TempleSale';
                       const reviewerInitial = getInitial(reviewerName);
@@ -928,9 +1051,9 @@ export default function SellerProfile() {
                       return (
                         <li
                           key={review.id}
-                          className="flex gap-3 rounded-xl border border-slate-100 bg-white/60 p-3"
+                          className="seller-comment flex gap-3 rounded-2xl border border-slate-100 bg-white/70 p-3 md:p-4"
                         >
-                          <div className="h-10 w-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center text-sm font-semibold text-slate-600">
+                          <div className="seller-comment__avatar h-10 w-10 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center text-sm font-semibold text-slate-600">
                             {reviewerAvatar ? (
                               <img src={reviewerAvatar} alt={reviewerName} className="h-full w-full object-cover" />
                             ) : (
@@ -938,9 +1061,9 @@ export default function SellerProfile() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-700">{reviewerName}</span>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 mb-1">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-semibold text-slate-700 truncate">{reviewerName}</span>
                                 {purchaseImageUrl && (
                                   <img
                                     src={purchaseImageUrl}
@@ -955,13 +1078,13 @@ export default function SellerProfile() {
                                 )}
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span>{formatReviewDate(review.created_at)}</span>
+                                <span className="text-[11px]">{formatReviewDate(review.created_at)}</span>
                                 {isReviewOwner && (
                                   <div className="flex items-center gap-2">
                                     {!editingThisReview && (
                                       <button
                                         type="button"
-                                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 transition"
+                                        className="seller-comment__action"
                                         onClick={() => startEditingReview(review)}
                                         disabled={isSaving || isDeleting}
                                       >
@@ -970,7 +1093,7 @@ export default function SellerProfile() {
                                     )}
                                     <button
                                       type="button"
-                                      className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 transition"
+                                      className="seller-comment__action seller-comment__action--danger"
                                       onClick={() => handleDeleteReview(review.id)}
                                       disabled={isDeleting}
                                     >

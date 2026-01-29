@@ -1,6 +1,10 @@
 // frontend/src/pages/EditProfile.jsx
 // Página para atualizar dados pessoais e senha do usuário.
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -106,6 +110,7 @@ const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0
   });
 
 const FALLBACK_PHONE_MAX_DIGITS = 15;
+const COMPANY_DEFAULT_CENTER = [-23.5505, -46.6333];
 
 const getCountryMaxLocalDigits = (country) => {
   if (!country) return FALLBACK_PHONE_MAX_DIGITS;
@@ -138,7 +143,15 @@ export default function EditProfile() {
       city: user?.city ?? '',
       district: user?.district ?? '',
       street: user?.street ?? '',
-      zip: user?.zip ?? ''
+      zip: user?.zip ?? '',
+      company_name: user?.company_name ?? '',
+      company_description: user?.company_description ?? '',
+      company_address: user?.company_address ?? '',
+      company_city: user?.company_city ?? '',
+      company_state: user?.company_state ?? '',
+      company_country: normalizeCountryCode(user?.company_country) ?? '',
+      company_lat: user?.company_lat ?? '',
+      company_lng: user?.company_lng ?? ''
     }),
     [user]
   );
@@ -150,6 +163,33 @@ export default function EditProfile() {
   const userSelectedPhoneCountryRef = useRef(false);
   const [form, setForm] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
+  const [companyLocating, setCompanyLocating] = useState(false);
+  const [companyMapOpen, setCompanyMapOpen] = useState(false);
+  const [companySearch, setCompanySearch] = useState('');
+  const [companySearchLoading, setCompanySearchLoading] = useState(false);
+  const [companySearchResults, setCompanySearchResults] = useState([]);
+  const [companyMapCenter, setCompanyMapCenter] = useState(() => {
+    const lat = Number(initialFormState.company_lat);
+    const lng = Number(initialFormState.company_lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : COMPANY_DEFAULT_CENTER;
+  });
+  const companyMapRef = useRef(null);
+  const pendingCompanyCenterRef = useRef(null);
+  const focusCompanyMap = useCallback(
+    (lat, lng, zoom = 16, animate = true) => {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const map = companyMapRef.current;
+      if (map) {
+        map.invalidateSize();
+        setTimeout(() => {
+          map.flyTo([lat, lng], zoom, { animate });
+        }, 20);
+      } else {
+        pendingCompanyCenterRef.current = [lat, lng];
+      }
+    },
+    []
+  );
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(user?.profile_image_url ?? '');
   const [removeAvatar, setRemoveAvatar] = useState(false);
@@ -209,6 +249,11 @@ export default function EditProfile() {
     setRemoveAvatar(false);
     setAvatarPreview(user?.profile_image_url ?? '');
     applyInitialPhoneState(initialFormState.phone);
+    const lat = Number(initialFormState.company_lat);
+    const lng = Number(initialFormState.company_lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      setCompanyMapCenter([lat, lng]);
+    }
     if (avatarObjectUrlRef.current) {
       URL.revokeObjectURL(avatarObjectUrlRef.current);
       avatarObjectUrlRef.current = null;
@@ -355,10 +400,45 @@ export default function EditProfile() {
     };
   }, [phoneCountryIndex]);
 
+  const handleCompanySearch = useCallback(
+    async (query) => {
+      const trimmed = query.trim();
+      if (trimmed.length < 3) {
+        setCompanySearchResults([]);
+        return;
+      }
+      setCompanySearchLoading(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
+          trimmed
+        )}&limit=5&addressdetails=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR,en' } });
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCompanySearchResults(
+            data.map((item) => ({
+              label: item.display_name,
+              lat: Number(item.lat),
+              lng: Number(item.lon),
+              address: item.address || {}
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('Busca de endereço falhou', err);
+        setCompanySearchResults([]);
+      } finally {
+        setCompanySearchLoading(false);
+      }
+    },
+    []
+  );
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     if (name === 'phone') return;
-    const nextValue = name === 'country' ? normalizeCountryCode(value) : value;
+    const isCountryField = name === 'country' || name === 'company_country';
+    const nextValue = isCountryField ? normalizeCountryCode(value) : value;
     setForm({ ...form, [name]: nextValue });
   };
 
@@ -380,6 +460,70 @@ export default function EditProfile() {
     setPhoneLocalDigits((prev) => limitPhoneDigitsForCountry(prev, countryCandidate));
   };
 
+  const applyCompanyLocation = useCallback(
+    (lat, lng, extras = {}) => {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      setCompanyMapCenter([lat, lng]);
+      focusCompanyMap(lat, lng, 16, true);
+      setForm((prev) => ({
+        ...prev,
+        company_lat: lat,
+        company_lng: lng,
+        company_city: extras.city || prev.company_city,
+        company_state: extras.state || prev.company_state,
+        company_country: normalizeCountryCode(extras.country) || prev.company_country,
+        company_address: extras.address || prev.company_address
+      }));
+    },
+    [focusCompanyMap]
+  );
+
+  const reverseGeocodeCompany = useCallback(
+    async (lat, lng) => {
+      try {
+        const res = await api.get('/geo/reverse', { params: { lat, lng } });
+        const geo = res.data?.data || {};
+        applyCompanyLocation(lat, lng, {
+          city: geo.city,
+          state: geo.state,
+          country: geo.country,
+          address: geo.street
+        });
+      } catch (err) {
+        console.warn('Falha no reverse geocode da empresa', err);
+        applyCompanyLocation(lat, lng);
+      }
+    },
+    [applyCompanyLocation]
+  );
+
+  // Configuração do marcador padrão do Leaflet (corrige assets em bundlers)
+  useEffect(() => {
+    const DefaultIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+    L.Marker.prototype.options.icon = DefaultIcon;
+  }, []);
+
+  // Aplica centro pendente quando o mapa já existe
+  useEffect(() => {
+    if (companyMapRef.current && pendingCompanyCenterRef.current) {
+      companyMapRef.current.invalidateSize();
+      setTimeout(() => {
+        if (companyMapRef.current) {
+          companyMapRef.current.flyTo(pendingCompanyCenterRef.current, 16, { animate: true });
+        }
+        pendingCompanyCenterRef.current = null;
+      }, 20);
+    }
+  }, [companyMapCenter]);
+
   const handleReset = () => {
     userSelectedPhoneCountryRef.current = false;
     setForm(initialFormState);
@@ -387,11 +531,71 @@ export default function EditProfile() {
     setAvatarFile(null);
     setRemoveAvatar(false);
     setAvatarPreview(user?.profile_image_url ?? '');
+    setCompanyMapCenter(COMPANY_DEFAULT_CENTER);
     if (avatarObjectUrlRef.current) {
       URL.revokeObjectURL(avatarObjectUrlRef.current);
       avatarObjectUrlRef.current = null;
     }
   };
+
+  const handleCompanyGeolocate = () => {
+    if (companyLocating) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Geolocalização indisponível no dispositivo.');
+      return;
+    }
+    setCompanyLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords || {};
+        await reverseGeocodeCompany(latitude, longitude);
+        focusCompanyMap(latitude, longitude, 16, true);
+        setCompanyLocating(false);
+      },
+      () => {
+        toast.error('Não foi possível obter sua localização.');
+        setCompanyLocating(false);
+      },
+      { enableHighAccuracy: false, maximumAge: 600000, timeout: 7000 }
+    );
+  };
+
+  const handleClearCompanyLocation = () => {
+    pendingCompanyCenterRef.current = null;
+    setForm((prev) => ({
+      ...prev,
+      company_address: '',
+      company_city: '',
+      company_state: '',
+      company_country: '',
+      company_lat: '',
+      company_lng: ''
+    }));
+    setCompanyMapCenter(COMPANY_DEFAULT_CENTER);
+    if (companyMapRef.current) {
+      companyMapRef.current.setView(COMPANY_DEFAULT_CENTER, 14, { animate: true });
+      companyMapRef.current.invalidateSize();
+    }
+  };
+
+  // Ao abrir modal do mapa: centralizar no ponto salvo ou geolocalizar primeiro
+  useEffect(() => {
+    if (!companyMapOpen) return;
+    const map = companyMapRef.current;
+    if (map) {
+      map.invalidateSize();
+    }
+    if (form.company_lat && form.company_lng) {
+      const lat = Number(form.company_lat);
+      const lng = Number(form.company_lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        focusCompanyMap(lat, lng, 16, false);
+        return;
+      }
+    }
+    // se não há ponto salvo, tenta geolocalizar automaticamente
+    handleCompanyGeolocate();
+  }, [companyMapOpen, form.company_lat, form.company_lng, focusCompanyMap, handleCompanyGeolocate]);
 
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
@@ -454,12 +658,16 @@ export default function EditProfile() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (saving) return;
+    if (companyMapOpen) {
+      toast.error('Feche o mapa antes de salvar.');
+      return;
+    }
     setSaving(true);
     try {
       const normalizedPhone = normalizePhoneNumber(selectedPhoneCountry?.dialCode, phoneLocalDigits);
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (key === 'country') {
+        if (key === 'country' || key === 'company_country') {
           payload.append(key, normalizeCountryCode(value) || '');
         } else if (key === 'phone') {
           payload.append('phone', normalizedPhone || '');
@@ -662,10 +870,81 @@ export default function EditProfile() {
               Bairro
               <input name="district" value={form.district} onChange={handleChange} placeholder="Centro" />
             </label>
+              <label>
+                Rua
+                <input name="street" value={form.street} onChange={handleChange} placeholder="Rua Principal" />
+              </label>
+            </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Minha empresa</p>
+                <h3 className="text-base font-semibold text-slate-900">Dados públicos da loja</h3>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Para aparecer no seu perfil público, preencha o <strong>Nome da empresa</strong> e salve uma localização no mapa.
+            </p>
+
+            <div className="edit-profile-grid">
+              <label>
+                Nome da empresa
+                <input
+                  name="company_name"
+                  value={form.company_name}
+                  onChange={handleChange}
+                  placeholder="Ex.: Loja Exemplo Ltda"
+                />
+              </label>
+            </div>
+
             <label>
-              Rua
-              <input name="street" value={form.street} onChange={handleChange} placeholder="Rua Principal" />
+              Descrição (opcional)
+              <textarea
+                name="company_description"
+                value={form.company_description}
+                onChange={handleChange}
+                placeholder="Resumo da empresa, serviços, horário de atendimento..."
+                rows={3}
+                className="edit-profile-textarea"
+              />
             </label>
+
+            <div className="space-y-1 text-sm text-slate-700">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-semibold text-slate-900">Local da empresa</p>
+              <button
+                type="button"
+                className="btn-primary text-[11px] px-3 py-1"
+                onClick={() => setCompanyMapOpen(true)}
+              >
+                    Selecionar no mapa
+                  </button>
+                </div>
+            <p className="text-slate-600 text-sm">
+            {form.company_address || form.company_city || form.company_state || form.company_country
+              ? [form.company_address, form.company_city, form.company_state, getCountryLabel(form.company_country)]
+                  .filter(Boolean)
+                  .join(', ')
+              : 'Nenhum local definido. Clique em "Selecionar no mapa".'}
+            </p>
+                {form.company_lat && form.company_lng && (
+                  <>
+                    <p className="text-xs text-slate-500">
+                      {Number(form.company_lat).toFixed(5)}, {Number(form.company_lng).toFixed(5)}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-secondary text-[9px] px-1 py-0.25 rounded-sm mt-1 inline-flex items-center gap-1"
+                      style={{ minWidth: '34px' }}
+                      onClick={handleClearCompanyLocation}
+                    >
+                      Limpar
+                    </button>
+                  </>
+            )}
+          </div>
           </div>
 
           <div className="edit-profile-actions">
@@ -678,6 +957,167 @@ export default function EditProfile() {
           </div>
         </form>
       </div>
+
+      {companyMapOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 py-6"
+            onClick={() => setCompanyMapOpen(false)}
+          >
+            <div
+              className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Local da empresa</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Clique no mapa ou pesquise um endereço para marcar.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-sky-700 hover:text-sky-800"
+                    onClick={handleCompanyGeolocate}
+                    disabled={companyLocating}
+                  >
+                    {companyLocating ? 'Localizando...' : 'Usar minha posição'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                    onClick={() => setCompanyMapOpen(false)}
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3">
+                <div className="company-map-search">
+                  <input
+                    type="text"
+                    value={companySearch}
+                    onChange={(e) => {
+                      setCompanySearch(e.target.value);
+                      handleCompanySearch(e.target.value);
+                    }}
+                    placeholder="Buscar endereço, cidade, ponto de referência..."
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => handleCompanySearch(companySearch)}
+                    disabled={companySearchLoading}
+                  >
+                    {companySearchLoading ? 'Buscando...' : 'Buscar'}
+                  </button>
+                </div>
+                {companySearchResults.length > 0 && (
+                  <div className="company-search-results mb-3">
+                    {companySearchResults.map((item) => (
+                      <button
+                        key={`${item.lat}-${item.lng}-${item.label}`}
+                        type="button"
+                        onClick={() => {
+                          setCompanySearchResults([]);
+                          setCompanySearch(item.label);
+                          setCompanyMapCenter([item.lat, item.lng]);
+                          const addr = item.address || {};
+                          applyCompanyLocation(item.lat, item.lng, {
+                            city: addr.city || addr.town || addr.village || '',
+                            state: addr.state || '',
+                            country: addr.country_code ? addr.country_code.toUpperCase() : '',
+                            address: item.label
+                          });
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="h-[420px] rounded-xl overflow-hidden border border-slate-200 relative">
+                  <button
+                    type="button"
+                    className="map-cancel-btn absolute right-3 bottom-3 px-3 py-1 text-xs"
+                    onClick={() => {
+                      pendingCompanyCenterRef.current = null;
+                      setCompanyMapOpen(false);
+                    }}
+                  >
+                    Confirmar Ponto
+                  </button>
+                  <MapContainer
+                    center={companyMapCenter}
+                    zoom={14}
+                    style={{ height: '100%', width: '100%' }}
+                    whenCreated={(map) => {
+                      companyMapRef.current = map;
+                      map.invalidateSize();
+                      setTimeout(() => {
+                        map.invalidateSize();
+                        const target = pendingCompanyCenterRef.current || companyMapCenter;
+                        if (Array.isArray(target)) {
+                          map.flyTo(target, 16, { animate: true });
+                          pendingCompanyCenterRef.current = null;
+                        }
+                      }, 50);
+                    }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <CompanyMapClick
+                      onClick={(lat, lng) => {
+                        focusCompanyMap(lat, lng, 16, true);
+                        reverseGeocodeCompany(lat, lng);
+                      }}
+                    />
+                    <CompanyMapViewSync center={companyMapCenter} />
+                    {Number.isFinite(Number(form.company_lat)) && Number.isFinite(Number(form.company_lng)) && (
+                      <Marker position={[Number(form.company_lat), Number(form.company_lng)]}>
+                        <Popup>Local da empresa</Popup>
+                      </Marker>
+                    )}
+                  </MapContainer>
+                </div>
+
+                <div className="mt-2 text-xs text-slate-600">
+                  Ponto selecionado: {form.company_lat && form.company_lng
+                    ? `${Number(form.company_lat).toFixed(5)}, ${Number(form.company_lng).toFixed(5)}`
+                    : 'nenhum ponto marcado'}
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </section>
   );
+}
+
+function CompanyMapClick({ onClick }) {
+  useMapEvents({
+    click(e) {
+      onClick(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+}
+
+function CompanyMapViewSync({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!Array.isArray(center)) return;
+    if (!Number.isFinite(center[0]) || !Number.isFinite(center[1])) return;
+    map.flyTo(center, 16, { animate: true });
+    map.invalidateSize();
+    setTimeout(() => map.invalidateSize(), 50);
+  }, [center, map]);
+  return null;
 }
