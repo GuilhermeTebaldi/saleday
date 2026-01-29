@@ -44,6 +44,7 @@ import { IMAGE_KIND, IMAGE_KIND_BADGE_LABEL } from '../utils/imageKinds.js';
 import useImageViewer from '../hooks/useImageViewer.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getPhoneActions } from '../utils/phone.js';
+import { BASE_PHONE_COUNTRIES } from '../data/phoneCountries.js';
 import { buildProductMessageLink } from '../utils/messageLinks.js';
 import { DICTS } from '../i18n/dictionaries.js';
 
@@ -346,8 +347,12 @@ export default function ProductDetail() {
   const regionLng = Number.isFinite(lngValue) ? lngValue : mapCoords.lng;
   const sellerPhoneRaw = product?.seller_phone ?? product?.sellerPhone ?? '';
   const phoneActions = useMemo(
-    () => getPhoneActions(sellerPhoneRaw),
-    [sellerPhoneRaw]
+    () =>
+      getPhoneActions(sellerPhoneRaw, {
+        countries: BASE_PHONE_COUNTRIES,
+        countryCode: product?.country || product?.seller_country || product?.sellerCountry
+      }),
+    [product?.country, product?.sellerCountry, product?.seller_country, sellerPhoneRaw]
   );
 
   // Sugere anúncios próximos para complementar o anúncio atual.

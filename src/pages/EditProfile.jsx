@@ -1,10 +1,24 @@
 // frontend/src/pages/EditProfile.jsx
 // Página para atualizar dados pessoais e senha do usuário.
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import api from '../api/api.js';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { COUNTRY_OPTIONS, normalizeCountryCode, getCountryLabel } from '../data/countries.js';
+import {
+  BASE_PHONE_COUNTRIES,
+  DEFAULT_PHONE_COUNTRY_CODE,
+  mergePhoneCountries,
+  buildPhoneCountryIndex
+} from '../data/phoneCountries.js';
+import {
+  onlyDigits,
+  limitDigits,
+  normalizeDialCode,
+  normalizePhoneNumber,
+  parsePhoneNumber,
+  formatLocalWithExample
+} from '../utils/phone.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import ImageViewerModal from '../components/ImageViewerModal.jsx';
 import useImageViewer from '../hooks/useImageViewer.js';
@@ -91,19 +105,26 @@ const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0
     }
   });
 
-const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+const FALLBACK_PHONE_MAX_DIGITS = 15;
 
-const formatBrazilPhone = (value) => {
-  const digits = onlyDigits(value).slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 6) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  }
-  if (digits.length <= 10) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  }
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+const getCountryMaxLocalDigits = (country) => {
+  if (!country) return FALLBACK_PHONE_MAX_DIGITS;
+  const parsed = Number.parseInt(country.localMaxDigits ?? country.maxDigits, 10);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  const exampleDigits = onlyDigits(country.example);
+  if (exampleDigits.length) return exampleDigits.length;
+  return FALLBACK_PHONE_MAX_DIGITS;
 };
+
+const getCountryExample = (country) => {
+  if (country?.example) return country.example;
+  const max = getCountryMaxLocalDigits(country);
+  const exampleLength = Math.min(Math.max(max, 6), 11);
+  return '9'.repeat(exampleLength) || '991234567';
+};
+
+const limitPhoneDigitsForCountry = (value, country) =>
+  limitDigits(value, getCountryMaxLocalDigits(country));
 
 export default function EditProfile() {
   const { token, user, login } = useContext(AuthContext);
@@ -121,6 +142,12 @@ export default function EditProfile() {
     }),
     [user]
   );
+  const [phoneCountries, setPhoneCountries] = useState(BASE_PHONE_COUNTRIES);
+  const [selectedPhoneCountryCode, setSelectedPhoneCountryCode] = useState(
+    normalizeCountryCode(user?.country) || DEFAULT_PHONE_COUNTRY_CODE
+  );
+  const [phoneLocalDigits, setPhoneLocalDigits] = useState('');
+  const userSelectedPhoneCountryRef = useRef(false);
   const [form, setForm] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
@@ -134,17 +161,59 @@ export default function EditProfile() {
     openViewer: openAvatarViewer,
     closeViewer: closeAvatarViewer
   } = useImageViewer();
+  const phoneCountryIndex = useMemo(() => buildPhoneCountryIndex(phoneCountries), [phoneCountries]);
+  const sortedPhoneCountries = useMemo(
+    () => [...phoneCountries].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+    [phoneCountries]
+  );
+  const selectedPhoneCountry =
+    sortedPhoneCountries.find(
+      (country) => normalizeCountryCode(country.code) === normalizeCountryCode(selectedPhoneCountryCode)
+    ) ||
+    phoneCountryIndex.byCode[DEFAULT_PHONE_COUNTRY_CODE] ||
+    sortedPhoneCountries[0] ||
+    null;
+
+  const applyInitialPhoneState = useCallback(
+    (sourcePhone) => {
+      userSelectedPhoneCountryRef.current = false;
+      const parsed = parsePhoneNumber(sourcePhone ?? user?.phone ?? '', phoneCountries);
+      const fallbackCountry =
+        phoneCountries.find(
+          (country) =>
+            normalizeCountryCode(country.code) ===
+            (normalizeCountryCode(initialFormState.country) || DEFAULT_PHONE_COUNTRY_CODE)
+        ) ||
+        phoneCountries.find((country) => normalizeCountryCode(country.code) === DEFAULT_PHONE_COUNTRY_CODE) ||
+        phoneCountries[0] ||
+        null;
+
+      const countryToUse = parsed.matchedCountry || fallbackCountry;
+      const dialToUse = countryToUse?.dialCode || parsed.dialCode || fallbackCountry?.dialCode || '';
+      const limitedLocal = limitPhoneDigitsForCountry(parsed.localNumber, countryToUse);
+      const nextCode = normalizeCountryCode(countryToUse?.code) || DEFAULT_PHONE_COUNTRY_CODE;
+
+      setSelectedPhoneCountryCode(nextCode);
+      setPhoneLocalDigits(limitedLocal);
+      setForm((prev) => ({
+        ...prev,
+        phone: normalizePhoneNumber(dialToUse, limitedLocal)
+      }));
+    },
+    [initialFormState.country, phoneCountries, user?.phone]
+  );
 
   useEffect(() => {
     setForm(initialFormState);
     setAvatarFile(null);
     setRemoveAvatar(false);
     setAvatarPreview(user?.profile_image_url ?? '');
+    applyInitialPhoneState(initialFormState.phone);
     if (avatarObjectUrlRef.current) {
       URL.revokeObjectURL(avatarObjectUrlRef.current);
       avatarObjectUrlRef.current = null;
     }
-  }, [initialFormState]);
+  }, [applyInitialPhoneState, initialFormState]);
 
   useEffect(() => {
     if (!token) {
@@ -181,22 +250,140 @@ export default function EditProfile() {
     []
   );
 
+  useEffect(() => {
+    const normalized = normalizePhoneNumber(selectedPhoneCountry?.dialCode, phoneLocalDigits);
+    setForm((prev) => (prev.phone === normalized ? prev : { ...prev, phone: normalized }));
+  }, [phoneLocalDigits, selectedPhoneCountry?.dialCode]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const loadRemoteCountries = async () => {
+      try {
+        const response = await fetch('https://api-paises.pages.dev/paises.json', { signal: controller.signal });
+        if (!response?.ok) return;
+        const data = await response.json();
+        const payload = Array.isArray(data) ? data : data?.paises || data?.countries || [];
+        const merged = mergePhoneCountries(payload);
+        if (active && Array.isArray(merged) && merged.length) {
+          setPhoneCountries(merged);
+        }
+      } catch {
+        // Mantém lista local silenciosamente
+      }
+    };
+    loadRemoteCountries();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const applyDetectedCountry = (isoCode, dialCode) => {
+      if (cancelled || userSelectedPhoneCountryRef.current) return;
+      const normalizedIso = normalizeCountryCode(isoCode);
+      const normalizedDial = normalizeDialCode(dialCode);
+      let candidate = null;
+      if (normalizedIso && phoneCountryIndex.byCode[normalizedIso]) {
+        candidate = phoneCountryIndex.byCode[normalizedIso];
+      }
+      if (!candidate && normalizedDial) {
+        const dialKey = normalizedDial.replace('+', '');
+        candidate = phoneCountryIndex.byDial[dialKey] || null;
+      }
+      if (!candidate) return;
+      setSelectedPhoneCountryCode(candidate.code);
+      setPhoneLocalDigits((prev) => limitPhoneDigitsForCountry(prev, candidate));
+    };
+
+    const tryIpFallback = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        if (!res?.ok) return;
+        const data = await res.json();
+        applyDetectedCountry(data?.country, data?.country_calling_code || data?.calling_code);
+      } catch {
+        // ignora
+      }
+    };
+
+    if (!navigator?.geolocation) {
+      tryIpFallback();
+      return () => {
+        cancelled = true;
+        controller.abort();
+      };
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        if (cancelled || userSelectedPhoneCountryRef.current) return;
+        const { latitude, longitude } = position.coords || {};
+        if (latitude == null || longitude == null) {
+          await tryIpFallback();
+          return;
+        }
+        try {
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`,
+            { signal: controller.signal }
+          );
+          if (res?.ok) {
+            const data = await res.json();
+            applyDetectedCountry(data?.countryCode || data?.country_code, data?.callingCode || data?.countryCallingCode);
+          } else {
+            await tryIpFallback();
+          }
+        } catch {
+          await tryIpFallback();
+        }
+      },
+      async () => {
+        await tryIpFallback();
+      },
+      { enableHighAccuracy: false, maximumAge: 600000, timeout: 5000 }
+    );
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [phoneCountryIndex]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-    let nextValue = name === 'country' ? normalizeCountryCode(value) : value;
-    if (name === 'phone') {
-      const normalizedCountry = normalizeCountryCode(form.country);
-      if (normalizedCountry === 'BR') {
-        nextValue = formatBrazilPhone(value);
-      } else {
-        nextValue = value;
-      }
-    }
+    if (name === 'phone') return;
+    const nextValue = name === 'country' ? normalizeCountryCode(value) : value;
     setForm({ ...form, [name]: nextValue });
   };
 
+  const handlePhoneInput = (event) => {
+    const limited = limitPhoneDigitsForCountry(event.target.value, selectedPhoneCountry);
+    setPhoneLocalDigits(limited);
+  };
+
+  const handlePhoneCountryChange = (event) => {
+    const nextCode = normalizeCountryCode(event.target.value);
+    const countryCandidate =
+      sortedPhoneCountries.find((country) => normalizeCountryCode(country.code) === nextCode) ||
+      selectedPhoneCountry ||
+      sortedPhoneCountries[0] ||
+      null;
+    userSelectedPhoneCountryRef.current = true;
+    if (!countryCandidate) return;
+    setSelectedPhoneCountryCode(countryCandidate.code);
+    setPhoneLocalDigits((prev) => limitPhoneDigitsForCountry(prev, countryCandidate));
+  };
+
   const handleReset = () => {
+    userSelectedPhoneCountryRef.current = false;
     setForm(initialFormState);
+    applyInitialPhoneState(initialFormState.phone);
     setAvatarFile(null);
     setRemoveAvatar(false);
     setAvatarPreview(user?.profile_image_url ?? '');
@@ -269,10 +456,13 @@ export default function EditProfile() {
     if (saving) return;
     setSaving(true);
     try {
+      const normalizedPhone = normalizePhoneNumber(selectedPhoneCountry?.dialCode, phoneLocalDigits);
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => {
         if (key === 'country') {
           payload.append(key, normalizeCountryCode(value) || '');
+        } else if (key === 'phone') {
+          payload.append('phone', normalizedPhone || '');
         } else {
           payload.append(key, value ?? '');
         }
@@ -383,15 +573,56 @@ export default function EditProfile() {
 
           <div className="edit-profile-grid">
             <label>
-              Telefone
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="(00) 00000-0000"
-                inputMode="tel"
-                autoComplete="tel"
-              />
+              Telefone celular
+              <div className="phone-input">
+                <div className="phone-input__country">
+                  <div className="phone-input__flag" aria-hidden="true">
+                    {selectedPhoneCountry?.flagUrl ? (
+                      <img
+                        src={selectedPhoneCountry.flagUrl}
+                        alt={`Bandeira de ${selectedPhoneCountry.name}`}
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="phone-input__flag-fallback">
+                        {selectedPhoneCountry?.dialCode || '+00'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="phone-input__dial">{selectedPhoneCountry?.dialCode || '+00'}</span>
+                  <span className="phone-input__chevron" aria-hidden="true">
+                    ▾
+                  </span>
+                  <select
+                    id="phone-country"
+                    className="phone-input__select"
+                    value={selectedPhoneCountry?.code || DEFAULT_PHONE_COUNTRY_CODE}
+                    onChange={handlePhoneCountryChange}
+                    aria-label="Selecione o país do telefone"
+                  >
+                    {sortedPhoneCountries.map((country) => (
+                      <option key={`${country.code}-${country.dialCode}`} value={country.code}>
+                        {country.name} {country.dialCode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  className="phone-input__field"
+                  inputMode="tel"
+                  placeholder={getCountryExample(selectedPhoneCountry)}
+                  maxLength={getCountryMaxLocalDigits(selectedPhoneCountry) + 8}
+                  value={formatLocalWithExample(phoneLocalDigits, selectedPhoneCountry?.example)}
+                  onInput={handlePhoneInput}
+                  autoComplete="tel"
+                />
+              </div>
+              <p className="phone-input__hint">
+                Exemplo: {selectedPhoneCountry?.dialCode || ''} {getCountryExample(selectedPhoneCountry)}
+              </p>
             </label>
             <label>
               CEP
