@@ -169,6 +169,16 @@ const COVER_THEMES = [
     chipText: '#f8fafc'
   },
   {
+    id: 'cubos-image',
+    name: 'Cubos (img)',
+    image: '/modelosdecapa/modelo-cubos.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12))'
+  },
+  {
     id: 'safira-image',
     name: 'Safira (img)',
     image: '/modelosdecapa/modelo-safira.svg',
@@ -200,29 +210,25 @@ const COVER_THEMES = [
   },
 ];
 
-const DEFAULT_COVER_THEME = 'forest';
+const DEFAULT_COVER_THEME = 'cubos-image';
 
 const resolveCoverTheme = (themeId) =>
   COVER_THEMES.find((theme) => theme.id === themeId) ||
   COVER_THEMES.find((theme) => theme.id === DEFAULT_COVER_THEME) ||
   COVER_THEMES[0];
 
-const FALLBACK_COVER_TEMPLATES = [
-  { id: 'modelo-verde', filename: 'modelo-verde.svg', url: '/modelosdecapa/modelo-verde.svg' },
-  { id: 'modelo-dourado', filename: 'modelo-dourado.svg', url: '/modelosdecapa/modelo-dourado.svg' },
-  { id: 'modelo-dourado-claro', filename: 'modelo-dourado-claro.svg', url: '/modelosdecapa/modelo-dourado-claro.svg' },
-  { id: 'modelo-safira', filename: 'modelo-safira.svg', url: '/modelosdecapa/modelo-safira.svg' },
-  { id: 'modelo-por-do-sol', filename: 'modelo-por-do-sol.svg', url: '/modelosdecapa/modelo-por-do-sol.svg' },
-  { id: 'modelo-carbono', filename: 'modelo-carbono.svg', url: '/modelosdecapa/modelo-carbono.svg' }
-];
+const FALLBACK_COVER_TEMPLATES = [];
 
 const buildCoverStyle = (imageUrl, themeId) => {
   const theme = resolveCoverTheme(themeId);
   const img = imageUrl || theme?.image || '';
   const gradient = theme?.gradient || COVER_THEMES[0].gradient;
+  const overlay =
+    theme?.overlay ||
+    'linear-gradient(120deg, rgba(10, 18, 38, 0.7), rgba(8, 47, 73, 0.4))';
   if (img) {
     return {
-      backgroundImage: `linear-gradient(120deg, rgba(10, 18, 38, 0.7), rgba(8, 47, 73, 0.4)), url('${img}')`,
+      backgroundImage: `${overlay}, url('${img}')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -302,12 +308,18 @@ export default function SellerProfile() {
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
   const mappedCoverTemplates = useMemo(
-    () =>
-      (coverTemplates || []).map((item, index) => ({
-        id: item.id || item.filename || `template-${index}`,
-        name: item.filename || item.name || 'Modelo',
-        image: item.url
-      })),
+    () => {
+      const existingImages = new Set(
+        COVER_THEMES.filter((t) => t.image).map((t) => t.image)
+      );
+      return (coverTemplates || [])
+        .filter((item) => item?.url && !existingImages.has(item.url))
+        .map((item, index) => ({
+          id: item.id || item.filename || `template-${index}`,
+          name: item.filename || item.name || 'Modelo',
+          image: item.url
+        }));
+    },
     [coverTemplates]
   );
   const themeOptions = useMemo(
@@ -683,12 +695,11 @@ export default function SellerProfile() {
       .then((res) => {
         if (!active) return;
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
-        const safeList = list.length > 0 ? list : FALLBACK_COVER_TEMPLATES;
-        setCoverTemplates(safeList);
+        setCoverTemplates(list);
       })
       .catch(() => {
         if (!active) return;
-        setCoverTemplates(FALLBACK_COVER_TEMPLATES);
+        setCoverTemplates([]);
       })
       .finally(() => {
         if (active) setCoverTemplatesLoading(false);

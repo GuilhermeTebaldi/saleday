@@ -1,0 +1,46 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="35%" stop-color="#e0f2fe"/>
+      <stop offset="70%" stop-color="#ecfccb"/>
+      <stop offset="100%" stop-color="#fef9c3"/>
+    </linearGradient>
+    <linearGradient id="cubeOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="cubeGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <linearGradient id="cubeLime" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bef264"/>
+      <stop offset="100%" stop-color="#84cc16"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#bg)"/>
+
+  <g fill="none" opacity="0.14">
+    <circle cx="260" cy="120" r="80" fill="#22d3ee"/>
+    <circle cx="1340" cy="90" r="70" fill="#f97316"/>
+    <circle cx="1200" cy="420" r="120" fill="#22c55e"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="630" y="180" width="210" height="210" rx="24" fill="url(#cubeOrange)"/>
+    <rect x="1010" y="200" width="150" height="150" rx="20" fill="url(#cubeGreen)"/>
+    <rect x="880" y="120" width="120" height="120" rx="18" fill="url(#cubeLime)"/>
+  </g>
+
+  <g opacity="0.16">
+    <circle cx="520" cy="320" r="18" fill="#f59e0b"/>
+    <circle cx="1180" cy="260" r="14" fill="#22d3ee"/>
+    <circle cx="940" cy="360" r="10" fill="#16a34a"/>
+    <circle cx="760" cy="140" r="12" fill="#f97316"/>
+  </g>
+</svg>
