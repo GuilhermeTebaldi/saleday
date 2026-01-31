@@ -151,6 +151,28 @@ const COVER_THEMES = [
     muted: '#0b172b'
   },
   {
+    id: 'jade-imperial',
+    name: 'Jade imperial',
+    gradient: 'linear-gradient(120deg, #022c22 0%, #0f766e 40%, #14b8a6 70%, #86efac 100%)',
+    foreground: '#ecfeff',
+    muted: '#ccfbf1',
+    cardBg: 'rgba(2, 44, 34, 0.5)',
+    cardBorder: 'rgba(94, 234, 212, 0.35)',
+    chipBg: 'rgba(236, 254, 255, 0.9)',
+    chipText: '#064e3b'
+  },
+  {
+    id: 'rubi-noite',
+    name: 'Rubi noir',
+    gradient: 'linear-gradient(125deg, #0f172a 0%, #3b0764 35%, #be185d 70%, #f97316 100%)',
+    foreground: '#fdf2f8',
+    muted: '#fbcfe8',
+    cardBg: 'rgba(15, 23, 42, 0.58)',
+    cardBorder: 'rgba(244, 63, 94, 0.4)',
+    chipBg: 'rgba(15, 23, 42, 0.78)',
+    chipText: '#fdf2f8'
+  },
+  {
     id: 'gold-image',
     name: 'Dourado (img)',
     image: '/modelosdecapa/modelo-dourado.svg',
@@ -361,7 +383,22 @@ const AVATAR_FRAMES = [
   { id: 'cubos', name: 'Cubos', ring: 'linear-gradient(135deg, #fbbf24, #22c55e)' },
   { id: 'cubos-solar', name: 'Cubos solar', ring: 'linear-gradient(135deg, #fde047, #f59e0b)' },
   { id: 'cubos-aurora', name: 'Cubos aurora', ring: 'linear-gradient(135deg, #22d3ee, #a855f7)' },
-  { id: 'pixel-pop', name: 'Pixel pop', ring: 'linear-gradient(135deg, #34d399, #60a5fa)' }
+  { id: 'pixel-pop', name: 'Pixel pop', ring: 'linear-gradient(135deg, #34d399, #60a5fa)' },
+  {
+    id: 'coroa-prisma',
+    name: 'Coroa Prisma',
+    ring: 'conic-gradient(from 180deg, #22d3ee, #a855f7, #f97316, #facc15, #22c55e, #22d3ee)'
+  },
+  {
+    id: 'halo-zenith',
+    name: 'Halo Zenith',
+    ring: 'conic-gradient(from 90deg, #38bdf8, #22c55e, #facc15, #f97316, #ec4899, #38bdf8)'
+  },
+  {
+    id: 'fogo-real',
+    name: 'Fogo Real',
+    ring: 'conic-gradient(from 180deg, #f97316, #f59e0b, #f43f5e, #be123c, #f97316)'
+  }
 ];
 
 const DEFAULT_COVER_THEME = 'cubos-image';
