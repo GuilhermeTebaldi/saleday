@@ -1,0 +1,36 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nebula-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1224"/>
+      <stop offset="40%" stop-color="#1d1b46"/>
+      <stop offset="75%" stop-color="#1f6feb"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <radialGradient id="nebula-glow1" cx="28%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#f472b6" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f472b6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nebula-glow2" cx="72%" cy="20%" r="45%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#nebula-bg)"/>
+  <rect width="1600" height="520" fill="url(#nebula-glow1)"/>
+  <rect width="1600" height="520" fill="url(#nebula-glow2)"/>
+
+  <g opacity="0.18">
+    <circle cx="180" cy="120" r="8" fill="#f8fafc"/>
+    <circle cx="260" cy="80" r="5" fill="#e0f2fe"/>
+    <circle cx="480" cy="140" r="6" fill="#f8fafc"/>
+    <circle cx="1220" cy="90" r="6" fill="#e0f2fe"/>
+    <circle cx="1360" cy="180" r="9" fill="#f8fafc"/>
+    <circle cx="1480" cy="60" r="4" fill="#e0f2fe"/>
+  </g>
+
+  <g opacity="0.22" stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+    <path d="M100 390 Q400 350 700 380 T1300 360" />
+    <path d="M0 440 Q360 410 720 430 T1600 410" />
+  </g>
+</svg>

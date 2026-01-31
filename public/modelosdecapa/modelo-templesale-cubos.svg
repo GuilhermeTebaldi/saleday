@@ -1,0 +1,49 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tsc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffefc"/>
+      <stop offset="40%" stop-color="#fff7e6"/>
+      <stop offset="100%" stop-color="#f3fee7"/>
+    </linearGradient>
+    <linearGradient id="tsc-swoosh1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="tsc-swoosh2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#86efac" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="cubeOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="cubeYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="cubeGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <filter id="tsc-shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#tsc-bg)"/>
+
+  <path d="M0 240 C260 210 520 280 800 230 C1080 180 1340 250 1600 200 L1600 520 L0 520 Z" fill="url(#tsc-swoosh1)"/>
+  <path d="M0 320 C260 290 520 360 800 310 C1080 260 1340 330 1600 280 L1600 520 L0 520 Z" fill="url(#tsc-swoosh2)"/>
+
+  <g filter="url(#tsc-shadow)">
+    <rect x="610" y="200" width="230" height="230" rx="28" fill="url(#cubeOrange)"/>
+    <rect x="960" y="190" width="170" height="170" rx="22" fill="url(#cubeYellow)"/>
+    <rect x="840" y="120" width="150" height="150" rx="20" fill="url(#cubeGreen)"/>
+  </g>
+
+  <g opacity="0.16" fill="#f59e0b">
+    <circle cx="220" cy="140" r="10"/>
+    <circle cx="1380" cy="120" r="12"/>
+    <circle cx="1220" cy="80" r="8"/>
+  </g>
+</svg>

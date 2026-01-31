@@ -259,6 +259,66 @@ const COVER_THEMES = [
     overlay: 'linear-gradient(120deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12))'
   },
   {
+    id: 'nebula-image',
+    name: 'Nebula (img)',
+    image: '/modelosdecapa/modelo-nebula.svg',
+    foreground: '#f8fafc',
+    muted: '#e0f2fe',
+    chipBg: 'rgba(255, 255, 255, 0.92)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.38), rgba(0,0,0,0.22))'
+  },
+  {
+    id: 'quadradinhos-image',
+    name: 'Quadradinhos (img)',
+    image: '/modelosdecapa/modelo-quadradinhos.svg',
+    foreground: '#f8fafc',
+    muted: '#dbeafe',
+    chipBg: 'rgba(15, 23, 42, 0.85)',
+    chipText: '#f8fafc',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.42), rgba(0,0,0,0.28))'
+  },
+  {
+    id: 'neon-pulse-image',
+    name: 'Neon pulse (img)',
+    image: '/modelosdecapa/modelo-neon-pulse.svg',
+    foreground: '#e0f2fe',
+    muted: '#c7d2fe',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#e0f2fe',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.45), rgba(0,0,0,0.25))'
+  },
+  {
+    id: 'glass-image',
+    name: 'Glass (img)',
+    image: '/modelosdecapa/modelo-glass.svg',
+    foreground: '#0f172a',
+    muted: '#1f2937',
+    chipBg: 'rgba(255, 255, 255, 0.9)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255,255,255,0.22), rgba(255,255,255,0.12))'
+  },
+  {
+    id: 'noite-tropical-image',
+    name: 'Noite tropical (img)',
+    image: '/modelosdecapa/modelo-noite-tropical.svg',
+    foreground: '#e0f2fe',
+    muted: '#bae6fd',
+    chipBg: 'rgba(15, 23, 42, 0.82)',
+    chipText: '#e0f2fe',
+    overlay: 'linear-gradient(120deg, rgba(0,0,0,0.42), rgba(0,0,0,0.26))'
+  },
+  {
+    id: 'templesale-cubos-image',
+    name: 'TempleSale (img)',
+    image: '/modelosdecapa/modelo-templesale-cubos.svg',
+    foreground: '#0f172a',
+    muted: '#0b172b',
+    chipBg: 'rgba(255, 255, 255, 0.95)',
+    chipText: '#0f172a',
+    overlay: 'linear-gradient(120deg, rgba(255,255,255,0.26), rgba(255,255,255,0.14))'
+  },
+  {
     id: 'safira-image',
     name: 'Safira (img)',
     image: '/modelosdecapa/modelo-safira.svg',
@@ -288,6 +348,20 @@ const COVER_THEMES = [
     foreground: '#f8fafc',
     muted: '#e2e8f0'
   },
+];
+
+const AVATAR_FRAMES = [
+  { id: 'none', name: 'Sem moldura' },
+  { id: 'gold', name: 'Dourada', ring: 'linear-gradient(135deg, #fbbf24, #f59e0b)' },
+  { id: 'emerald', name: 'Esmeralda', ring: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+  { id: 'sky', name: 'Azul céu', ring: 'linear-gradient(135deg, #38bdf8, #2563eb)' },
+  { id: 'rose', name: 'Rosa', ring: 'linear-gradient(135deg, #fb7185, #ec4899)' },
+  { id: 'violet', name: 'Violeta', ring: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
+  { id: 'graphite', name: 'Grafite', ring: 'linear-gradient(135deg, #e2e8f0, #64748b)' },
+  { id: 'cubos', name: 'Cubos', ring: 'linear-gradient(135deg, #fbbf24, #22c55e)' },
+  { id: 'cubos-solar', name: 'Cubos solar', ring: 'linear-gradient(135deg, #fde047, #f59e0b)' },
+  { id: 'cubos-aurora', name: 'Cubos aurora', ring: 'linear-gradient(135deg, #22d3ee, #a855f7)' },
+  { id: 'pixel-pop', name: 'Pixel pop', ring: 'linear-gradient(135deg, #34d399, #60a5fa)' }
 ];
 
 const DEFAULT_COVER_THEME = 'cubos-image';
@@ -344,6 +418,26 @@ export default function SellerProfile() {
     [promptLogin, token]
   );
 
+  const submitProfileUpdate = useCallback(
+    async (payload, fallbackError = 'Erro ao atualizar perfil.') => {
+      try {
+        const response = await api.put('/users/me', payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const updated = response.data?.data;
+        if (updated) {
+          setSeller((prev) => ({ ...(prev || {}), ...updated }));
+        }
+        return updated || null;
+      } catch (err) {
+        const msg = err?.response?.data?.message || fallbackError;
+        toast.error(msg);
+        throw err;
+      }
+    },
+    [token]
+  );
+
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -359,6 +453,7 @@ export default function SellerProfile() {
   const [companyMapOpen, setCompanyMapOpen] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [frameUpdating, setFrameUpdating] = useState(false);
 
   const [reviewStatus, setReviewStatus] = useState({
     loading: false,
@@ -382,6 +477,7 @@ export default function SellerProfile() {
   const avatarFileInputRef = useRef(null);
   const coverFileInputRef = useRef(null);
   const [coverEditorOpen, setCoverEditorOpen] = useState(false);
+  const [coverEditorTab, setCoverEditorTab] = useState('themes');
   const [coverTemplates, setCoverTemplates] = useState([]);
   const [coverTemplatesLoading, setCoverTemplatesLoading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
@@ -470,20 +566,15 @@ export default function SellerProfile() {
       try {
         const payload = new FormData();
         payload.append('avatar', processed);
-        const response = await api.put('/users/me', payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const updated = response.data?.data;
+        const updated = await submitProfileUpdate(payload, 'Erro ao atualizar foto.');
         if (updated) {
-          setSeller((prev) => ({ ...(prev || {}), ...updated }));
           toast.success('Foto atualizada.');
           setShowAvatarMenu(false);
         } else {
           toast.success('Foto enviada.');
         }
       } catch (err) {
-        const msg = err?.response?.data?.message || 'Erro ao atualizar foto.';
-        toast.error(msg);
+        // erro já tratado em submitProfileUpdate
       } finally {
         setAvatarUploading(false);
         if (avatarFileInputRef.current) {
@@ -492,7 +583,7 @@ export default function SellerProfile() {
         await reloadSellerProfile();
       }
     },
-    [isSelf, token, reloadSellerProfile]
+    [isSelf, reloadSellerProfile, submitProfileUpdate]
   );
 
   const updateCover = useCallback(
@@ -506,21 +597,15 @@ export default function SellerProfile() {
         if (templateUrl) payload.append('cover_template', templateUrl);
         if (removeImage) payload.append('removeCover', 'true');
         if (file) payload.append('cover', file);
-
-        const response = await api.put('/users/me', payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const updated = response.data?.data;
+        const updated = await submitProfileUpdate(payload, 'Erro ao atualizar capa.');
         if (updated) {
-          setSeller((prev) => ({ ...(prev || {}), ...updated }));
           toast.success('Capa atualizada.');
         } else {
           toast.success('Preferências salvas.');
         }
         setCoverEditorOpen(false);
       } catch (err) {
-        const msg = err?.response?.data?.message || 'Erro ao atualizar capa.';
-        toast.error(msg);
+        // erro já tratado em submitProfileUpdate
       } finally {
         setCoverUploading(false);
         if (coverFileInputRef.current) {
@@ -529,7 +614,7 @@ export default function SellerProfile() {
         await reloadSellerProfile();
       }
     },
-    [isSelf, requireAuth, token, setSeller, reloadSellerProfile]
+    [isSelf, requireAuth, reloadSellerProfile, submitProfileUpdate]
   );
 
   const handleApplyCoverTheme = useCallback(
@@ -579,6 +664,30 @@ export default function SellerProfile() {
     [updateCover]
   );
 
+  const handleApplyAvatarFrame = useCallback(
+    async (frameId) => {
+      if (!isSelf) return;
+      if (!requireAuth('Faça login para aplicar uma moldura.')) return;
+      setFrameUpdating(true);
+      try {
+        const payload = new FormData();
+        const normalized = frameId && frameId !== 'none' ? frameId : '';
+        payload.append('profile_frame', normalized);
+        const updated = await submitProfileUpdate(payload, 'Erro ao atualizar moldura.');
+        if (updated) {
+          toast.success('Moldura atualizada.');
+        }
+        setCoverEditorOpen(false);
+      } catch {
+        // erro já tratado em submitProfileUpdate
+      } finally {
+        setFrameUpdating(false);
+        await reloadSellerProfile();
+      }
+    },
+    [isSelf, reloadSellerProfile, requireAuth, submitProfileUpdate]
+  );
+
   // dados de capa e avatar (sempre calculados para manter ordem de hooks)
   const rawAvatar =
     seller?.profile_image_url ||
@@ -595,6 +704,13 @@ export default function SellerProfile() {
     [coverImageUrl, coverThemeId]
   );
   const activeTheme = useMemo(() => resolveCoverTheme(coverThemeId), [coverThemeId]);
+  const avatarFrameId = seller?.profile_frame || 'none';
+  const avatarFrame = useMemo(
+    () => AVATAR_FRAMES.find((frame) => frame.id === avatarFrameId) || AVATAR_FRAMES[0],
+    [avatarFrameId]
+  );
+  const avatarFrameStyle = avatarFrame?.ring ? { '--frame-ring': avatarFrame.ring } : undefined;
+  const avatarFrameClass = avatarFrame?.ring ? `avatar-frame avatar-frame--${avatarFrame.id}` : '';
   const coverVars = useMemo(
     () =>
       !isDesktop
@@ -1132,7 +1248,10 @@ export default function SellerProfile() {
               <button
                 type="button"
                 className="seller-cover__btn"
-                onClick={() => setCoverEditorOpen(true)}
+                onClick={() => {
+                  setCoverEditorTab('themes');
+                  setCoverEditorOpen(true);
+                }}
                 disabled={coverUploading}
               >
                 <MoreHorizontal size={20} />
@@ -1147,9 +1266,10 @@ export default function SellerProfile() {
               <div className="relative" ref={avatarMenuRef}>
                 <button
                   type="button"
-                  className="seller-avatar focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  className={`seller-avatar focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${avatarFrameClass}`}
                   onClick={handleAvatarClick}
                   aria-label={isSelf ? 'Editar foto do perfil' : 'Foto do perfil'}
+                  style={avatarFrameStyle}
                 >
                   {avatarUrl ? (
                     <img
@@ -1735,8 +1855,9 @@ export default function SellerProfile() {
               <div className="cover-editor__header">
                 <div>
                   <p className="cover-editor__eyebrow">Capa do perfil</p>
-               
-                  
+                  <p className="cover-editor__hint">
+                    Personalize a capa e a moldura da sua foto.
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -1748,51 +1869,110 @@ export default function SellerProfile() {
                 </button>
               </div>
 
-              <div className="cover-editor__section">
-                <div className="cover-editor__section-heading">
-                  <span className="cover-editor__section-title">Temas de cor</span>
-                </div>
-                {coverTemplatesLoading && (
-                  <p className="cover-editor__muted">Carregando modelos...</p>
-                )}
-                <div className="cover-editor__grid cover-editor__grid--themes">
-                  {themeOptions.map((theme) => {
-                    const style = theme.image
-                      ? {
-                          backgroundImage: `linear-gradient(120deg, rgba(10, 18, 38, 0.55), rgba(8, 47, 73, 0.35)), url('${theme.image}')`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }
-                      : { backgroundImage: theme.gradient };
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        className={`cover-theme-card ${coverThemeId === theme.id ? 'is-active' : ''} ${
-                          theme.image ? 'cover-theme-card--image' : ''
-                        }`}
-                        style={style}
-                        onClick={() =>
-                          theme.image
-                            ? handleSelectCoverTemplate(theme)
-                            : handleApplyCoverTheme(theme.id)
-                        }
-                        disabled={coverUploading}
-                      >
-                        <span className="cover-theme-card__name">{theme.name}</span>
-                        {theme.image ? (
-                          <span className="cover-theme-card__thumb">
-                            <img src={theme.image} alt={theme.name} />
-                          </span>
-                        ) : null}
-                        {coverThemeId === theme.id && (
-                          <span className="cover-theme-card__badge">Ativo</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="cover-editor__tabs">
+                <button
+                  type="button"
+                  className={`cover-editor__tab ${coverEditorTab === 'themes' ? 'is-active' : ''}`}
+                  onClick={() => setCoverEditorTab('themes')}
+                  disabled={coverUploading || frameUpdating}
+                >
+                  Temas de cor
+                </button>
+                <button
+                  type="button"
+                  className={`cover-editor__tab ${coverEditorTab === 'frames' ? 'is-active' : ''}`}
+                  onClick={() => setCoverEditorTab('frames')}
+                  disabled={coverUploading || frameUpdating}
+                >
+                  Molduras
+                </button>
               </div>
+
+              {coverEditorTab === 'themes' && (
+                <div className="cover-editor__section">
+                  <div className="cover-editor__section-heading">
+                    
+                  </div>
+                  {coverTemplatesLoading && (
+                    <p className="cover-editor__muted">Carregando modelos...</p>
+                  )}
+                  <div className="cover-editor__grid cover-editor__grid--themes">
+                    {themeOptions.map((theme) => {
+                      const style = theme.image
+                        ? {
+                            backgroundImage: `linear-gradient(120deg, rgba(10, 18, 38, 0.55), rgba(8, 47, 73, 0.35)), url('${theme.image}')`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
+                          }
+                        : { backgroundImage: theme.gradient };
+                      return (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          className={`cover-theme-card ${coverThemeId === theme.id ? 'is-active' : ''} ${
+                            theme.image ? 'cover-theme-card--image' : ''
+                          }`}
+                          style={style}
+                          onClick={() =>
+                            theme.image
+                              ? handleSelectCoverTemplate(theme)
+                              : handleApplyCoverTheme(theme.id)
+                          }
+                          disabled={coverUploading}
+                        >
+                          <span className="cover-theme-card__name">{theme.name}</span>
+                          {theme.image ? (
+                            <span className="cover-theme-card__thumb">
+                              <img src={theme.image} alt={theme.name} />
+                            </span>
+                          ) : null}
+                          {coverThemeId === theme.id && (
+                            <span className="cover-theme-card__badge">Ativo</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {coverEditorTab === 'frames' && (
+                <div className="cover-editor__section">
+                  <div className="cover-editor__section-heading">
+                    
+                  </div>
+                  <div className="cover-editor__grid cover-editor__grid--themes cover-editor__grid--frames">
+                    {AVATAR_FRAMES.map((frame) => {
+                      const isActive = avatarFrameId === frame.id;
+                      const previewStyle = frame.ring ? { '--frame-ring': frame.ring } : undefined;
+                      const frameClass =
+                        frame.id !== 'none'
+                          ? `frame-preview avatar-frame avatar-frame--${frame.id}`
+                          : 'frame-preview frame-preview--none';
+                      return (
+                        <button
+                          key={frame.id}
+                          type="button"
+                          className={`cover-theme-card cover-theme-card--frame ${isActive ? 'is-active' : ''}`}
+                          onClick={() => handleApplyAvatarFrame(frame.id)}
+                          disabled={frameUpdating || coverUploading}
+                        >
+                          <span
+                            className={frameClass}
+                            style={previewStyle}
+                          >
+                            TS
+                          </span>
+                          <span className="cover-theme-card__name">{frame.name}</span>
+                          {isActive && (
+                            <span className="cover-theme-card__badge">Ativo</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="cover-editor__section">
                 <div className="cover-editor__section-heading">

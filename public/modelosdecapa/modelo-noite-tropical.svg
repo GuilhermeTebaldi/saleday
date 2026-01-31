@@ -1,0 +1,28 @@
+<svg width="1600" height="520" viewBox="0 0 1600 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nt-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#02131a"/>
+      <stop offset="50%" stop-color="#0b2c2f"/>
+      <stop offset="100%" stop-color="#0f5132"/>
+    </linearGradient>
+    <linearGradient id="nt-wave1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="nt-wave2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="520" fill="url(#nt-bg)"/>
+  <path d="M0 220 C260 190 520 260 800 210 C1080 160 1340 230 1600 180 L1600 520 L0 520 Z" fill="url(#nt-wave1)"/>
+  <path d="M0 310 C260 280 520 350 800 300 C1080 250 1340 320 1600 270 L1600 520 L0 520 Z" fill="url(#nt-wave2)"/>
+
+  <g opacity="0.22" fill="#22d3ee">
+    <circle cx="240" cy="120" r="6"/>
+    <circle cx="360" cy="90" r="8"/>
+    <circle cx="1320" cy="80" r="7"/>
+    <circle cx="1220" cy="170" r="5"/>
+  </g>
+</svg>

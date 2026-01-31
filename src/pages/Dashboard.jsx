@@ -839,12 +839,13 @@ export default function Dashboard() {
     },
     {
       key: 'security',
-      label: 'Segurança',
+      label: 'Senha',
       icon: <ShieldIcon className="h-4 w-4" />,
       onClick: () => {
         setPasswords(getInitialSecurityPasswords());
         setIsSecurityModalOpen(true);
-      }
+      },
+      hidden: true
     },
     {
       key: 'terms',
@@ -973,14 +974,16 @@ export default function Dashboard() {
           >
             <div className="dashboard-shortcuts">
               {shortcutItems.map((item) => (
-                <ShortcutButton
-                  key={item.key}
-                  icon={item.icon}
-                  label={item.label}
-                  to={item.to}
-                  tone={item.tone}
-                  onClick={item.onClick}
-                />
+                item.hidden ? null : (
+                  <ShortcutButton
+                    key={item.key}
+                    icon={item.icon}
+                    label={item.label}
+                    to={item.to}
+                    tone={item.tone}
+                    onClick={item.onClick}
+                  />
+                )
               ))}
             </div>
             <div className="dashboard-language mt-4 space-y-2">
