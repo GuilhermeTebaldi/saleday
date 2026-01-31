@@ -198,6 +198,10 @@ const ENTRIES = [
 
 { key: 'Carregando seus anúncios...', en: 'Loading your listings...', es: 'Cargando tus anuncios...', it: 'Caricamento dei tuoi annunci...', ja: 'あなたの出品を読み込んでいます...' },
 { key: 'Você ainda não publicou produtos.', en: 'You haven\'t published any products yet.', es: 'Aún no has publicado productos.', it: 'Non hai ancora pubblicato prodotti.', ja: 'まだ商品を出品していません。' },
+{ key: 'Seus anúncios', en: 'Your listings', es: 'Tus anuncios', it: 'I tuoi annunci', ja: 'あなたの出品' },
+{ key: 'Ativos', en: 'Active', es: 'Activos', it: 'Attivi', ja: 'アクティブ' },
+{ key: 'Vendidos', en: 'Sold', es: 'Vendidos', it: 'Venduti', ja: '売却済み' },
+{ key: 'Painel do vendedor', en: 'Seller dashboard', es: 'Panel del vendedor', it: 'Pannello del venditore', ja: '販売者ダッシュボード' },
   { key: 'Não foi possível criar sua conta.', en: 'Could not create your account.', es: 'No fue posible crear tu cuenta.', it: 'Impossibile creare il tuo account.' , ja: 'アカウントを作成できませんでした。' },
   { key: 'seu@email.com', en: 'your@email.com', es: 'tu@correo.com', it: 'tua@email.com' , ja: 'your@email.com' },
   { key: 'Ocultar senha', en: 'Hide password', es: 'Ocultar contraseña', it: 'Nascondi password' , ja: 'パスワードを隠す' },
@@ -217,9 +221,31 @@ const ENTRIES = [
   { key: 'Voltar ao topo', en: 'Back to top', es: 'Volver arriba', it: 'Torna in cima' , ja: 'ページトップへ' },
   { key: 'Voltar', en: 'Back', es: 'Volver', it: 'Indietro' , ja: '戻る' },
   { key: 'Painel do usuário', en: 'User dashboard', es: 'Panel de usuario', it: 'Pannello utente' , ja: 'ユーザーダッシュボード' },
+  { key: 'Pedidos e compras', en: 'Orders and purchases', es: 'Pedidos y compras', it: 'Ordini e acquisti', ja: '注文と購入' },
+  { key: 'Atalhos', en: 'Shortcuts', es: 'Atajos', it: 'Scorciatoie', ja: 'ショートカット' },
+  { key: 'Ações rápidas', en: 'Quick actions', es: 'Acciones rápidas', it: 'Azioni rapide', ja: 'クイックアクション' },
+  { key: 'Faça agora', en: 'Do it now', es: 'Hazlo ahora', it: 'Fallo ora', ja: '今すぐやる' },
+  { key: 'Configurações e suporte', en: 'Settings and support', es: 'Configuración y soporte', it: 'Impostazioni e supporto', ja: '設定とサポート' },
+  { key: 'Central de orders', en: 'Orders center', es: 'Centro de pedidos', it: 'Centro ordini', ja: '注文センター' },
+  {
+    key: 'Confira produtos confirmados e avalie o vendedor assim que receber.',
+    en: 'Check confirmed products and rate the seller as soon as you receive them.',
+    es: 'Revisa los productos confirmados y evalúa al vendedor en cuanto los recibas.',
+    it: 'Controlla i prodotti confermati e valuta il venditore appena li ricevi.',
+    ja: '確定した商品を確認し、受け取り次第販売者を評価してください。'
+  },
   { key: 'Atalhos rápidos', en: 'Quick shortcuts', es: 'Accesos rápidos', it: 'Scorciatoie rapide', ja: 'クイックショートカット' },
   { key: 'Organize seu ritmo', en: 'Organize your rhythm', es: 'Organiza tu ritmo', it: 'Organizza il tuo ritmo', ja: '自分のリズムを整える' },
   { key: 'Minhas compras', en: 'My purchases', es: 'Mis compras', it: 'I miei acquisti', ja: '購入履歴' },
+  { key: 'Vendas', en: 'Sales', es: 'Ventas', it: 'Vendite', ja: '販売' },
+  { key: 'Você recebeu 1 nova solicitação.', en: 'You received 1 new request.', es: 'Recibiste 1 nueva solicitud.', it: 'Hai ricevuto 1 nuova richiesta.', ja: '新しいリクエストを1件受け取りました。' },
+  { key: 'Abra Gerenciar pedidos para responder rápido.', en: 'Open Manage orders to respond quickly.', es: 'Abre Gestionar pedidos para responder rápido.', it: 'Apri Gestire ordini per rispondere rapidamente.', ja: 'すぐに対応するには「注文を管理」を開いてください。' },
+  { key: '✕', en: '✕', es: '✕', it: '✕', ja: '✕' },
+  { key: '+1 pedido', en: '+1 order', es: '+1 pedido', it: '+1 ordine', ja: '＋1件の注文' },
+  { key: 'Abra', en: 'Open', es: 'Abrir', it: 'Apri', ja: '開く' },
+  { key: 'para responder rápido.', en: 'to reply quickly.', es: 'para responder rápido.', it: 'per rispondere rapidamente.', ja: 'すばやく対応するために。' },
+  { key: 'pedido', en: 'order', es: 'pedido', it: 'ordine', ja: '注文' },
+  { key: 'solicitação', en: 'request', es: 'solicitud', it: 'richiesta', ja: 'リクエスト' },
   { key: 'Atualização automática', en: 'Automatic update', es: 'Actualización automática', it: 'Aggiornamento automatico', ja: '自動更新' },
   { key: 'Tem dúvidas?', en: 'Have questions?', es: '¿Tienes dudas?', it: 'Hai domande?', ja: 'ご質問はありますか？' },
   { key: 'Suporte', en: 'Support', es: 'Soporte', it: 'Supporto', ja: 'サポート' },
@@ -1240,7 +1266,11 @@ const ENTRIES = [
 { key: 'Arquivo', en: 'File', es: 'Archivo', it: 'File' },
   { key: '', en: '', es: '', it: '', ja: '' },
   
-  { key: 'Curtidas', en: 'Likes', es: 'Me gusta', it: 'Mi piace', ja: 'いいね' }
+  { key: 'Curtidas', en: 'Likes', es: 'Me gusta', it: 'Mi piace', ja: 'いいね' },
+  { key: 'Curtida', en: 'Like', es: 'Me gusta', it: 'Mi piace', ja: 'いいね' },
+  { key: 'curtidas', en: 'likes', es: 'me gusta', it: 'mi piace', ja: 'いいね' },
+  { key: 'curtida', en: 'like', es: 'me gusta', it: 'mi piace', ja: 'いいね' },
+  { key: 'Você tem {count} curtida', en: 'You have {count} like', es: 'Tienes {count} me gusta', it: 'Hai {count} mi piace', ja: '{count}いいねがあります' }
 ];
 
 const PT = {};

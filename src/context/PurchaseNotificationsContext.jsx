@@ -8,6 +8,7 @@ const POLL_INTERVAL_MS = 12000;
 
 const PurchaseNotificationsContext = createContext({
   orders: [],
+  unseenOrderIds: [],
   unseenCount: 0,
   hasUnseenOrders: false,
   latestUnseenOrder: null,
@@ -136,13 +137,14 @@ export function PurchaseNotificationsProvider({ children }) {
   const contextValue = useMemo(
     () => ({
       orders,
+      unseenOrderIds: unseenIds,
       unseenCount: unseenIds.length,
       hasUnseenOrders: unseenIds.length > 0,
       latestUnseenOrder,
       markOrdersSeen,
       refreshOrders: loadOrders
     }),
-    [orders, unseenIds.length, latestUnseenOrder, markOrdersSeen, loadOrders]
+    [orders, unseenIds, latestUnseenOrder, markOrdersSeen, loadOrders]
   );
 
   return (

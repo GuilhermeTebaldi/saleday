@@ -26,6 +26,7 @@ export default function MyProducts() {
     : [];
   const [resetVisible, setResetVisible] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, productId: null });
+  const [activeFilter, setActiveFilter] = useState('active');
 
   const isValidImageSource = (url) =>
     typeof url === 'string' &&
@@ -239,48 +240,122 @@ export default function MyProducts() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <>
-        <CloseBackButton />
-        <LoadingBar message="Carregando seus anúncios..." className="my-products-empty" />
-      </>
-    );
-  }
-  if (fetchError) {
-    return (
-      <>
-        <CloseBackButton />
-        <p className="my-products-empty text-rose-600">{fetchError}</p>
-      </>
-    );
-  }
-  if (!safeProducts.length) {
-    return (
-      <>
-        <CloseBackButton />
-        <p className="my-products-empty">Você ainda não publicou produtos.</p>
-      </>
-    );
-  }
+  const visibleProducts = safeProducts.filter((product) => !product.hidden_by_seller);
+  const soldCount = visibleProducts.filter((product) => product.status === 'sold').length;
+  const activeCount = visibleProducts.filter((product) => product.status !== 'sold').length;
+  const statusSummary = [
+    {
+      label: 'Ativos',
+      value: activeCount,
+      description: '',
+      filterKey: 'active'
+    },
+    {
+      label: 'Vendidos',
+      value: soldCount,
+      description: '',
+      filterKey: 'sold'
+    },
+  ];
+  const productFilters = {
+    active: (product) => product.status !== 'sold' && !product.hidden_by_seller,
+    sold: (product) => product.status === 'sold' && !product.hidden_by_seller,
+  };
+  const filteredProducts = safeProducts.filter(
+    (product) => productFilters[activeFilter]?.(product) ?? true
+  );
+  const activeFilterSummary = statusSummary.find((item) => item.filterKey === activeFilter);
+  const filteredEmptyMessage = activeFilterSummary
+    ? `Nenhum ${activeFilterSummary.label.toLowerCase()} encontrado.`
+    : 'Nenhum produto encontrado.';
+  const handleFilterChange = useCallback((filterKey) => {
+    setActiveFilter(filterKey);
+  }, []);
+  const handleFilterKeyDown = useCallback(
+    (event, filterKey) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        handleFilterChange(filterKey);
+      }
+    },
+    [handleFilterChange]
+  );
 
-  const hasProductsList = safeProducts.length > 0;
+  const resetButton = resetVisible && (
+    <button
+      type="button"
+      onClick={handleHardReset}
+      className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-600 text-white rounded shadow-lg"
+    >
+      Reset App
+    </button>
+  );
 
-  return (
+  const renderShell = (children) => (
     <>
-      {resetVisible && (
-        <button
-          type="button"
-          onClick={handleHardReset}
-          className="fixed top-4 right-4 z-50 px-4 py-2 bg-red-600 text-white rounded shadow-lg"
-        >
-          Reset App
-        </button>
-      )}
-      <CloseBackButton />
-      {hasProductsList && (
-        <section className="my-products-grid grid grid-cols-2 md:grid-cols-3 gap-3">
-          {safeProducts.map((product, index) => (
+      {resetButton}
+      <main className="my-products-page">
+        <CloseBackButton />
+        {children}
+      </main>
+    </>
+  );
+
+  if (loading) {
+    return renderShell(
+      <div className="my-products-status">
+        <LoadingBar message="Carregando seus anúncios..." className="my-products-status__loader" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return renderShell(
+      <div className="my-products-status">
+        <p className="my-products-status__text text-rose-600">{fetchError}</p>
+      </div>
+    );
+  }
+
+  if (!safeProducts.length) {
+    return renderShell(
+      <div className="my-products-status">
+        <p className="my-products-status__text">Você ainda não publicou produtos.</p>
+      </div>
+    );
+  }
+
+  return renderShell(
+    <>
+      <section className="my-products-page__hero">
+        <div className="my-products-page__hero-text">
+          <p className="my-products-page__eyebrow">Painel do vendedor</p>
+          <h1 className="my-products-page__title">Seus anúncios</h1>
+         
+        </div>
+        <div className="my-products-page__hero-stats" aria-label="Resumo de status dos anúncios">
+          {statusSummary.map((item) => (
+            <div
+              key={item.filterKey}
+              className={`my-products-page__summary-card ${
+                activeFilter === item.filterKey ? 'my-products-page__summary-card--active' : ''
+              }`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={activeFilter === item.filterKey}
+              onClick={() => handleFilterChange(item.filterKey)}
+              onKeyDown={(event) => handleFilterKeyDown(event, item.filterKey)}
+            >
+              <span className="my-products-page__summary-value">{item.value}</span>
+              <span className="my-products-page__summary-label">{item.label}</span>
+              <p className="my-products-page__summary-description">{item.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="my-products-grid">
+        {filteredProducts.length ? (
+          filteredProducts.map((product, index) => (
             <ProductCard
               key={`product-${String(product.id ?? `idx-${index}`)}`}
               product={product}
@@ -291,9 +366,11 @@ export default function MyProducts() {
               isValidImageSource={isValidImageSource}
               getProductPriceLabel={getProductPriceLabel}
             />
-          ))}
-        </section>
-      )}
+          ))
+        ) : (
+          <div className="my-products-empty my-products-empty--inline">{filteredEmptyMessage}</div>
+        )}
+      </section>
       {deleteConfirm.open && (
         <div
           className="my-products-confirm"

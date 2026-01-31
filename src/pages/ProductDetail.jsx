@@ -1758,104 +1758,107 @@ export default function ProductDetail() {
               <section className="product-detail__section">
                 <div className="product-detail__summary">
                   <div className="product-detail__price-card">
-                    <div className="product-detail__metrics">
-                      <div className="product-detail__metric">
-                        <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
-                        <span className="product-detail__metric-count">{viewsCount}</span>
-                        <span>Visualizações</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleFavorite}
-                        disabled={favoriteLoading}
-                        aria-pressed={favorite}
-                        title={favorite ? 'Remover curtida' : 'Curtir'}
-                        className={`product-detail__metric product-detail__metric--favorite ${
-                          favorite ? 'is-active' : ''
-                        }`}
-                      >
-                        <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
-                        <span className="product-detail__metric-count">{likesCount}</span>
-                        <span>Curtidas</span>
-                      </button>
-                      <details className="product-detail__more-actions product-detail__more-actions--inline">
-                        <summary
-                          className="product-detail__more-actions-toggle"
-                          aria-label="Mais ações"
-                          title="Mais ações"
-                        >
-                          ⋯
-                        </summary>
-                        <div className="product-detail__more-actions-panel">
-                          <button
-                            onClick={openOfferModal}
-                            disabled={isSold || isOwner}
-                            className="product-detail__action product-detail__action--secondary"
-                          >
-                            <Send size={18} />{' '}
-                            {isSold
-                              ? 'Produto vendido'
-                              : isOwner
-                              ? 'Você é o vendedor'
-                              : isFreeProduct
-                              ? 'Combinar retirada'
-                              : 'Fazer oferta'}
-                          </button>
-
-                          {!isSeller && !isSold && user && (
-                            <button
-                              onClick={handleRequestPurchase}
-                              disabled={ordering}
-                              className="product-detail__action product-detail__action--tertiary"
-                            >
-                              <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
-                            </button>
-                          )}
-
-                          <button
-                            onClick={openShare}
-                            className="product-detail__action product-detail__action--secondary"
-                          >
-                            <Share2 size={18} /> Compartilhar
-                          </button>
-
-                          {isOwner && !isSold && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await api.put(
-                                    `/products/${product.id}/status`,
-                                    { status: 'sold' },
-                                    { headers: { Authorization: `Bearer ${token}` } }
-                                  );
-                                  setProduct((prev) => ({ ...prev, status: 'sold' }));
-                                  toast.success('Produto marcado como vendido.');
-                                } catch {
-                                  toast.error('Falha ao marcar como vendido.');
-                                }
-                              }}
-                              className="product-detail__action product-detail__action--dark"
-                            >
-                              Marcar como vendido
-                            </button>
-                          )}
-
-                          {false && isOwner && !isSold && (
-                            // para voltar o botao é só tirar o : false &&
-                            <Link
-                              to={boostLinkTarget}
-                              state={boostLinkState}
-                              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
-                            >
-                              Impulsionar anúncio
-                            </Link>
-                          )}
+                    <div className="product-detail__price-top">
+                      <div className="product-detail__metrics">
+                        <div className="product-detail__metric">
+                          <Eye size={16} className="product-detail__metric-icon" aria-hidden="true" />
+                          <span className="product-detail__metric-count">{viewsCount}</span>
+                          <span>Visualizações</span>
                         </div>
-                      </details>
+                        <button
+                          type="button"
+                          onClick={handleFavorite}
+                          disabled={favoriteLoading}
+                          aria-pressed={favorite}
+                          title={favorite ? 'Remover curtida' : 'Curtir'}
+                          className={`product-detail__metric product-detail__metric--favorite ${
+                            favorite ? 'is-active' : ''
+                          }`}
+                        >
+                          <Heart size={16} className="product-detail__metric-icon" aria-hidden="true" />
+                          <span className="product-detail__metric-count">{likesCount}</span>
+                          <span>Curtidas</span>
+                        </button>
+                        {isOwner && !isSold && (
+                          <details className="product-detail__more-actions product-detail__more-actions--inline">
+                            <summary
+                              className="product-detail__more-actions-toggle"
+                              aria-label="Mais ações"
+                              title="Mais ações"
+                            >
+                              ⋯
+                            </summary>
+                            <div className="product-detail__more-actions-panel">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await api.put(
+                                      `/products/${product.id}/status`,
+                                      { status: 'sold' },
+                                      { headers: { Authorization: `Bearer ${token}` } }
+                                    );
+                                    setProduct((prev) => ({ ...prev, status: 'sold' }));
+                                    toast.success('Produto marcado como vendido.');
+                                  } catch {
+                                    toast.error('Falha ao marcar como vendido.');
+                                  }
+                                }}
+                                className="product-detail__action product-detail__action--dark"
+                              >
+                                Marcar como vendido
+                              </button>
+                              {false && isOwner && !isSold && (
+                                // para voltar o botao é só tirar o : false &&
+                                <Link
+                                  to={boostLinkTarget}
+                                  state={boostLinkState}
+                                  className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 text-white text-sm font-semibold shadow-lg shadow-pink-500/30 hover:opacity-95 transition"
+                                >
+                                  Impulsionar anúncio
+                                </Link>
+                              )}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                      <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
+                        {priceFmt}
+                      </p>
                     </div>
-                    <p className={`product-detail__price ${isFreeProduct ? 'is-free' : ''}`}>
-                      {priceFmt}
-                    </p>
+
+                    <div className="product-detail__actions product-detail__actions--inline product-detail__actions--compact">
+                      <button
+                        onClick={openOfferModal}
+                        disabled={isSold || isOwner}
+                        className="product-detail__action product-detail__action--secondary"
+                      >
+                        <Send size={18} />{' '}
+                        {isSold
+                          ? 'Produto vendido'
+                          : isOwner
+                          ? 'Você é o vendedor'
+                          : isFreeProduct
+                          ? 'Combinar retirada'
+                          : 'Fazer oferta'}
+                      </button>
+
+                      {!isSeller && !isSold && user && (
+                        <button
+                          onClick={handleRequestPurchase}
+                          disabled={ordering}
+                          className="product-detail__action product-detail__action--secondary"
+                        >
+                          <ShoppingCart size={18} /> {ordering ? 'Solicitando...' : 'Solicitar compra'}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={openShare}
+                        className="product-detail__action product-detail__action--secondary"
+                      >
+                        <Share2 size={18} /> Compartilhar
+                      </button>
+                    </div>
                     {product.pickup_only && (
                       <p className="product-detail__pickup">
                         Entrega: retirada em mãos combinada com o vendedor.

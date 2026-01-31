@@ -23,6 +23,7 @@ import { normalizeOrderStatus } from '../utils/orderStatus.js';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
+import { motion } from 'framer-motion';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -81,18 +82,6 @@ const privacyHighlights = [
     ]
   }
 ];
-
-const HeartIcon = ({ className = '' }) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <path
-      d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 21.092 3.318 12.682a4.5 4.5 0 010-6.364z"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 const CheckIcon = ({ className = '' }) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
@@ -219,9 +208,6 @@ const CogIcon = ({ className = '' }) => (
   </svg>
 );
 
-const BOOST_LINK_TARGET = '/dashboard/impulsiona';
-const BOOST_LINK_STATE = undefined;
-const watermarkLogoSrc = '/logo-templesale.png';
 const LOCALE_OPTIONS = [
   { value: 'pt-BR', label: 'Português (BR)' },
   { value: 'en-US', label: 'English (US)' },
@@ -284,9 +270,17 @@ const StatBox = ({ label, value, detail, tone = 'blue' }) => {
   );
 };
 
-const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggle, avatarMenuRef }) => (
-  <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-    <div className="relative" ref={avatarMenuRef}>
+const UserCard = ({
+  user,
+  userInitial,
+  userAvatar,
+  avatarMenuOpen,
+  onAvatarToggle,
+  avatarMenuRef,
+  sellerProfilePath
+}) => (
+  <div className="dashboard-user flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+    <div className="dashboard-user__avatar relative" ref={avatarMenuRef}>
       <button
         type="button"
         className="focus-visible:outline-none"
@@ -321,48 +315,51 @@ const UserCard = ({ user, userInitial, userAvatar, avatarMenuOpen, onAvatarToggl
         </div>
       )}
     </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Painel do usuário</p>
-      <h1 className="dashboard-title mt-1 text-2xl font-semibold text-[var(--ts-text)]">
-        {user?.username || user?.email}
-      </h1>
+    <div className="dashboard-user__meta flex-1 min-w-0">
+      <div className="mt-1 flex items-center gap-2">
+        {sellerProfilePath ? (
+          <Link to={sellerProfilePath} className="dashboard-username">
+            {user?.username || user?.email}
+          </Link>
+        ) : (
+          <h1 className="dashboard-username">{user?.username || user?.email}</h1>
+        )}
+      </div>
       <p className="text-sm text-[var(--ts-muted)] truncate">{user?.email}</p>
     </div>
   </div>
 );
 
-const QuickAccessBar = ({ className = '', children, ...props }) => (
-  <div className={`flex flex-wrap gap-3 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
 const ActionCard = forwardRef(
-  ({ title, description, icon, to, onClick, badge, className = '' }, ref) => {
+  ({ title, icon, to, onClick, badge, className = '', pulse = false }, ref) => {
     const Element = to ? Link : 'button';
     const elementProps = {
-      className: `group flex flex-col gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-5 shadow-[0_14px_28px_-24px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_40px_-28px_rgba(0,0,0,0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)] ${className}`,
+      className: `dashboard-quick-action ${className}`.trim(),
       onClick,
       ...(to ? { to } : { type: 'button' })
     };
     if (ref) elementProps.ref = ref;
 
+    const badgeToneClass =
+      badge && typeof badge === 'string' && badge.startsWith('+') ? 'bg-rose-500' : 'bg-emerald-500';
+
     return (
       <Element {...elementProps}>
-        <div className="flex items-center justify-between">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-muted)] shadow-inner shadow-black/5">
-            {icon}
+        {pulse && (
+          <span
+            className="absolute right-2 top-2 inline-flex h-6 w-6 animate-ping rounded-full bg-emerald-400/60"
+            aria-hidden="true"
+          />
+        )}
+        {badge && (
+          <span
+            className={`absolute right-2 top-2 inline-flex min-w-[1.6rem] items-center justify-center rounded-full px-2 text-[11px] font-bold text-white shadow-lg shadow-rose-500/25 ${badgeToneClass}`}
+          >
+            {badge}
           </span>
-          {badge && (
-            <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--ts-muted)]">
-              {badge}
-            </span>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-[var(--ts-text)]">{title}</p>
-          <p className="text-xs text-[var(--ts-muted)]">{description}</p>
-        </div>
+        )}
+        <span className="dashboard-quick-action__icon">{icon}</span>
+        <span className="dashboard-quick-action__label">{title}</span>
       </Element>
     );
   }
@@ -388,6 +385,27 @@ const MobileMenu = ({ actions }) => (
   </div>
 );
 
+const ShortcutButton = ({ icon, label, to, onClick, tone = 'neutral' }) => {
+  const Element = to ? Link : 'button';
+  const toneClasses =
+    tone === 'danger'
+      ? 'border-rose-100 bg-rose-50 text-rose-700'
+      : tone === 'accent'
+      ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+      : 'text-[var(--ts-text)]';
+  const elementProps = {
+    className: `dashboard-shortcut ${toneClasses}`.trim(),
+    onClick,
+    ...(to ? { to } : { type: 'button' })
+  };
+  return (
+    <Element {...elementProps}>
+      <span className="dashboard-shortcut__icon">{icon}</span>
+      <span className="text-sm font-semibold">{label}</span>
+    </Element>
+  );
+};
+
 export default function Dashboard() {
   const { user, token, logout } = useContext(AuthContext);
   const { locale, setLocale } = useContext(LocaleContext);
@@ -408,6 +426,7 @@ export default function Dashboard() {
   const supportNotificationRef = useRef(0);
   const [isTermsPanelOpen, setIsTermsPanelOpen] = useState(false);
   const [isPrivacyPanelOpen, setIsPrivacyPanelOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   const [orderSummary, setOrderSummary] = useState({
     total: 0,
@@ -418,18 +437,20 @@ export default function Dashboard() {
   const [newOrderIds, setNewOrderIds] = useState([]);
   const [sellerOrdersList, setSellerOrdersList] = useState([]);
   const [isQuickPanelOpen, setIsQuickPanelOpen] = useState(false);
-  const [quickPanelTab, setQuickPanelTab] = useState(null);
-  const [favoritePanelItems, setFavoritePanelItems] = useState([]);
-  const [favoritePanelLoading, setFavoritePanelLoading] = useState(false);
+  const quickPanelTab = 'orders';
   const { hasUnseenOrders, unseenCount, markOrdersSeen } = usePurchaseNotifications();
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
   const avatarMenuRef = useRef(null);
   const purchaseActionRef = useRef(null);
   const [hasAutoScrolledPurchases, setHasAutoScrolledPurchases] = useState(false);
-  const purchaseBadge = hasUnseenOrders ? `+${unseenCount}` : undefined;
-  const purchaseActionClasses = `h-full min-h-[140px] md:col-span-2 purchase-action-card ${
-    hasUnseenOrders ? 'purchase-action-card--alert' : ''
-  }`.trim();
+  const pendingSellerCount = Number(orderSummary.pending) || 0;
+  const buyerUnseenCount = hasUnseenOrders ? Number(unseenCount) || 0 : 0;
+  const taskCount = pendingSellerCount + buyerUnseenCount;
+  const hasNewAlerts = newOrderIds.length > 0 || hasUnseenOrders;
+  const purchaseBadge = taskCount > 0 ? `+${taskCount}` : undefined;
+  const purchaseActionClasses = `purchase-action-card ${
+    taskCount > 0 ? 'purchase-action-card--alert' : ''
+  } ${hasNewAlerts ? 'purchase-action-card--pulse' : ''}`.trim();
   const activeLocale = locale || 'pt-BR';
 
   const userId = user?.id;
@@ -447,18 +468,16 @@ export default function Dashboard() {
     setIsAvatarMenuOpen(false);
   }, []);
 
-  const openFavoritesPanel = useCallback(() => {
-    setQuickPanelTab('favorites');
-    setIsQuickPanelOpen(true);
-  }, []);
-
   const openOrdersPanel = useCallback(() => {
-    setQuickPanelTab('orders');
     setIsQuickPanelOpen(true);
   }, []);
 
   const closeQuickPanel = useCallback(() => {
     setIsQuickPanelOpen(false);
+  }, []);
+
+  const toggleShortcuts = useCallback(() => {
+    setIsShortcutsOpen((prev) => !prev);
   }, []);
 
   useEffect(() => {
@@ -667,11 +686,14 @@ export default function Dashboard() {
     }
   };
 
-  const openSupportChat = (conversationId) => {
-    setSupportAlert(null);
-    setIsSupportModalOpen(true);
-    loadSupportConversations({ focusId: conversationId });
-  };
+  const openSupportChat = useCallback(
+    (conversationId) => {
+      setSupportAlert(null);
+      setIsSupportModalOpen(true);
+      loadSupportConversations({ focusId: conversationId });
+    },
+    [loadSupportConversations]
+  );
 
   useEffect(() => {
     loadSupportConversations();
@@ -768,52 +790,92 @@ export default function Dashboard() {
     }
   }, [supportMessages, isSupportModalOpen]);
 
-  useEffect(() => {
-    if (!isQuickPanelOpen || quickPanelTab !== 'favorites') return undefined;
-    if (!token) {
-      setFavoritePanelItems([]);
-      setFavoritePanelLoading(false);
-      return undefined;
+  const quickActions = [
+    {
+      key: 'new-product',
+      title: 'Novo anúncio',
+      icon: <PlusIcon className="h-5 w-5" />,
+      to: '/new-product',
+      className: 'is-primary'
+    },
+    {
+      key: 'my-products',
+      title: 'Meus anúncios',
+      icon: <ShopIcon className="h-5 w-5" />,
+      to: '/my-products'
+    },
+    {
+      key: 'messages',
+      title: 'Mensagens',
+      icon: <MessageIcon className="h-5 w-5" />,
+      to: '/messages'
+    },
+    {
+      key: 'purchases',
+      title: 'Pedidos e compras',
+      icon: <BagIcon className="h-5 w-5" />,
+      to: '/sales-requests',
+      badge: purchaseBadge,
+      className: purchaseActionClasses,
+      pulse: hasNewAlerts,
+      actionRef: purchaseActionRef,
+      onClick: () => markOrdersSeen?.()
     }
-    let active = true;
-    setFavoritePanelLoading(true);
-    api
-      .get('/favorites')
-      .then((res) => {
-        if (!active) return;
-        setFavoritePanelItems(res.data?.data ?? []);
-      })
-      .catch((error) => {
-        if (!active) return;
-        console.error(error);
-        if (error?.code === 'ERR_NETWORK') {
-          setFavoritePanelItems([]);
-          return;
-        }
-        const status = error?.response?.status;
-        const message = String(error?.response?.data?.message || '').toLowerCase();
-        const likelyTokenIssue =
-          message.includes('token') || message.includes('sessão') || message.includes('autentica');
-        if (status === 401 || status === 403) {
-          if (!likelyTokenIssue) {
-            toast.error('Sua sessão expirou. Faça login novamente para ver seus favoritos.');
-          }
-        } else {
-          toast.error('Não foi possível carregar seus favoritos.');
-        }
-        setFavoritePanelItems([]);
-      })
-      .finally(() => {
-        if (active) setFavoritePanelLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [isQuickPanelOpen, quickPanelTab, token]);
+  ];
+
+  const shortcutItems = [
+    {
+      key: 'panel',
+      label: 'Painel lateral',
+      icon: <CogIcon className="h-4 w-4" />,
+      tone: 'accent',
+      onClick: () => setIsConfigPanelOpen(true)
+    },
+    {
+      key: 'profile',
+      label: 'Editar perfil',
+      icon: <ShieldIcon className="h-4 w-4" />,
+      to: '/edit-profile'
+    },
+    {
+      key: 'security',
+      label: 'Segurança',
+      icon: <ShieldIcon className="h-4 w-4" />,
+      onClick: () => {
+        setPasswords(getInitialSecurityPasswords());
+        setIsSecurityModalOpen(true);
+      }
+    },
+    {
+      key: 'terms',
+      label: 'Termos',
+      icon: <CogIcon className="h-4 w-4" />,
+      onClick: () => setIsTermsPanelOpen(true)
+    },
+    {
+      key: 'privacy',
+      label: 'Privacidade',
+      icon: <CogIcon className="h-4 w-4" />,
+      onClick: () => setIsPrivacyPanelOpen(true)
+    },
+    {
+      key: 'support',
+      label: 'Suporte',
+      icon: <MessageIcon className="h-4 w-4" />,
+      onClick: () => openSupportChat()
+    },
+    {
+      key: 'logout',
+      label: 'Sair',
+      icon: <ArrowRightIcon className="h-4 w-4" />,
+      tone: 'danger',
+      onClick: logout
+    }
+  ];
 
 
   return (
-    <section className="dashboard min-h-screen bg-white px-4 pb-16 pt-2 sm:px-6 lg:px-8 text-slate-900">
+    <section className="dashboard dashboard-page">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <CloseBackButton />
         <div className="space-y-3">
@@ -835,486 +897,211 @@ export default function Dashboard() {
               </button>
             </div>
           )}
-          {newOrderIds.length > 0 && (
-            <div className="rounded-3xl border border-yellow-200 bg-gradient-to-r from-yellow-50 to-white px-4 py-3 text-sm text-yellow-800 shadow-sm">
-              Você recebeu {newOrderIds.length}{' '}
-              {newOrderIds.length === 1 ? 'nova solicitação de compra' : 'novas solicitações de compra'}.
-              Confira em <strong>Gerenciar pedidos</strong>.
-            </div>
-          )}
         </div>
 
-        <div className="relative overflow-visible rounded-[36px] border border-black/5 bg-white p-6 shadow-[0_24px_50px_-34px_rgba(0,0,0,0.55)]">
-          <img
-            src={watermarkLogoSrc}
-            alt="TempleSale logo"
-            className="pointer-events-none absolute top-[-4px] right-[-14px] h-40 w-40 opacity-20 mix-blend-multiply blur-sm lg:hidden"
+        <section className="dashboard-card dashboard-card--tight dashboard-profile-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <UserCard
+            user={user}
+            userAvatar={userAvatar}
+            userInitial={userInitial}
+            avatarMenuOpen={isAvatarMenuOpen}
+            onAvatarToggle={toggleAvatarMenu}
+            avatarMenuRef={avatarMenuRef}
+            sellerProfilePath={sellerProfilePath}
           />
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <UserCard
-              user={user}
-              userAvatar={userAvatar}
-              userInitial={userInitial}
-              avatarMenuOpen={isAvatarMenuOpen}
-              onAvatarToggle={toggleAvatarMenu}
-              avatarMenuRef={avatarMenuRef}
-            />
-            <div className="flex flex-wrap gap-3">
+          {sellerProfilePath && (
+            <div className="dashboard-profile-cta">
               <PrimaryButton
                 as={Link}
-                to="/sales-requests"
-                icon={<ArrowRightIcon className="h-4 w-4 text-white" />}
-                className={`min-w-[180px] ${
-                  newOrderIds.length > 0
-                    ? 'dashboard-order-summary__cta dashboard-order-summary__cta--highlight'
-                    : ''
-                }`}
-              >
-                {newOrderIds.length > 0 ? (
-                  <span className="flex items-center gap-2">
-                    <span>Gerenciar pedidos</span>
-                    <span className="dashboard-order-summary__badge">+{newOrderIds.length}</span>
-                  </span>
-                ) : (
-                  'Gerenciar pedidos'
-                )}
-              </PrimaryButton>
-              {sellerProfilePath && (
-                <PrimaryButton
-                  as={Link}
-                  to={sellerProfilePath}
-                  variant="secondary"
-                  className="min-w-[180px]"
-                >
-                  Meu perfil público
-                </PrimaryButton>
-              )}
-
-            </div>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-[var(--ts-muted)]">
-            <span>Pedidos totais: {orderSummary.total}</span>
-            <span>Pendentes: {orderSummary.pending}</span>
-            <span>Confirmados: {orderSummary.confirmed}</span>
-            {newOrderIds.length > 0 && (
-              <span className="rounded-full border border-[rgba(200,178,106,0.45)] bg-[rgba(200,178,106,0.18)] px-2 py-0.5 text-xs font-semibold text-[var(--ts-text)]">
-                +{newOrderIds.length} novas solicitações
-              </span>
-            )}
-          </div>
-
-          <QuickAccessBar className="mt-6 w-full gap-3">
-            <button
-              type="button"
-              onClick={openFavoritesPanel}
-              aria-label="Abrir curtidas"
-              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-3 text-left shadow-[0_12px_22px_-18px_rgba(0,0,0,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(0,0,0,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)]"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-gold)] shadow-inner shadow-black/5">
-                  <HeartIcon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--ts-muted)]">Coleção</p>
-                  <p className="text-sm font-semibold text-[var(--ts-text)]">Curtidas</p>
-                </div>
-              </div>
-              <ArrowRightIcon className="h-4 w-4 text-[var(--ts-muted)]" />
-            </button>
-            <button
-              type="button"
-              onClick={openOrdersPanel}
-              aria-label="Abrir vendas confirmadas"
-              className="flex min-w-[220px] flex-1 items-center justify-between gap-3 rounded-2xl border border-black/5 bg-[var(--ts-card)] px-4 py-3 text-left shadow-[0_12px_22px_-18px_rgba(0,0,0,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(0,0,0,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(200,178,106,0.5)]"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/5 bg-[var(--ts-surface)] text-[var(--ts-cta)] shadow-inner shadow-black/5">
-                  <CheckIcon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--ts-muted)]">Vendas</p>
-                  <p className="text-sm font-semibold text-[var(--ts-text)]">
-                    {newOrderIds.length ? 'Pedidos com novidades' : 'Painel de vendas'}
-                  </p>
-                </div>
-              </div>
-              {newOrderIds.length > 0 ? (
-                <span className="rounded-full border border-[rgba(200,178,106,0.45)] bg-[rgba(200,178,106,0.18)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ts-text)]">
-                  +{newOrderIds.length}
-                </span>
-              ) : (
-                <ArrowRightIcon className="h-4 w-4 text-[var(--ts-muted)]" />
-              )}
-            </button>
-          </QuickAccessBar>
-          <div className="mt-5 flex justify-end">
-
-          {false && isOwner && !isSold && ( // nao perder esse botao agora ele esta bloqueado só apagar {false && isOwner && !isSold && ( e o botao volta ! 
-            <Link
-              to={BOOST_LINK_TARGET}
-              state={BOOST_LINK_STATE}
-              className="inline-flex items-center gap-2 rounded-full border border-transparent bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/30 transition hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
-            >
-              Impulsionar anúncio
-            </Link>
- )} 
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="space-y-6">
-            
-            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Atalhos rápidos</p>
-                  <h2 className="dashboard-title text-xl font-semibold text-[var(--ts-text)]">Organize seu ritmo</h2>
-                </div>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--ts-muted)]">
-                  Atualização automática
-                </span>
-              </div>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <ActionCard
-                  title="Meus anúncios"
-                  description="Revise estoque, preços e histórico de exibição."
-                  icon={<ShopIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
-                  to="/my-products"
-                  className="h-full min-h-[140px]"
-                />
-                <ActionCard
-                  title="Mensagens"
-                  description="Responda compradores e acompanhe conversas ativas."
-                  icon={<MessageIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
-                  to="/messages"
-                  className="h-full min-h-[140px]"
-                />
-                <ActionCard
-                  title="Novo produto"
-                  description="Publique rapidamente com fotos, descrições e preços."
-                  icon={<PlusIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
-                  to="/new-product"
-                  className="h-full min-h-[140px]"
-                />
-                <ActionCard
-                  ref={purchaseActionRef}
-                  title="Minhas compras"
-                  description="Reveja pedidos confirmados, acompanhe o contato e avalie vendedores."
-                  icon={<BagIcon className="h-5 w-5 text-[var(--ts-muted)]" />}
-                  to="/buyer-purchases"
-                  badge={purchaseBadge}
-                  className={purchaseActionClasses}
-                  onClick={() => markOrdersSeen?.()}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Suporte</p>
-                  <h3 className="dashboard-title text-lg font-semibold text-[var(--ts-text)]">Tem dúvidas?</h3>
-                </div>
-                <MessageIcon className="h-6 w-6 text-[var(--ts-muted)]" />
-              </div>
-              <p className="mt-3 text-sm text-[var(--ts-muted)]">
-                Converse com o time operacional e acompanhe o histórico em tempo real.
-              </p>
-              {supportAlert && (
-                <p className="mt-3 rounded-2xl border border-[rgba(31,143,95,0.25)] bg-[rgba(31,143,95,0.12)] px-3 py-2 text-xs font-semibold text-[var(--ts-text)]">
-                  {supportAlert.message}
-                </p>
-              )}
-              <PrimaryButton
+                to={sellerProfilePath}
                 variant="secondary"
-                icon={<MessageIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
-                className="min-w-[180px]"
-                onClick={() => openSupportChat()}
+                className="dashboard-profile-btn"
               >
-                Conversar com o suporte
+                Ver perfil
               </PrimaryButton>
             </div>
+          )}
+        </section>
 
-            <div className="rounded-[32px] border border-black/5 bg-white p-6 shadow-[0_24px_45px_-34px_rgba(0,0,0,0.5)]">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--ts-muted)]">Conta & privacidade</p>
-                  <h3 className="dashboard-title text-lg font-semibold text-[var(--ts-text)]">Ajustes essenciais</h3>
-                </div>
-                <CogIcon className="h-6 w-6 text-[var(--ts-muted)]" />
+        <div className="grid gap-4 lg:grid-cols-1">
+          <section className="dashboard-card">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--ts-muted)]">Ações rápidas</p>
+                <h2 className="dashboard-title text-xl font-semibold text-[var(--ts-text)]">Faça agora</h2>
               </div>
-              <p className="mt-3 text-sm text-[var(--ts-muted)]">
-                Mantenha a segurança em dia, sincronize termos aceitos e revise permissões.
-              </p>
-              <div className="mt-4 rounded-2xl border border-gray-100 bg-[var(--ts-surface)] p-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--ts-muted)]">Idioma</p>
-                  <p className="text-sm font-semibold text-[var(--ts-text)]">Idioma da interface</p>
-                  <p className="text-xs text-[var(--ts-muted)]">
-                    Escolha como deseja ver o app.
-                  </p>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {LOCALE_OPTIONS.map((option) => {
-                    const isActive = option.value === activeLocale;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setLocale(option.value)}
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                          isActive
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <PrimaryButton
-                  variant="muted"
-                  className="px-3 py-1 text-[10px] uppercase tracking-[0.3em]"
-                  icon={<CogIcon className="h-3 w-3 text-[var(--ts-muted)]" />}
-                  onClick={() => setIsConfigPanelOpen(true)}
-                >
-                  Painel lateral
-                </PrimaryButton>
-                <PrimaryButton
-                  as={Link}
-                  to="/edit-profile"
-                  variant="secondary"
-                  className="flex-1 min-w-[130px]"
-                  icon={<ShieldIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
-                >
-                  Editar perfil
-                </PrimaryButton>
-                <PrimaryButton
-                  variant="secondary"
-                  className="flex-1 min-w-[130px]"
-                  icon={<ShieldIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
-                  onClick={() => {
-                    setPasswords(getInitialSecurityPasswords());
-                    setIsSecurityModalOpen(true);
-                  }}
-                >
-                  Segurança
-                </PrimaryButton>
-                <PrimaryButton
-                  variant="secondary"
-                  className="flex-1 min-w-[130px]"
-                  icon={<CogIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
-                  onClick={() => setIsTermsPanelOpen(true)}
-                >
-                  Termos
-                </PrimaryButton>
-                <PrimaryButton
-                  variant="secondary"
-                  className="flex-1 min-w-[130px]"
-                  icon={<CogIcon className="h-4 w-4 text-[var(--ts-muted)]" />}
-                  onClick={() => setIsPrivacyPanelOpen(true)}
-                >
-                  Privacidade
-                </PrimaryButton>
-                <PrimaryButton
-                  variant="accent"
-                  className="flex-1 min-w-[130px]"
-                  icon={<ArrowRightIcon className="h-4 w-4 text-[#1a1d21]" />}
-                  onClick={logout}
-                >
-                  Sair
-                </PrimaryButton>
+            </div>
+            <div className="dashboard-quick-grid mt-3">
+              {quickActions.map((action) => (
+                <ActionCard
+                  key={action.key}
+                  ref={action.actionRef}
+                  title={action.title}
+                  icon={action.icon}
+                  to={action.to}
+                  badge={action.badge}
+                  className={action.className}
+                  pulse={action.pulse}
+                  onClick={action.onClick}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <section className="dashboard-card">
+          <button
+            type="button"
+            className="dashboard-accordion__trigger"
+            onClick={toggleShortcuts}
+            aria-expanded={isShortcutsOpen}
+            aria-controls="dashboard-shortcuts-panel"
+          >
+            <div className="text-left">
+              <p className="text-[10px] uppercase tracking-[0.35em] text-[var(--ts-muted)]">Atalhos</p>
+              <h2 className="dashboard-title text-xl font-semibold text-[var(--ts-text)]">
+                Configurações e suporte
+              </h2>
+            </div>
+            <span className={`dashboard-accordion__chevron ${isShortcutsOpen ? 'is-open' : ''}`} aria-hidden="true">
+              ⌄
+            </span>
+          </button>
+          <div
+            id="dashboard-shortcuts-panel"
+            className={`dashboard-accordion__body ${isShortcutsOpen ? 'is-open' : ''}`}
+          >
+            <div className="dashboard-shortcuts">
+              {shortcutItems.map((item) => (
+                <ShortcutButton
+                  key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  to={item.to}
+                  tone={item.tone}
+                  onClick={item.onClick}
+                />
+              ))}
+            </div>
+            <div className="dashboard-language mt-4 space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--ts-muted)]">Idioma</p>
+              <div className="flex flex-wrap gap-2">
+                {LOCALE_OPTIONS.map((option) => {
+                  const isActive = option.value === activeLocale;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setLocale(option.value)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        isActive
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <p className="text-center text-xs text-[var(--ts-muted)]">
-          Acompanhe suas métricas principais, organize anúncios e mantenha a segurança em dia.
+          TEMPLESALE.COM
         </p>
+        
       </div>
 
       {isQuickPanelOpen && (
         <>
-          <div className="home-drawer__overlay" onClick={closeQuickPanel} aria-hidden="true" />
-          <div className="home-drawer" role="dialog" aria-modal="true">
+          <motion.div
+            className="home-drawer__overlay"
+            onClick={closeQuickPanel}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+          <motion.div
+            className="home-drawer"
+            role="dialog"
+            aria-modal="true"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+          >
             <header className="home-drawer__header">
-              <nav className="home-drawer__tabs" aria-label="Painéis rápidos">
-                
-                <button
-                  type="button"
-                  className={`home-drawer__tab ${quickPanelTab === 'favorites' ? 'is-active' : ''}`}
-                  onClick={() => setQuickPanelTab('favorites')}
-                >
-                  Curtidas <span>{favoritePanelItems.length}</span>
-                </button>
-                <button
-                  type="button"
-                  className={`home-drawer__tab ${quickPanelTab === 'orders' ? 'is-active' : ''}`}
-                  onClick={() => setQuickPanelTab('orders')}
-                >
-                  Vendas {orderSummary.total ? <span>({orderSummary.total})</span> : null}
-                </button>
-              </nav>
+              <div>
+                <p className="home-drawer__eyebrow">Vendas</p>
+                <p className="text-[11px] text-slate-500">
+                  Pedidos confirmados e pendentes na sua lojinha
+                </p>
+              </div>
               <button type="button" className="home-drawer__close" onClick={closeQuickPanel}>
                 ✕
               </button>
             </header>
             <div className="home-drawer__body">
-              {quickPanelTab === 'favorites' ? (
-                <div className="home-drawer__section">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="home-drawer__eyebrow">Coleção pessoal</p>
-                    <button
-                      type="button"
-                      className="home-drawer__close"
-                      onClick={closeQuickPanel}
-                      aria-label="Fechar painel de curtidas"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <h2 className="home-drawer__title">
-                    {favoritePanelItems.length
-                      ? `Você tem ${favoritePanelItems.length} curtida${
-                          favoritePanelItems.length > 1 ? 's' : ''
-                        }`
-                      : 'Nenhum favorito salvo'}
-                  </h2>
-
-                  <div className="home-drawer__content">
-                    {favoritePanelLoading ? (
-                      <LoadingBar
-                        message="Carregando favoritos..."
-                        className="home-drawer__empty"
-                        size="sm"
-                      />
-                    ) : favoritePanelItems.length === 0 ? (
-                      <p className="home-drawer__empty">
-                        Marque produtos como favoritos para acessá-los rapidamente aqui no painel.
-                      </p>
-                    ) : (
-                      favoritePanelItems.slice(0, 5).map((product) => {
-                        const targetProduct = product.product || product;
-                        const imageUrl =
-                          targetProduct?.image_urls?.[0] ||
-                          targetProduct?.image_url ||
-                          IMG_PLACEHOLDER;
-                        const title = targetProduct?.title || product.title || 'Produto favorito';
-                        const priceLabel = isProductFree(targetProduct)
-                          ? 'Grátis'
-                          : formatProductPrice(targetProduct?.price, targetProduct?.country);
-                        return (
-                          <Link
-                            key={targetProduct?.id ?? product.id ?? product.product_id}
-                            to={`/product/${targetProduct?.id ?? product.id ?? product.product_id}`}
-                            className="home-fav-card"
-                            onClick={closeQuickPanel}
-                          >
-                            <div className="home-fav-card__image-wrapper">
-                              <img
-                                src={imageUrl}
-                                alt={title}
-                                className="home-fav-card__image"
-                                loading="eager"
-                                decoding="async"
-                                onError={(event) => {
-                                  event.currentTarget.src = IMG_PLACEHOLDER;
-                                  event.currentTarget.onerror = null;
-                                }}
-                              />
-                            </div>
-                            <div className="home-fav-card__details">
-                              <p className="home-fav-card__title">{title}</p>
-                              <p
-                                className={`home-fav-card__price ${
-                                  isProductFree(targetProduct) ? 'is-free' : ''
-                                }`}
-                              >
-                                {priceLabel}
-                              </p>
-                            </div>
-                          </Link>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="home-drawer__section">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="home-drawer__eyebrow">Vendas</p>
-                    <button
-                      type="button"
-                      className="home-drawer__close"
-                      onClick={closeQuickPanel}
-                      aria-label="Fechar painel de vendas"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <h2 className="home-drawer__title">
-                    {orderSummary.total
-                      ? `Você tem ${orderSummary.total} pedidos`
-                      : 'Nenhuma venda registrada ainda'}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {orderSummary.pending} pendente{orderSummary.pending === 1 ? '' : 's'} •{' '}
-                    {orderSummary.confirmed} confirmado
-                    {orderSummary.confirmed === 1 ? '' : 's'}
-                  </p>
-                  <div className="home-drawer__content">
-                    {sellerOrdersList.length === 0 ? (
-                      <p className="home-drawer__empty">
-                        Assim que houver novas vendas elas aparecerão aqui.
-                      </p>
-                    ) : (
-                      sellerOrdersList.slice(0, 5).map((order) => {
-                        const orderId = order.id;
-                        const statusLabel = (order.status || '').replace(/_/g, ' ');
-                        return (
-                          <div
-                            key={orderId}
-                            className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-slate-50 p-3 text-sm"
-                          >
-                            <div className="flex flex-col gap-1">
-                              <p className="font-semibold text-gray-700">
-                                {order.product_title || order.product?.title || `Pedido #${orderId}`}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatOrderDatetime(order.created_at || order.updated_at)}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-600">
-                                {statusLabel || 'Status'}
-                                {newOrderIds.includes(orderId) ? ' • Novo' : ''}
-                              </span>
-                              <span className="text-[12px] text-gray-500">
-                                {order.quantity ? `${order.quantity}x` : '—'}
-                              </span>
-                            </div>
+              <div className="home-drawer__section">
+                <h2 className="home-drawer__title">
+                  {orderSummary.total
+                    ? `Você tem ${orderSummary.total} pedidos`
+                    : 'Nenhuma venda registrada ainda'}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {orderSummary.pending} pendente{orderSummary.pending === 1 ? '' : 's'} •{' '}
+                  {orderSummary.confirmed} confirmado
+                  {orderSummary.confirmed === 1 ? '' : 's'}
+                </p>
+                <div className="home-drawer__content">
+                  {sellerOrdersList.length === 0 ? (
+                    <p className="home-drawer__empty">
+                      Assim que houver novas vendas elas aparecerão aqui.
+                    </p>
+                  ) : (
+                    sellerOrdersList.slice(0, 5).map((order) => {
+                      const orderId = order.id;
+                      const statusLabel = (order.status || '').replace(/_/g, ' ');
+                      return (
+                        <div
+                          key={orderId}
+                          className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-slate-50 p-3 text-sm"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <p className="font-semibold text-gray-700">
+                              {order.product_title || order.product?.title || `Pedido #${orderId}`}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatOrderDatetime(order.created_at || order.updated_at)}
+                            </p>
                           </div>
-                        );
-                      })
-                    )}
-                    <Link
-                      to="/sales-requests"
-                      className="dashboard-button bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 text-sm font-semibold rounded-xl shadow-sm hover:shadow transition"
-                      onClick={closeQuickPanel}
-                    >
-                      Ver pedidos
-                    </Link>
-                  </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                              {statusLabel || 'Status'}
+                              {newOrderIds.includes(orderId) ? ' • Novo' : ''}
+                            </span>
+                            <span className="text-[12px] text-gray-500">
+                              {order.quantity ? `${order.quantity}x` : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <Link
+                    to="/sales-requests"
+                    className="dashboard-button bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 text-sm font-semibold rounded-xl shadow-sm hover:shadow transition"
+                    onClick={closeQuickPanel}
+                  >
+                    Ver pedidos
+                  </Link>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </>
       )}
 
@@ -1322,7 +1109,6 @@ export default function Dashboard() {
  {false && isOwner && !isSold && ( // botoes bonitos nao apagar 
       <MobileMenu
         actions={[
-          { label: 'Curtidas', icon: <HeartIcon className="h-4 w-4 text-rose-500" />, onClick: openFavoritesPanel },
           {
             label: 'Vendas',
             icon: <CheckIcon className="h-4 w-4 text-emerald-500" />,

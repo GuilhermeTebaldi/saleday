@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api.js';
 import { toast } from 'react-hot-toast';
-import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter } from 'lucide-react';
+import { Search, MapPin, Crosshair, RotateCw, Map as MapIcon, X, User, Globe, Filter, Heart, ShoppingBag } from 'lucide-react';
 import { getCountryLabel } from '../data/countries.js';
 import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import LoadingBar from './LoadingBar.jsx';
@@ -175,6 +175,8 @@ export default function SearchBar({
   onFiltersChange,
   resetSignal,
   onOpenMap,
+  onOpenFavorites,
+  onOpenOrders,
   geoScope,
   originCountry,
   hasProfile,
@@ -533,6 +535,26 @@ export default function SearchBar({
     navigate('/sellers/search');
   }, [closeDropdowns, navigate]);
 
+  const handleOpenFavorites = useCallback(() => {
+    closeDropdowns();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('templesale:close-hamburger'));
+    }
+    if (typeof onOpenFavorites === 'function') {
+      onOpenFavorites();
+    }
+  }, [closeDropdowns, onOpenFavorites]);
+
+  const handleOpenOrders = useCallback(() => {
+    closeDropdowns();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('templesale:close-hamburger'));
+    }
+    if (typeof onOpenOrders === 'function') {
+      onOpenOrders();
+    }
+  }, [closeDropdowns, onOpenOrders]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleTriggerSearch = (event) => {
@@ -607,7 +629,13 @@ export default function SearchBar({
           <X size={16} />
         </button>
         {user && (
-          <div className="home-search-toolbar__profile">
+          <Link
+            to={`/users/${user.id}`}
+            className="home-search-toolbar__profile"
+            onClick={() => {
+              closeDropdowns();
+            }}
+          >
             <div className="home-search-toolbar__avatar">
               {user?.profile_image_url ? (
                 <img
@@ -636,17 +664,9 @@ export default function SearchBar({
               ) : (
                 <p className="home-search-toolbar__profile-meta">Perfil incompleto</p>
               )}
-                <Link
-                  to="/edit-profile"
-                  className="home-search-toolbar__profile-link"
-                  onClick={() => {
-                    closeDropdowns();
-                  }}
-                >
-                Editar perfil
-              </Link>
+              <span className="home-search-toolbar__profile-link">Ver perfil</span>
             </div>
-          </div>
+          </Link>
         )}
         {hasCategoryOptions && (
           <div className="home-search-toolbar__dropdown home-search-toolbar__dropdown--filter">
@@ -861,9 +881,27 @@ export default function SearchBar({
           <MapIcon size={18} />
           <span className="home-search-toolbtn__label">Mapa</span>
         </button>
-          <button
-            type="button"
-            title="Buscar vendedores"
+        <button
+          type="button"
+          title="Abrir coleção pessoal"
+          onClick={handleOpenFavorites}
+          className={`${TOOLBAR_ICON_BTN}`}
+        >
+          <Heart size={18} />
+          <span className="home-search-toolbtn__label">Curtidas</span>
+        </button>
+        <button
+          type="button"
+          title="Abrir compras confirmadas"
+          onClick={handleOpenOrders}
+          className={`${TOOLBAR_ICON_BTN}`}
+        >
+          <ShoppingBag size={18} />
+          <span className="home-search-toolbtn__label">Compras</span>
+        </button>
+        <button
+          type="button"
+          title="Buscar vendedores"
             onClick={handleSellerSearchOpen}
             className={`${TOOLBAR_ICON_BTN}`}
             aria-haspopup="false"

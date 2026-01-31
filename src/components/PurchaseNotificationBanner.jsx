@@ -9,18 +9,28 @@ import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 const PurchaseNotificationBanner = () => {
   const { latestUnseenOrder, markOrdersSeen } = usePurchaseNotifications();
   const [isVisible, setIsVisible] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const lastDisplayedId = useRef(null);
-  const handleDismiss = useCallback(() => {
+  const handleMinimize = useCallback(() => {
     markOrdersSeen?.();
+    setIsMinimized(true);
+  }, [markOrdersSeen]);
+  const handleClose = useCallback(() => {
+    markOrdersSeen?.();
+    setIsMinimized(false);
     setIsVisible(false);
   }, [markOrdersSeen]);
+  const handleExpand = useCallback(() => {
+    setIsMinimized(false);
+  }, []);
   useEffect(() => {
     if (!latestUnseenOrder) return;
     if (lastDisplayedId.current === latestUnseenOrder.id) return;
     lastDisplayedId.current = latestUnseenOrder.id;
     setActiveOrder(latestUnseenOrder);
     setIsVisible(true);
+    setIsMinimized(false);
   }, [latestUnseenOrder]);
 
   const productImage = useMemo(() => {
@@ -44,10 +54,25 @@ const PurchaseNotificationBanner = () => {
   }
 
   const productTitle = activeOrder.product_title || activeOrder.product?.title || 'Produto comprado';
-  const sellerName = activeOrder.seller_name || 'vendedor';
-
   return (
-    <div className="purchase-notification-banner" role="status" aria-live="polite">
+    <div
+      className={`purchase-notification-banner ${isMinimized ? 'is-minimized' : ''}`.trim()}
+      role="status"
+      aria-live="polite"
+      tabIndex={isMinimized ? 0 : -1}
+      aria-label={isMinimized ? 'Abrir notificacao de compra confirmada' : undefined}
+      onClick={isMinimized ? handleExpand : undefined}
+      onKeyDown={
+        isMinimized
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleExpand();
+              }
+            }
+          : undefined
+      }
+    >
       <div className="purchase-notification-banner__thumb">
         <img
           src={productImage}
@@ -58,48 +83,41 @@ const PurchaseNotificationBanner = () => {
       </div>
       <div className="purchase-notification-banner__content">
         <p className="purchase-notification-banner__eyebrow">Compra confirmada</p>
-        <p className="purchase-notification-banner__title">Você comprou {productTitle}!</p>
-        {priceLabel && (
+        <p className="purchase-notification-banner__title">{productTitle}</p>
+        {!isMinimized && priceLabel && (
           <p className="purchase-notification-banner__price">{priceLabel}</p>
         )}
-        <p className="purchase-notification-banner__subtitle">
-          Frete, mensagem e avaliação ficam disponíveis imediatamente.
-        </p>
-      <button
-        type="button"
-        className="purchase-notification-banner__close"
-        onClick={handleDismiss}
-        aria-label="Fechar notificação"
-      >
-        ×
-      </button>
-      <div className="purchase-notification-banner__actions">
-          <Link
-            to="/buyer-purchases"
-            className="purchase-notification-banner__btn purchase-notification-banner__btn--primary"
-            onClick={handleDismiss}
+        {!isMinimized && (
+          <p className="purchase-notification-banner__subtitle">Frete e avaliação liberados.</p>
+        )}
+        {!isMinimized && (
+          <button
+            type="button"
+            className="purchase-notification-banner__close"
+            onClick={handleMinimize}
+            aria-label="Minimizar notificação"
           >
-          Ver compras
-          </Link>
-          {activeOrder.product_id && (
+            ×
+          </button>
+        )}
+        {!isMinimized && (
+          <div className="purchase-notification-banner__actions">
             <Link
-              to={`/product/${activeOrder.product_id}`}
-              className="purchase-notification-banner__btn purchase-notification-banner__btn--ghost"
-              onClick={handleDismiss}
+              to="/sales-requests"
+              className="purchase-notification-banner__btn purchase-notification-banner__btn--primary"
+              onClick={handleClose}
             >
-              Ver produto
+              Ver compras
             </Link>
-          )}
-          {activeOrder.seller_id && (
-            <Link
-              to={`/users/${activeOrder.seller_id}`}
+            <button
+              type="button"
               className="purchase-notification-banner__btn purchase-notification-banner__btn--ghost"
-              onClick={handleDismiss}
+              onClick={handleClose}
             >
-              Avaliar {sellerName}
-            </Link>
-          )}
-      </div>
+              Ok
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

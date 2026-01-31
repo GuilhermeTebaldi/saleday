@@ -17,11 +17,27 @@ const buildMessageLink = (order) => {
 
 const BuyerOrdersList = ({
   orders = [],
+  highlightIds = [],
+  showDate = false,
   onViewProduct,
   onRateSeller,
   onMessageSeller,
   onClose
 }) => {
+  const highlightSet = new Set(
+    highlightIds.map((value) => Number(value)).filter(Number.isFinite)
+  );
+
+  const formatOrderDate = (order) => {
+    const dateValue = order?.confirmed_at || order?.updated_at || order?.created_at;
+    if (!dateValue) return '';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+  };
   const safeOnClose = () => {
     if (typeof onClose === 'function') {
       onClose();
@@ -43,8 +59,14 @@ const BuyerOrdersList = ({
         const productLink = `/product/${order.product_id}`;
         const messageLink = buildMessageLink(order);
 
+        const isNew = highlightSet.has(Number(orderId));
+        const dateLabel = showDate ? formatOrderDate(order) : '';
+
         return (
-          <article key={orderId} className="home-orders-card">
+          <article
+            key={orderId}
+            className={`home-orders-card ${isNew ? 'home-orders-card--new' : ''}`.trim()}
+          >
             <div className="home-orders-card__imgwrap">
               <img
                 src={productImage}
@@ -58,6 +80,9 @@ const BuyerOrdersList = ({
             </div>
             <div className="home-orders-card__body">
               <p className="home-orders-card__title">{productTitle}</p>
+              {dateLabel && (
+                <p className="home-orders-card__meta">Compra em {dateLabel}</p>
+              )}
               <div className="home-orders-card__actions">
                 <Link
                   to={productLink}

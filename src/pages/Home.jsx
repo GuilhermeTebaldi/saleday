@@ -1114,6 +1114,12 @@ export default function Home() {
     setActiveDrawer(true);
   }, []);
 
+  const openOrdersDrawer = useCallback(() => {
+    setDrawerTab('orders');
+    setActiveDrawer(true);
+    markOrdersSeen?.();
+  }, [markOrdersSeen]);
+
   // registrar click e view
   const registerClick = useCallback((productId) => {
     if (!productId) return;
@@ -1560,6 +1566,8 @@ export default function Home() {
           onFiltersChange={handleSearchFilters}
           resetSignal={externalResetToken}
           onOpenMap={() => mapOpenRef.current?.()}
+          onOpenFavorites={openFavoritesDrawer}
+          onOpenOrders={openOrdersDrawer}
           geoScope={geoScope}
           originCountry={preferredCountry}
           hasProfile={hasProfile}
@@ -1695,24 +1703,25 @@ export default function Home() {
                     )}
                   </button>
                 </nav>
-                <button
-                  type="button"
-                  className="home-drawer__close"
-                  onClick={() => setActiveDrawer(false)}
-                >
-                  ✕
-                </button>
+              <button
+                type="button"
+                className="home-drawer__close"
+                onClick={() => setActiveDrawer(false)}
+              >
+                (x)
+              </button>
               </header>
 
               <div className="home-drawer__body">
                 {drawerTab === 'favorites' ? (
                   <div className="home-drawer__section">
-                    <p className="home-drawer__eyebrow">Coleção pessoal</p>
-                    <h2 className="home-drawer__title">
-                      {favoriteIds.length
-                        ? `Você tem ${favoriteIds.length} favorit${favoriteIds.length > 1 ? 'os' : 'o'}`
-                        : 'Nenhum favorito salvo'}
-                    </h2>
+                    <div className="home-drawer__eyebrow-row">
+                      <p className="home-drawer__eyebrow">Coleção pessoal</p>
+                      <span className="home-drawer__count">{favoriteIds.length}</span>
+                    </div>
+                    {!favoriteIds.length && (
+                      <p className="home-drawer__title">Nenhum favorito salvo</p>
+                    )}
 
                     <div className="home-drawer__content">
                       {favoriteLoading ? (
@@ -1793,14 +1802,12 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                ) : (
-                  <div className="home-drawer__section">
-                    <p className="home-drawer__eyebrow">Compras confirmadas</p>
-                    <h2 className="home-drawer__title">
-                      {buyerOrders.length
-                        ? `Meus pedidos confirmados (${buyerOrders.length})`
-                        : 'Nenhum pedido confirmado ainda'}
-                    </h2>
+                  ) : (
+                    <div className="home-drawer__section">
+                    <div className="home-drawer__eyebrow-row">
+                      <p className="home-drawer__eyebrow">Compras confirmadas</p>
+                      <span className="home-drawer__count">{buyerOrders.length}</span>
+                    </div>
 
                   <div className="home-drawer__content">
                     {buyerOrders.length === 0 ? (
@@ -1810,6 +1817,7 @@ export default function Home() {
                     ) : (
                       <BuyerOrdersList
                         orders={buyerOrders}
+                        showDate
                         onViewProduct={(order) => {
                           if (order?.product_id) {
                             registerClick(order.product_id);

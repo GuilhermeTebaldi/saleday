@@ -25,7 +25,6 @@ import SellerProfile from './pages/SellerProfile.jsx';
 import SellerSearch from './pages/SellerSearch.jsx';
 import EditProduct from './pages/EditProduct.jsx';
 import SalesRequests from './pages/SalesRequests.jsx';
-import BuyerPurchases from './pages/BuyerPurchases.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -43,6 +42,7 @@ import AutoI18n from './i18n/AutoI18n.jsx';
 import { registerBanReasonListener } from './utils/banNotice.js';
 import PurchaseNotificationBanner from './components/PurchaseNotificationBanner.jsx';
 import { PurchaseNotificationsProvider } from './context/PurchaseNotificationsContext.jsx';
+import SellerOrdersToast from './components/SellerOrdersToast.jsx';
 
 export default function App() {
   const [banMessage, setBanMessage] = useState(null);
@@ -102,6 +102,7 @@ export default function App() {
               <AutoI18n />
               <BanBanner message={banMessage} />
               <Header />
+              <SellerOrdersToast />
               <PurchaseNotificationBanner />
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -204,7 +205,7 @@ export default function App() {
                   path="/buyer-purchases"
                   element={
                     <ProtectedRoute>
-                      <BuyerPurchases />
+                      <SalesRequests />
                     </ProtectedRoute>
                   }
                 />

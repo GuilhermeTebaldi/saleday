@@ -944,6 +944,7 @@ import { MessageCircle } from 'lucide-react';
       () => toAbsoluteImageUrl(selectedMeta.avatar) || '',
       [selectedMeta.avatar]
     );
+    const headerProfilePath = counterpartId ? `/users/${counterpartId}` : null;
     const handleHeaderAvatarPreview = useCallback(
       (event) => {
         if (!headerAvatarUrl) return;
@@ -1195,33 +1196,74 @@ import { MessageCircle } from 'lucide-react';
             </button>
           </div>
     <div className="flex min-w-0 items-center gap-3">
-    <div
-      className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20 ${
-        headerAvatarUrl ? 'cursor-pointer' : ''
-      }`}
-      role={headerAvatarUrl ? 'button' : undefined}
-      tabIndex={headerAvatarUrl ? 0 : undefined}
-      aria-label={headerAvatarUrl ? `Ver foto de ${headerPartnerName}` : undefined}
-      onClick={handleHeaderAvatarPreview}
-      onKeyDown={handleHeaderAvatarPreview}
-    >
-                          {headerAvatarUrl ? (
-                            <img
-                              src={headerAvatarUrl}
-                              alt={headerPartnerName || 'Usuário TempleSale'}
-                              className="h-full w-full rounded-2xl object-cover"
-                            />
-                          ) : (
-                            getInitial(selectedMeta.counterpart || selectedMeta.seller || 'TempleSale')
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h2 className="truncate text-xl font-semibold text-slate-900">
-                            {headerPartnerName}
-                          </h2>
-                          <p className="truncate text-sm text-slate-500">{headerSubtitle}</p>
-                        </div>
-                      </div>
+      <div className="relative">
+        {headerProfilePath ? (
+          <Link
+            to={headerProfilePath}
+            className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20"
+            aria-label={`Ver perfil de ${headerPartnerName}`}
+          >
+            {headerAvatarUrl ? (
+              <img
+                src={headerAvatarUrl}
+                alt={headerPartnerName || 'Usuário TempleSale'}
+                className="h-full w-full rounded-2xl object-cover"
+              />
+            ) : (
+              getInitial(selectedMeta.counterpart || selectedMeta.seller || 'TempleSale')
+            )}
+          </Link>
+        ) : (
+          <div
+            className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-semibold text-white shadow-lg shadow-blue-500/20 ${
+              headerAvatarUrl ? 'cursor-pointer' : ''
+            }`}
+            role={headerAvatarUrl ? 'button' : undefined}
+            tabIndex={headerAvatarUrl ? 0 : undefined}
+            aria-label={headerAvatarUrl ? `Ver foto de ${headerPartnerName}` : undefined}
+            onClick={handleHeaderAvatarPreview}
+            onKeyDown={handleHeaderAvatarPreview}
+          >
+            {headerAvatarUrl ? (
+              <img
+                src={headerAvatarUrl}
+                alt={headerPartnerName || 'Usuário TempleSale'}
+                className="h-full w-full rounded-2xl object-cover"
+              />
+            ) : (
+              getInitial(selectedMeta.counterpart || selectedMeta.seller || 'TempleSale')
+            )}
+          </div>
+        )}
+        {headerAvatarUrl && headerProfilePath && (
+          <button
+            type="button"
+            className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-white text-[10px] font-semibold text-slate-600 shadow-sm shadow-slate-200"
+            aria-label={`Ver foto de ${headerPartnerName}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleHeaderAvatarPreview(event);
+            }}
+          >
+            👁️
+          </button>
+        )}
+      </div>
+      <div className="min-w-0">
+        {headerProfilePath ? (
+          <Link
+            to={headerProfilePath}
+            className="block truncate text-xl font-semibold text-slate-900"
+          >
+            {headerPartnerName}
+          </Link>
+        ) : (
+          <h2 className="truncate text-xl font-semibold text-slate-900">{headerPartnerName}</h2>
+        )}
+        <p className="truncate text-sm text-slate-500">{headerSubtitle}</p>
+      </div>
+    </div>
                       <div className="flex items-center gap-3">
                         {productSold && (
                           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-inner">
