@@ -12944,8 +12944,12 @@ body.templesale-panel-open .nav-side-backdrop {
     gap: 10px;
   }
   .cover-editor__tabs {
-    flex-direction: column;
+    flex-direction: row;
     align-items: stretch;
+  }
+  .cover-editor__tab {
+    flex: 1;
+    text-align: center;
   }
   .cover-editor__grid {
     grid-template-columns: 1fr;
