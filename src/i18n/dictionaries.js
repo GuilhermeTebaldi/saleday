@@ -292,6 +292,8 @@ const ENTRIES = [
   { key: 'Me retorne no WhatsApp!', en: 'Get back to me on WhatsApp!', es: 'Respóndeme por WhatsApp.', it: 'Rispondimi su WhatsApp!', ja: 'WhatsAppで返信してください！' },
   { key: 'Tenho interesse, está disponível?', en: 'I am interested, is it available?', es: 'Tengo interés, ¿está disponible?', it: 'Sono interessato, è disponibile?', ja: '興味があります、まだ利用できますか？' },
   { key: 'Sugestões rápidas', en: 'Quick suggestions', es: 'Sugerencias rápidas', it: 'Suggerimenti rapidi', ja: 'クイック提案' },
+  { key: 'Sugestões', en: 'Suggestions', es: 'Sugerencias', it: 'Suggerimenti', ja: '提案' },
+  { key: 'Mostrar mais →', en: 'Show more →', es: 'Mostrar más →', it: 'Mostra di più →', ja: 'もっと見る →' },
   {
     key: 'Faça perguntas rápidas ao anunciante e acompanhe as respostas publicamente no ad.',
     en: 'Ask quick questions to the advertiser and follow the answers publicly on the ad.',
@@ -856,6 +858,8 @@ const ENTRIES = [
   { key: 'Usuário TempleSale', en: 'TempleSale user', es: 'Usuario TempleSale', it: 'Utente TempleSale' },
   { key: 'Local não informado', en: 'Location not provided', es: 'Ubicación no informada', it: 'Località non fornita' },
   { key: 'Ir para a página inicial e recarregar', en: 'Go to the home page and reload', es: 'Ir a la página inicial y recargar', it: 'Vai alla home e ricarica' },
+  { key: 'Erro ao carregar a página inicial', en: 'Error loading the home page', es: 'Error al cargar la página inicial', it: 'Errore nel caricamento della home page' },
+  { key: 'Tente recarregar a página ou voltar novamente em instantes.', en: 'Try refreshing the page or coming back in a moment.', es: 'Intenta recargar la página o vuelve en un momento.', it: 'Prova a ricaricare la pagina o ritorna tra un momento.' },
   { key: 'Ir para o painel', en: 'Go to the dashboard', es: 'Ir al panel', it: 'Vai al pannello' },
   { key: 'Abrir notificações', en: 'Open notifications', es: 'Abrir notificaciones', it: 'Apri notifiche' },
   { key: 'Fechar notificações', en: 'Close notifications', es: 'Cerrar notificaciones', it: 'Chiudi notifiche' },

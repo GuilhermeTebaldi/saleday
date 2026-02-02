@@ -82,6 +82,16 @@ const resolveCountryName = (code) => {
 };
 const isActive = (p) => (p?.status || 'active') !== 'sold';
 const FAVORITE_FIELDS = ['likes_count', 'likes', 'favorites_count'];
+const BOOST_PLAN_LABELS = {
+  ruby: 'Ruby',
+  diamond: 'Diamante',
+  esmerald: 'Esmeralda'
+};
+const BOOST_PLAN_ICONS = {
+  ruby: '/pagamntoporgemas/ruby1.png',
+  diamond: '/pagamntoporgemas/diamante2.png',
+  esmerald: '/pagamntoporgemas/esmeralda3.png'
+};
 
 const HOME_SNAPSHOT_KEY = 'templesale:home-snapshot';
 const HOME_RESTORE_KEY = 'templesale:home-restore';
@@ -134,6 +144,17 @@ const clearHomeRestore = () => {
 const normalizeId = (value) => {
   const num = Number(value);
   return Number.isNaN(num) ? String(value) : num;
+};
+
+const normalizePlanKey = (value) => {
+  if (!value) return '';
+  return String(value).trim().toLowerCase();
+};
+
+const getGridColumns = (width) => {
+  if (width >= 1024) return 4;
+  if (width >= 640) return 3;
+  return 2;
 };
 
 const renderQuickCategoryIcon = (icon) => {
@@ -759,6 +780,11 @@ export default function Home() {
   const [productsLoading, setProductsLoading] = useState(() => !initialHomeSnapshot);
   const [lastMapCenter, setLastMapCenter] = useState(() => readStoredMapCenter());
   const productsRef = useRef([]);
+  const sponsoredRowRefs = useRef({});
+  const [gridColumns, setGridColumns] = useState(() => {
+    if (typeof window === 'undefined') return 4;
+    return getGridColumns(window.innerWidth);
+  });
   const [viewMode, setViewMode] = useState(() => initialHomeSnapshot?.viewMode ?? 'all'); // 'all' | 'free'
   const [favoriteIds, setFavoriteIds] = useState(() => {
     if (typeof window === 'undefined') return [];
@@ -1012,6 +1038,16 @@ export default function Home() {
   }, [loadDefaultProducts, initialHomeSnapshot]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => {
+      setGridColumns(getGridColumns(window.innerWidth));
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     const hasActiveFilters = Boolean(
       searchSummary ||
         locationSummary ||
@@ -1149,6 +1185,19 @@ export default function Home() {
     } catch {
       // ignore
     }
+  }, []);
+
+  const handleSponsoredMore = useCallback((groupKey) => {
+    const row = sponsoredRowRefs.current[groupKey];
+    if (!row) return;
+    const cards = Array.from(row.children);
+    if (!cards.length) return;
+    const currentRight = row.scrollLeft + row.clientWidth + 4;
+    const nextCard = cards.find(
+      (card) => card.offsetLeft + card.offsetWidth > currentRight
+    );
+    const targetLeft = nextCard ? nextCard.offsetLeft : 0;
+    row.scrollTo({ left: targetLeft, behavior: 'smooth' });
   }, []);
 
   const handleSearchFilters = useCallback((payload) => {
@@ -1382,6 +1431,12 @@ export default function Home() {
 
   const freeProducts = products.filter((p) => isProductFree(p));
   const displayedProducts = viewMode === 'free' ? freeProducts : products;
+  const sponsoredProducts = useMemo(() => {
+    if (!displayedProducts.length) return [];
+    return displayedProducts.filter((product) => normalizePlanKey(product?.manual_rank_plan));
+  }, [displayedProducts]);
+  const showSponsored = gridColumns <= 2;
+  const activeSponsoredProducts = showSponsored ? sponsoredProducts : [];
   useEffect(() => {
     const activeCountry =
       normalizeCountryCode(
@@ -1635,33 +1690,214 @@ export default function Home() {
           </div>
         ) : (
           <div className="home-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 w-full">
-            {displayedProducts.map((product) => {
-              const productImageEntries = buildProductImageEntries(product);
-              const productImages = productImageEntries.length
-                ? productImageEntries.map((entry) => entry.url)
-                : [IMG_PLACEHOLDER];
-              const productImageKinds = productImageEntries.length
-                ? productImageEntries.map((entry) => entry.kind)
-                : [null];
-              const galleryKey = productImages.join('|');
-              const countryLabel = resolveCountryName(product.country);
-              const locationParts = [product.city, countryLabel].filter(Boolean);
-              const priceLabel = getProductPriceLabel(product);
-              const locationLabel = locationParts.join(' • ');
+            {(() => {
+              const items = [];
+              const renderSponsoredBlock = (itemsList) => {
+                const rowKey = 'all';
+                return (
+                <div key="home-sponsored-all" className="home-sponsored">
+                  <div className="home-sponsored__group">
+                    <div className="home-sponsored__header">
+                      <div className="home-sponsored__title-wrap">
+                        <span className="home-sponsored__title">Sugestões</span>
+                        <span className="home-sponsored__sparkles" aria-hidden="true">
+                          <span className="home-sponsored__sparkle home-sponsored__sparkle--one" />
+                          <span className="home-sponsored__sparkle home-sponsored__sparkle--two" />
+                          <span className="home-sponsored__sparkle home-sponsored__sparkle--three" />
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="home-sponsored__action"
+                        onClick={() => handleSponsoredMore(rowKey)}
+                      >
+                        Mostrar mais →
+                      </button>
+                    </div>
+                    <div
+                      className={`home-sponsored__row ${
+                        itemsList.length === 1 ? 'is-single' : ''
+                      }`}
+                      role="list"
+                      ref={(node) => {
+                        if (node) sponsoredRowRefs.current[rowKey] = node;
+                      }}
+                    >
+                      {itemsList.map((product) => {
+                        const planKey = normalizePlanKey(product?.manual_rank_plan);
+                        const planLabel = BOOST_PLAN_LABELS[planKey] || planKey;
+                        const entry = getPrimaryImageEntry(product);
+                        const imageSrc = entry?.url || IMG_PLACEHOLDER;
+                        const isIllustrative = entry?.kind === IMAGE_KIND.ILLUSTRATIVE;
+                        const title = product?.title || 'Produto';
+                        const countryLabel = resolveCountryName(product.country);
+                        const locationParts = [product.city, countryLabel].filter(Boolean);
+                        const priceLabel = getProductPriceLabel(product);
+                        const locationLabel = locationParts.join(' • ');
+                        const tierIcon = BOOST_PLAN_ICONS[planKey];
 
-              return (
-                <ProductCardHome
-                  key={product.id}
-                  product={product}
-                  images={productImages}
-                  imageKinds={productImageKinds}
-                  galleryKey={galleryKey}
-                  priceLabel={priceLabel}
-                  locationLabel={locationLabel}
-                  onClick={() => registerClick(product.id)}
-                />
-              );
-            })}
+                        return (
+                          <article
+                            key={`sponsored-${planKey}-${product.id}`}
+                            className="home-sponsored-card"
+                            role="listitem"
+                          >
+                            <Link
+                              to={`/product/${product.id}`}
+                              className="home-sponsored-card__link"
+                              onClick={() => registerClick(product.id)}
+                            >
+                              <div className="home-sponsored-card__media">
+                                <img
+                                  src={imageSrc}
+                                  alt={title}
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={(e) => {
+                                    e.currentTarget.src = IMG_PLACEHOLDER;
+                                    e.currentTarget.onerror = null;
+                                  }}
+                                />
+                                {isIllustrative && (
+                                  <span className="home-sponsored-card__badge">
+                                    {IMAGE_KIND_BADGE_LABEL}
+                                  </span>
+                                )}
+                                <span
+                                  className={`home-sponsored-card__tier home-sponsored-card__tier--${planKey}`}
+                                  aria-label={planLabel}
+                                  title={planLabel}
+                                >
+                                  {tierIcon ? (
+                                    <img
+                                      src={tierIcon}
+                                      alt={planLabel}
+                                      className="home-sponsored-card__tier-icon"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  ) : (
+                                    <span className="home-sponsored-card__tier-text">
+                                      {planLabel}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                              <div className="home-sponsored-card__body">
+                                <p
+                                  className={`home-sponsored-card__price ${
+                                    isProductFree(product) ? 'is-free' : ''
+                                  }`}
+                                >
+                                  {priceLabel}
+                                </p>
+                                {locationLabel && (
+                                  <p className="home-sponsored-card__location">{locationLabel}</p>
+                                )}
+                                <p className="home-sponsored-card__title" title={title}>
+                                  {title}
+                                </p>
+                              </div>
+                            </Link>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                );
+              };
+
+              const sponsoredBlocks = activeSponsoredProducts.length
+                ? [renderSponsoredBlock(activeSponsoredProducts)]
+                : [];
+              if (!sponsoredBlocks.length) {
+                return displayedProducts.map((product) => {
+                  const productImageEntries = buildProductImageEntries(product);
+                  const productImages = productImageEntries.length
+                    ? productImageEntries.map((entry) => entry.url)
+                    : [IMG_PLACEHOLDER];
+                  const productImageKinds = productImageEntries.length
+                    ? productImageEntries.map((entry) => entry.kind)
+                    : [null];
+                  const galleryKey = productImages.join('|');
+                  const countryLabel = resolveCountryName(product.country);
+                  const locationParts = [product.city, countryLabel].filter(Boolean);
+                  const priceLabel = getProductPriceLabel(product);
+                  const locationLabel = locationParts.join(' • ');
+
+                  return (
+                    <ProductCardHome
+                      key={product.id}
+                      product={product}
+                      images={productImages}
+                      imageKinds={productImageKinds}
+                      galleryKey={galleryKey}
+                      priceLabel={priceLabel}
+                      locationLabel={locationLabel}
+                      onClick={() => registerClick(product.id)}
+                    />
+                  );
+                });
+              }
+
+              const normalCount = displayedProducts.length;
+              const blockCount = sponsoredBlocks.length;
+              const insertionPoints = [];
+              const minGap = Math.max(1, gridColumns);
+              const firstInsertFloor = Math.max(gridColumns, 2);
+              let lastPos = -1;
+              for (let i = 0; i < blockCount; i += 1) {
+                let pos = Math.floor(((i + 1) * normalCount) / (blockCount + 1));
+                pos = Math.max(pos, firstInsertFloor);
+                pos = Math.ceil(pos / gridColumns) * gridColumns;
+                if (pos <= lastPos + minGap) pos = lastPos + minGap;
+                if (pos > normalCount) pos = normalCount;
+                insertionPoints.push(pos);
+                lastPos = pos;
+              }
+
+              let blockIndex = 0;
+              displayedProducts.forEach((product, index) => {
+                if (insertionPoints[blockIndex] === index) {
+                  items.push(sponsoredBlocks[blockIndex]);
+                  blockIndex += 1;
+                }
+
+                const productImageEntries = buildProductImageEntries(product);
+                const productImages = productImageEntries.length
+                  ? productImageEntries.map((entry) => entry.url)
+                  : [IMG_PLACEHOLDER];
+                const productImageKinds = productImageEntries.length
+                  ? productImageEntries.map((entry) => entry.kind)
+                  : [null];
+                const galleryKey = productImages.join('|');
+                const countryLabel = resolveCountryName(product.country);
+                const locationParts = [product.city, countryLabel].filter(Boolean);
+                const priceLabel = getProductPriceLabel(product);
+                const locationLabel = locationParts.join(' • ');
+
+                items.push(
+                  <ProductCardHome
+                    key={product.id}
+                    product={product}
+                    images={productImages}
+                    imageKinds={productImageKinds}
+                    galleryKey={galleryKey}
+                    priceLabel={priceLabel}
+                    locationLabel={locationLabel}
+                    onClick={() => registerClick(product.id)}
+                  />
+                );
+              });
+
+              while (blockIndex < blockCount && insertionPoints[blockIndex] === normalCount) {
+                items.push(sponsoredBlocks[blockIndex]);
+                blockIndex += 1;
+              }
+
+              return items;
+            })()}
           </div>
         )}
       </section>
