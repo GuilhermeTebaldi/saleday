@@ -111,7 +111,7 @@ export default function AdminLayout() {
                 </button>
                 <button
                   onClick={logout}
-                  className="rounded-xl bg-white px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-indigo-500/30 transition hover:-translate-y-0.5"
+                  className="rounded-xl bg-white px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-indigo-500/30 transition"
                 >
                   Sair
                 </button>

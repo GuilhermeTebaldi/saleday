@@ -196,7 +196,7 @@ export default function AdminUsers() {
           <div className="flex gap-2">
             <button
               type="submit"
-              className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow shadow-indigo-500/30 transition hover:-translate-y-0.5"
+              className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow shadow-indigo-500/30 transition"
             >
               Buscar
             </button>

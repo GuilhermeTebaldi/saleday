@@ -291,7 +291,7 @@ export default function AdminSupport() {
             <button
               type="submit"
               disabled={!activeConversation || sendingReply || !reply.trim()}
-              className="rounded-2xl bg-gradient-to-r from-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 transition hover:shadow-indigo-500/60 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl bg-gradient-to-r from-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/40 transition disabled:cursor-not-allowed disabled:opacity-60"
             >
               {sendingReply ? 'Enviando...' : 'Responder'}
             </button>
