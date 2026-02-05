@@ -71,13 +71,14 @@ const App: React.FC = () => {
       const images = Array.from(cardRef.current.querySelectorAll('img'));
       await Promise.all(
         images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          if (typeof img.decode === 'function') {
-            return img.decode().catch(() => {});
+          const image = img as HTMLImageElement;
+          if (image.complete && image.naturalWidth > 0) return Promise.resolve();
+          if (typeof image.decode === 'function') {
+            return image.decode().catch(() => {});
           }
           return new Promise((resolve) => {
-            img.onload = () => resolve(true);
-            img.onerror = () => resolve(true);
+            image.onload = () => resolve(true);
+            image.onerror = () => resolve(true);
           });
         })
       );

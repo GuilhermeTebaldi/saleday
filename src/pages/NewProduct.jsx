@@ -579,6 +579,7 @@ export default function NewProduct() {
   const lastZipAutoFillRef = useRef({ zip: '', at: 0 });
   const autoZipTriggeredRef = useRef(false);
   const initialZipRef = useRef(baseForm.zip);
+  const locationSourceRef = useRef('');
   const [activeImageKindId, setActiveImageKindId] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
@@ -612,6 +613,11 @@ export default function NewProduct() {
     setShowFieldErrors(false);
     initialZipRef.current = baseForm.zip;
     autoZipTriggeredRef.current = false;
+    if (baseForm.lat !== '' && baseForm.lat !== null && baseForm.lat !== undefined) {
+      locationSourceRef.current = 'gps';
+    } else {
+      locationSourceRef.current = '';
+    }
     setCurrentStep(0);
     setMaxStepReached(0);
   }, [baseForm]);
@@ -1061,12 +1067,20 @@ export default function NewProduct() {
 
     if (name === 'city') {
       const normalizedCity = normalizeCityName(value);
-      setForm((prev) => ({ ...prev, city: normalizedCity, lat: '', lng: '' }));
+      setForm((prev) => ({
+        ...prev,
+        city: normalizedCity,
+        ...(locationSourceRef.current === 'gps' ? {} : { lat: '', lng: '' })
+      }));
       return;
     }
 
     if (ADDRESS_FIELDS.has(name)) {
-      setForm((prev) => ({ ...prev, [name]: value, lat: '', lng: '' }));
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+        ...(locationSourceRef.current === 'gps' ? {} : { lat: '', lng: '' })
+      }));
       return;
     }
 
@@ -1263,6 +1277,7 @@ export default function NewProduct() {
               lat,
               lng
             }));
+            locationSourceRef.current = 'gps';
             toast.success('Localização detectada com sucesso.');
           } else {
             toast.error('Falha ao detectar endereço.');
@@ -1286,25 +1301,32 @@ export default function NewProduct() {
   };
 
   // Valida e usa o CEP/ZIP higienizado no fetch
-  async function applyZipLookup({ showSuccessToast = true } = {}) {
+  async function applyZipLookup({ showSuccessToast = true, mode = 'auto' } = {}) {
     const country = (form.country || 'BR').toUpperCase();
     const cleaned = cleanZip(form.zip, country);
+    const isAuto = mode === 'auto';
     if (!cleaned) {
-      toast.error('Informe o CEP/ZIP.');
-      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-      focusZipInput();
+      if (!isAuto) {
+        toast.error('Informe o CEP/ZIP.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+      }
       return { success: false };
     }
     if (country === 'BR' && cleaned.length !== 8) {
-      toast.error('CEP deve ter 8 dígitos.');
-      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-      focusZipInput();
+      if (!isAuto) {
+        toast.error('CEP deve ter 8 dígitos.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+      }
       return { success: false };
     }
     if (country === 'US' && !(cleaned.length === 5 || cleaned.length === 9)) {
-      toast.error('ZIP deve ter 5 ou 9 dígitos.');
-      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-      focusZipInput();
+      if (!isAuto) {
+        toast.error('ZIP deve ter 5 ou 9 dígitos.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+      }
       return { success: false };
     }
 
@@ -1315,9 +1337,11 @@ export default function NewProduct() {
     try {
       const { data } = await api.get('/geo/cep', { params: { country, zip: cleaned } });
       if (!data.success || !data.data) {
-        toast.error('CEP/ZIP não encontrado.');
-        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-        focusZipInput();
+        if (!isAuto) {
+          toast.error('CEP/ZIP não encontrado.');
+          setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+          focusZipInput();
+        }
         return { success: false };
       }
       const a = data.data;
@@ -1347,23 +1371,49 @@ export default function NewProduct() {
       const latNum = toFiniteNumber(next.lat);
       const lngNum = toFiniteNumber(next.lng);
       if (latNum === null || lngNum === null || !inBounds(resolvedCountry, latNum, lngNum)) {
-        toast.error('CEP localizado sem coordenadas válidas. Digite novamente.');
-        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-        focusZipInput();
+        if (!isAuto) {
+          toast.error('CEP localizado sem coordenadas válidas. Digite novamente.');
+          setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+          focusZipInput();
+        }
         return { success: false };
       }
       next.lat = latNum;
       next.lng = lngNum;
-      setForm((prev) => ({ ...prev, ...next }));
+      const hasGps = locationSourceRef.current === 'gps';
+      const allowOverwrite = mode === 'manual' || !hasGps;
+      setForm((prev) => {
+        if (allowOverwrite) {
+          return { ...prev, ...next };
+        }
+        const hasLat = prev.lat !== '' && prev.lat !== null && prev.lat !== undefined;
+        const hasLng = prev.lng !== '' && prev.lng !== null && prev.lng !== undefined;
+        return {
+          ...prev,
+          country: next.country || prev.country,
+          state: prev.state || next.state,
+          city: prev.city || next.city,
+          neighborhood: prev.neighborhood || next.neighborhood,
+          street: prev.street || next.street,
+          zip: next.zip || prev.zip,
+          lat: hasLat ? prev.lat : next.lat,
+          lng: hasLng ? prev.lng : next.lng
+        };
+      });
+      if (allowOverwrite) {
+        locationSourceRef.current = 'zip';
+      }
       if (showSuccessToast) {
         toast.success('Endereço preenchido pelo CEP.');
       }
       return { success: true, next };
     } catch (err) {
       console.error(err?.response?.data || err.message);
-      toast.error('Erro ao consultar CEP.');
-      setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
-      focusZipInput();
+      if (!isAuto) {
+        toast.error('Erro ao consultar CEP.');
+        setForm((prev) => ({ ...prev, zip: '', lat: '', lng: '' }));
+        focusZipInput();
+      }
       return { success: false };
     } finally {
       setLoadingZip(false);
@@ -1371,18 +1421,19 @@ export default function NewProduct() {
   }
 
   async function handleFillByZip() {
-    await applyZipLookup({ showSuccessToast: true });
+    await applyZipLookup({ showSuccessToast: true, mode: 'manual' });
   }
 
   useEffect(() => {
     if (autoZipTriggeredRef.current) return;
+    if (locationSourceRef.current === 'gps') return;
     const country = (form.country || 'BR').toUpperCase();
     const initialZip = initialZipRef.current;
     if (!initialZip || form.zip !== initialZip) return;
     const cleaned = cleanZip(initialZip, country);
     if (!shouldAutoFillZip(country, cleaned)) return;
     autoZipTriggeredRef.current = true;
-    handleFillByZip();
+    applyZipLookup({ showSuccessToast: true, mode: 'auto' });
   }, [form.country, form.zip]);
 
   const shouldAutoFillZip = (country, cleanedZip) => {
@@ -1395,6 +1446,7 @@ export default function NewProduct() {
 
   const handleZipBlur = (event) => {
     if (event?.relatedTarget?.dataset?.zipAutofill === 'true') return;
+    if (locationSourceRef.current === 'gps') return;
     const country = (form.country || 'BR').toUpperCase();
     const cleaned = cleanZip(form.zip, country);
     if (!shouldAutoFillZip(country, cleaned)) return;
@@ -1402,7 +1454,7 @@ export default function NewProduct() {
     const last = lastZipAutoFillRef.current;
     if (last.zip === cleaned && now - last.at < 5000) return;
     lastZipAutoFillRef.current = { zip: cleaned, at: now };
-    handleFillByZip();
+    applyZipLookup({ showSuccessToast: true, mode: 'auto' });
   };
 
   const buildForwardGeoQuery = (countryCode, stateCode, address) => {
@@ -1583,13 +1635,25 @@ export default function NewProduct() {
       focusMissingField('year');
       return;
     }
-    const zipToastId = toast.loading('Validando CEP... só um segundo.');
-    const zipCheck = await applyZipLookup({ showSuccessToast: false });
-    toast.dismiss(zipToastId);
-    if (!zipCheck.success) {
-      setShowFieldErrors(true);
-      focusMissingField('zip');
-      return;
+    const countryCode = normalizeCountryCode(form.country) || initialFormState.country;
+    const latExisting = toFiniteNumber(form.lat);
+    const lngExisting = toFiniteNumber(form.lng);
+    const hasValidCoords =
+      latExisting !== null &&
+      lngExisting !== null &&
+      Number.isFinite(latExisting) &&
+      Number.isFinite(lngExisting) &&
+      inBounds(countryCode, latExisting, lngExisting);
+    let zipCheck = { success: true, next: null };
+    if (!hasValidCoords) {
+      const zipToastId = toast.loading('Validando CEP... só um segundo.');
+      zipCheck = await applyZipLookup({ showSuccessToast: false, mode: 'manual' });
+      toast.dismiss(zipToastId);
+      if (!zipCheck.success) {
+        setShowFieldErrors(true);
+        focusMissingField('zip');
+        return;
+      }
     }
 
     setPublishStage(images.length > 0 ? 'uploading' : 'processing');
@@ -1609,7 +1673,7 @@ export default function NewProduct() {
         resetPublishState();
         return;
       }
-      const formSnapshot = zipCheck.next ? { ...form, ...zipCheck.next } : form;
+      const formSnapshot = zipCheck?.next ? { ...form, ...zipCheck.next } : form;
       const payload = buildPayload(resolvedCoords, formSnapshot);
       const formData = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
@@ -2344,7 +2408,11 @@ export default function NewProduct() {
                               value={form.zip}
                               onChange={(e) => {
                                 const cleaned = cleanZip(e.target.value, (form.country || 'BR').toUpperCase());
-                                setForm((prev) => ({ ...prev, zip: cleaned, lat: '', lng: '' }));
+                                setForm((prev) => ({
+                                  ...prev,
+                                  zip: cleaned,
+                                  ...(locationSourceRef.current === 'gps' ? {} : { lat: '', lng: '' })
+                                }));
                               }}
                               onBlur={handleZipBlur}
                               required
