@@ -20,7 +20,7 @@ const Badge: React.FC<{ icon: React.ReactNode; label: string; dark?: boolean }> 
 const PriceTag: React.FC<{ preco: string; className?: string }> = ({ preco, className }) => (
   <div className={`bg-[#19C37D] py-5 px-10 rounded-[2rem] shadow-[0_15px_40px_rgba(25,195,125,0.3)] flex flex-col items-center justify-center ${className}`}>
     <span className="text-white text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-90">Valor do Investimento</span>
-    <span className="text-white text-6xl font-black tracking-tighter leading-none">
+    <span className="text-white font-black tracking-tight leading-none whitespace-nowrap tabular-nums text-[clamp(28px,5.5vw,64px)]">
       {isValidValue(preco) ? preco : 'CONSULTE'}
     </span>
   </div>
