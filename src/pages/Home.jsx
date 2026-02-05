@@ -916,10 +916,6 @@ export default function Home() {
       if (!normalized) return;
       counts.set(normalized, (counts.get(normalized) || 0) + 1);
     });
-    ['Terreno', 'Aluguel'].forEach((label) => {
-      const normalized = normalizeLabel(label);
-      if (!counts.has(normalized)) counts.set(normalized, 0);
-    });
     return Array.from(counts.entries())
       .map(([normalized, count]) => ({
         label: CATEGORY_LABEL_MAP.get(normalized) || normalized,
@@ -1500,7 +1496,7 @@ export default function Home() {
         ...item,
         total: counts.get(normalizeLabel(item.label)) || 0
       }))
-      .filter((item) => item.total > 0 || ['Terreno', 'Aluguel'].includes(item.label));
+      .filter((item) => item.total > 0);
   }, [quickCategoryCache, products, activeCountryForShortcuts]);
   const activeFilters = [];
   if (searchSummary) {
