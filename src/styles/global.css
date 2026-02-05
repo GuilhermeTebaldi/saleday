@@ -2088,7 +2088,7 @@ body.templesale-header-search-open .home-search-bar {
 .home-grid-section {
   margin-top: clamp(0.15rem, 2vw, 0.3rem);
   padding: clamp(0.85rem, 1.2vw + 0.4rem, 1.4rem) 0 0 !important;
-  background: #030000;
+  background: var(--ts-bg);
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
