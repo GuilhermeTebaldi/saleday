@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PropertyData, isValidValue, formatCEP } from '../types';
+import { getCategoryDetailFields } from '../../src/utils/categoryFields.js';
 
 interface PreviewCardProps {
   data: PropertyData;
@@ -25,13 +26,135 @@ const PriceTag: React.FC<{ preco: string; className?: string }> = ({ preco, clas
   </div>
 );
 
+const formatBadgeLabel = (name, value, label) => {
+  if (!isValidValue(value)) return '';
+  if (name === 'area' || name === 'areaM2') return `${value} m²`;
+  if (name === 'bedrooms' || name === 'quartos') return `${value} Qts`;
+  if (name === 'bathrooms' || name === 'banheiros') return `${value} Ban`;
+  if (name === 'parking' || name === 'vagas') return `${value} Vagas`;
+  if (name === 'year') return `${value}`;
+  if (label) return `${label}: ${value}`;
+  return String(value);
+};
+
+const iconForField = (name) => {
+  switch (name) {
+    case 'area':
+    case 'areaM2':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19h16"></path><path d="M4 5v14"></path><path d="M12 5v14"></path><path d="M20 5v14"></path><path d="M4 12h16"></path>
+        </svg>
+      );
+    case 'bedrooms':
+    case 'quartos':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"></path><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path>
+        </svg>
+      );
+    case 'bathrooms':
+    case 'banheiros':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12h18"></path><path d="M7 12V6a3 3 0 0 1 6 0v6"></path><path d="M5 12v4a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-4"></path>
+        </svg>
+      );
+    case 'parking':
+    case 'vagas':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="3" width="22" height="13" rx="2" ry="2"></rect><path d="M8 21h8"></path>
+        </svg>
+      );
+    case 'brand':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 7v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7"></path><path d="M7 7l5-4 5 4"></path>
+        </svg>
+      );
+    case 'model':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="7" width="18" height="10" rx="2"></rect><path d="M7 7V5h10v2"></path>
+        </svg>
+      );
+    case 'color':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3v18"></path><path d="M3 12h18"></path>
+        </svg>
+      );
+    case 'year':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path>
+        </svg>
+      );
+    case 'propertyType':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 11l9-8 9 8"></path><path d="M5 10v10h14V10"></path>
+        </svg>
+      );
+    case 'rentType':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h10"></path>
+        </svg>
+      );
+    case 'serviceType':
+    case 'serviceDuration':
+    case 'serviceRate':
+    case 'serviceLocation':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a7.97 7.97 0 0 0 .1-6"></path><path d="M4.5 9a7.97 7.97 0 0 0 .1 6"></path>
+        </svg>
+      );
+    case 'jobTitle':
+    case 'jobType':
+    case 'jobSalary':
+    case 'jobRequirements':
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M9 7V5a3 3 0 0 1 6 0v2"></path>
+        </svg>
+      );
+    default:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12h16"></path>
+        </svg>
+      );
+  }
+};
+
 const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean }> = ({ data, dark }) => {
-  const { areaM2, quartos, banheiros, vagas } = data;
+  const category = data.category || data.categoria;
+  const detailFields = getCategoryDetailFields(category);
+  const values = data as Record<string, any>;
+
+  const badges = detailFields
+    .map((field) => {
+      const value = values[field.name];
+      const label = formatBadgeLabel(field.name, value, field.label);
+      return label ? { label, icon: iconForField(field.name) } : null;
+    })
+    .filter(Boolean) as { label: string }[];
+
+  if (!badges.length) return null;
+
   return (
     <div className="flex flex-wrap gap-4">
-      {isValidValue(areaM2) && <Badge dark={dark} label={`${areaM2} m²`} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19h16"></path><path d="M4 5v14"></path><path d="M12 5v14"></path><path d="M20 5v14"></path><path d="M4 12h16"></path></svg>} />}
-      {isValidValue(quartos) && <Badge dark={dark} label={`${quartos} Qts`} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"></path><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path></svg>} />}
-      {isValidValue(vagas) && <Badge dark={dark} label={`${vagas} Vagas`} icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="22" height="13" rx="2" ry="2"></rect><path d="M8 21h8"></path></svg>} />}
+      {badges.map((item, index) => (
+        <Badge
+          key={`${item.label}-${index}`}
+          dark={dark}
+          label={item.label}
+          icon={item.icon}
+        />
+      ))}
     </div>
   );
 };

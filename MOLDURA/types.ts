@@ -5,6 +5,7 @@ export interface PropertyData {
   templateId?: TemplateId;
   empresaNome?: string;
   categoria: string;
+  category?: string;
   preco: string;
   headline?: string;
   cep?: string;
@@ -17,6 +18,24 @@ export interface PropertyData {
   quartos?: number | string | null;
   banheiros?: number | string | null;
   vagas?: number | string | null;
+  brand?: string;
+  model?: string;
+  color?: string;
+  year?: number | string | null;
+  propertyType?: string;
+  area?: number | string | null;
+  bedrooms?: number | string | null;
+  bathrooms?: number | string | null;
+  parking?: number | string | null;
+  rentType?: string;
+  serviceType?: string;
+  serviceDuration?: string;
+  serviceRate?: string;
+  serviceLocation?: string;
+  jobTitle?: string;
+  jobType?: string;
+  jobSalary?: string;
+  jobRequirements?: string;
 }
 
 export const isValidValue = (val: any): boolean => {

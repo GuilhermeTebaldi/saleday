@@ -4,11 +4,15 @@ import { toPng } from 'html-to-image';
 import { PropertyData, isValidValue } from './types';
 import { PreviewCard } from './components/PreviewCard';
 import { EditorForm } from './components/EditorForm';
+import api from '../src/api/api.js';
+import { getProductPriceLabel } from '../src/utils/product.js';
+import { getPrimaryImageEntry, toAbsoluteImageUrl } from '../src/utils/images.js';
 
 const INITIAL_DATA: PropertyData = {
   templateId: 'classic',
   empresaNome: "NOME DA IMOBILIÁRIA",
   categoria: "Imóveis",
+  category: "Imóveis",
   preco: "R$ 400.000,00",
   headline: "TERRENO",
   cep: "89811442",
@@ -29,6 +33,9 @@ const App: React.FC = () => {
   const [logoImage, setLogoImage] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [productLink, setProductLink] = useState('');
+  const [importingProduct, setImportingProduct] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleDataUpdate = (newData: PropertyData) => {
     setData(newData);
@@ -79,6 +86,108 @@ const App: React.FC = () => {
     }
   }, [data]);
 
+  const extractProductId = (value: string) => {
+    if (!value) return '';
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    const directMatch = trimmed.match(/\/product\/([^/?#]+)/i);
+    if (directMatch?.[1]) return directMatch[1];
+    const altMatch = trimmed.match(/\/products\/([^/?#]+)/i);
+    if (altMatch?.[1]) return altMatch[1];
+    try {
+      const withProtocol = /^[a-zA-Z]+:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+      const parsed = new URL(withProtocol);
+      const match = parsed.pathname.match(/\/product\/([^/?#]+)/i);
+      if (match?.[1]) return match[1];
+    } catch {
+      return trimmed;
+    }
+    return trimmed;
+  };
+
+  const applyProductToData = useCallback((product: any) => {
+    const priceLabel = getProductPriceLabel({
+      price: product?.price,
+      country: product?.country,
+      is_free: product?.is_free
+    });
+    const primaryImage = getPrimaryImageEntry(product)?.url || toAbsoluteImageUrl(product?.image_url);
+    const sellerLogo = toAbsoluteImageUrl(product?.seller_avatar);
+
+    setData((prev) => ({
+      ...prev,
+      category: product?.category ?? prev.category,
+      categoria: product?.category ?? prev.categoria,
+      empresaNome: product?.seller_name ?? prev.empresaNome,
+      headline: product?.title ?? prev.headline,
+      preco: priceLabel || prev.preco,
+      cep: product?.zip ?? prev.cep,
+      rua: product?.street ?? prev.rua,
+      bairro: product?.neighborhood ?? prev.bairro,
+      cidade: product?.city ?? prev.cidade,
+      uf: product?.state ?? prev.uf,
+      tipoImovel:
+        product?.property_type ??
+        product?.propertyType ??
+        product?.model ??
+        product?.title ??
+        prev.tipoImovel,
+      areaM2:
+        product?.surface_area ??
+        product?.surfaceArea ??
+        product?.area ??
+        prev.areaM2,
+      quartos: product?.bedrooms ?? prev.quartos,
+      banheiros: product?.bathrooms ?? prev.banheiros,
+      vagas: product?.parking ?? prev.vagas,
+      brand: product?.brand ?? prev.brand,
+      model: product?.model ?? prev.model,
+      color: product?.color ?? prev.color,
+      year: product?.year ?? prev.year,
+      propertyType: product?.property_type ?? product?.propertyType ?? prev.propertyType,
+      area: product?.surface_area ?? product?.surfaceArea ?? product?.area ?? prev.area,
+      bedrooms: product?.bedrooms ?? prev.bedrooms,
+      bathrooms: product?.bathrooms ?? prev.bathrooms,
+      parking: product?.parking ?? prev.parking,
+      rentType: product?.rent_type ?? product?.rentType ?? prev.rentType,
+      serviceType: product?.service_type ?? product?.serviceType ?? prev.serviceType,
+      serviceDuration: product?.service_duration ?? product?.serviceDuration ?? prev.serviceDuration,
+      serviceRate: product?.service_rate ?? product?.serviceRate ?? prev.serviceRate,
+      serviceLocation: product?.service_location ?? product?.serviceLocation ?? prev.serviceLocation,
+      jobTitle: product?.job_title ?? product?.jobTitle ?? prev.jobTitle,
+      jobType: product?.job_type ?? product?.jobType ?? prev.jobType,
+      jobSalary: product?.job_salary ?? product?.jobSalary ?? prev.jobSalary,
+      jobRequirements: product?.job_requirements ?? product?.jobRequirements ?? prev.jobRequirements
+    }));
+
+    if (primaryImage) setHeroImage(primaryImage);
+    if (sellerLogo) setLogoImage(sellerLogo);
+  }, []);
+
+  const handleImportFromLink = useCallback(async () => {
+    setImportError(null);
+    const productId = extractProductId(productLink);
+    if (!productId) {
+      setImportError('Cole o link do produto para importar.');
+      return;
+    }
+    setImportingProduct(true);
+    try {
+      const res = await api.get(`/products/${productId}`);
+      const product = res?.data?.data;
+      if (!product) {
+        setImportError('Não foi possível encontrar esse produto.');
+        return;
+      }
+      applyProductToData(product);
+    } catch (err) {
+      console.error('Erro ao importar produto', err);
+      setImportError('Falha ao buscar o produto. Verifique o link.');
+    } finally {
+      setImportingProduct(false);
+    }
+  }, [applyProductToData, productLink]);
+
   return (
     <div className="min-h-screen bg-[#f1f5f9] p-4 md:p-8 flex flex-col items-center">
       <header className="w-full max-w-7xl flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -100,6 +209,31 @@ const App: React.FC = () => {
 
       <main className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <section className="lg:col-span-5 bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-8">
+
+          <div className="space-y-3">
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#19C37D] rounded-full"></span>
+              Importar Anúncio
+            </h3>
+            <div className="flex flex-col gap-3 md:flex-row">
+              <input
+                type="url"
+                value={productLink}
+                onChange={(e) => setProductLink(e.target.value)}
+                placeholder="Cole o link do produto (ex: https://templesale.com/product/123)"
+                className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#19C37D] focus:border-transparent outline-none transition-all text-sm font-semibold text-gray-700 placeholder:text-gray-300"
+              />
+              <button
+                type="button"
+                onClick={handleImportFromLink}
+                disabled={importingProduct}
+                className="px-6 py-3 bg-[#0B0B0B] text-white font-black rounded-xl shadow-md transition-all disabled:opacity-50 uppercase text-[10px] tracking-widest"
+              >
+                {importingProduct ? 'IMPORTANDO...' : 'IMPORTAR'}
+              </button>
+            </div>
+            {importError && <p className="text-xs text-red-600">{importError}</p>}
+          </div>
           
           <div className="space-y-4">
              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
