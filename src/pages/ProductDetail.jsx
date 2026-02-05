@@ -355,6 +355,7 @@ export default function ProductDetail() {
     [product?.country, product?.sellerCountry, product?.seller_country, sellerPhoneRaw]
   );
 
+
   // Sugere anúncios próximos para complementar o anúncio atual.
   useEffect(() => {
     if (!phoneActions) {

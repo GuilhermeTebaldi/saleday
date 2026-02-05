@@ -122,6 +122,7 @@ const App: React.FC = () => {
   };
 
   const applyProductToData = useCallback((product: any) => {
+    const clean = (value: any) => (isValidValue(value) ? String(value) : '');
     const priceLabel = getProductPriceLabel({
       price: product?.price,
       country: product?.country,
@@ -132,49 +133,50 @@ const App: React.FC = () => {
 
     setData((prev) => ({
       ...prev,
-      category: product?.category ?? '',
-      categoria: product?.category ?? '',
-      empresaNome: product?.seller_name ?? '',
-      headline: product?.title ?? '',
+      category: clean(product?.category),
+      categoria: clean(product?.category),
+      empresaNome: clean(product?.seller_name),
+      headline: clean(product?.title),
       preco: priceLabel || '',
-      cep: product?.zip ?? '',
-      rua: product?.street ?? '',
-      bairro: product?.neighborhood ?? '',
-      cidade: product?.city ?? '',
-      uf: product?.state ?? '',
-      country: product?.country ?? '',
+      cep: clean(product?.zip),
+      rua: clean(product?.street),
+      bairro: clean(product?.neighborhood),
+      cidade: clean(product?.city),
+      uf: clean(product?.state),
+      country: clean(product?.country),
       tipoImovel:
-        product?.property_type ??
-        product?.propertyType ??
-        product?.model ??
-        product?.title ??
-        '',
+        clean(product?.property_type) ||
+        clean(product?.propertyType) ||
+        clean(product?.model) ||
+        clean(product?.title),
       areaM2:
-        product?.surface_area ??
-        product?.surfaceArea ??
-        product?.area ??
-        '',
-      quartos: product?.bedrooms ?? '',
-      banheiros: product?.bathrooms ?? '',
-      vagas: product?.parking ?? '',
-      brand: product?.brand ?? '',
-      model: product?.model ?? '',
-      color: product?.color ?? '',
-      year: product?.year ?? '',
-      propertyType: product?.property_type ?? product?.propertyType ?? '',
-      area: product?.surface_area ?? product?.surfaceArea ?? product?.area ?? '',
-      bedrooms: product?.bedrooms ?? '',
-      bathrooms: product?.bathrooms ?? '',
-      parking: product?.parking ?? '',
-      rentType: product?.rent_type ?? product?.rentType ?? '',
-      serviceType: product?.service_type ?? product?.serviceType ?? '',
-      serviceDuration: product?.service_duration ?? product?.serviceDuration ?? '',
-      serviceRate: product?.service_rate ?? product?.serviceRate ?? '',
-      serviceLocation: product?.service_location ?? product?.serviceLocation ?? '',
-      jobTitle: product?.job_title ?? product?.jobTitle ?? '',
-      jobType: product?.job_type ?? product?.jobType ?? '',
-      jobSalary: product?.job_salary ?? product?.jobSalary ?? '',
-      jobRequirements: product?.job_requirements ?? product?.jobRequirements ?? ''
+        clean(product?.surface_area) ||
+        clean(product?.surfaceArea) ||
+        clean(product?.area),
+      quartos: clean(product?.bedrooms),
+      banheiros: clean(product?.bathrooms),
+      vagas: clean(product?.parking),
+      brand: clean(product?.brand),
+      model: clean(product?.model),
+      color: clean(product?.color),
+      year: clean(product?.year),
+      propertyType: clean(product?.property_type) || clean(product?.propertyType),
+      area:
+        clean(product?.surface_area) ||
+        clean(product?.surfaceArea) ||
+        clean(product?.area),
+      bedrooms: clean(product?.bedrooms),
+      bathrooms: clean(product?.bathrooms),
+      parking: clean(product?.parking),
+      rentType: clean(product?.rent_type) || clean(product?.rentType),
+      serviceType: clean(product?.service_type) || clean(product?.serviceType),
+      serviceDuration: clean(product?.service_duration) || clean(product?.serviceDuration),
+      serviceRate: clean(product?.service_rate) || clean(product?.serviceRate),
+      serviceLocation: clean(product?.service_location) || clean(product?.serviceLocation),
+      jobTitle: clean(product?.job_title) || clean(product?.jobTitle),
+      jobType: clean(product?.job_type) || clean(product?.jobType),
+      jobSalary: clean(product?.job_salary) || clean(product?.jobSalary),
+      jobRequirements: clean(product?.job_requirements) || clean(product?.jobRequirements)
     }));
 
     if (primaryImage) setHeroImage(primaryImage);
@@ -195,6 +197,7 @@ const App: React.FC = () => {
       else if (country === 'BR') setProductLocale('pt-BR');
     }
   }, []);
+
 
   const handleImportFromLink = useCallback(async () => {
     setImportError(null);
