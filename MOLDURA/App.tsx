@@ -142,6 +142,7 @@ const App: React.FC = () => {
       bairro: product?.neighborhood ?? '',
       cidade: product?.city ?? '',
       uf: product?.state ?? '',
+      country: product?.country ?? '',
       tipoImovel:
         product?.property_type ??
         product?.propertyType ??

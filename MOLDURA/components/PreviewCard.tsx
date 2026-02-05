@@ -3,6 +3,7 @@ import React from 'react';
 import { PropertyData, isValidValue, formatCEP } from '../types';
 import { getCategoryDetailFields } from '../../src/utils/categoryFields.js';
 import { DICTS } from '../../src/i18n/dictionaries.js';
+import { getCountryLabel, normalizeCountryCode } from '../../src/data/countries.js';
 
 interface PreviewCardProps {
   data: PropertyData;
@@ -166,8 +167,9 @@ const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean; t: (key: stri
 export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoImage, locale }) => {
   const dict = DICTS[locale || 'pt-BR'] || DICTS['pt-BR'];
   const t = (key: string) => dict[key] ?? key;
-  const { templateId = 'classic', empresaNome, categoria, preco, headline, cep, bairro, cidade, uf, tipoImovel } = data;
+  const { templateId = 'classic', empresaNome, categoria, preco, headline, cep, bairro, cidade, uf, tipoImovel, country } = data;
   const categoriaLabel = categoria ? t(categoria) : t('Imóveis');
+  const countryLabel = getCountryLabel(normalizeCountryCode(country)) || country || '';
 
   const renderHero = () => (
     <div className="absolute inset-0 bg-[#E2E8F0] overflow-hidden">
@@ -245,7 +247,11 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
                    <span className="text-gray-400 text-3xl font-bold"> • {cidade}/{uf}</span>
                  )}
               </div>
-              {isValidValue(cep) && <span className="text-gray-400 text-xl font-bold tracking-widest mt-2">{t('CEP')} {formatCEP(cep)}</span>}
+              {isValidValue(countryLabel) && (
+                <span className="text-gray-400 text-xl font-bold tracking-widest mt-2">
+                  {countryLabel}
+                </span>
+              )}
             </div>
 
             {/* PREÇO COMO PILL DESTAQUE NA ZONA C */}
@@ -320,7 +326,10 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
           <div className="mt-auto flex justify-between items-center bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
             <div className="space-y-1">
               <span className="text-white text-2xl font-black uppercase">{bairro}</span>
-              <p className="text-gray-500 text-lg font-bold">{cidade} • {t('CEP')} {formatCEP(cep)}</p>
+              <p className="text-gray-500 text-lg font-bold">
+                {cidade}
+                {isValidValue(countryLabel) ? ` • ${countryLabel}` : ''}
+              </p>
             </div>
             <CommonBadges data={data} dark t={t} />
           </div>

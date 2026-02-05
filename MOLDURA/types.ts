@@ -13,6 +13,7 @@ export interface PropertyData {
   bairro: string;
   cidade?: string;
   uf?: string;
+  country?: string;
   tipoImovel: string;
   areaM2?: number | string | null;
   quartos?: number | string | null;
