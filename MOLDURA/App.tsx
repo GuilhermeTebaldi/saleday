@@ -65,6 +65,20 @@ const App: React.FC = () => {
     
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      const images = Array.from(cardRef.current.querySelectorAll('img'));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          if (typeof img.decode === 'function') {
+            return img.decode().catch(() => {});
+          }
+          return new Promise((resolve) => {
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(true);
+          });
+        })
+      );
       
       const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,

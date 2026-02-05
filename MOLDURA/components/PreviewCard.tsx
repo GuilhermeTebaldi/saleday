@@ -165,7 +165,12 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
   const renderHero = () => (
     <div className="absolute inset-0 bg-[#E2E8F0] overflow-hidden">
       {heroImage ? (
-        <img src={heroImage} alt="Hero" className="w-full h-full object-cover" />
+        <img
+          src={heroImage}
+          alt="Hero"
+          className="w-full h-full object-cover"
+          crossOrigin="anonymous"
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl font-black">FOTO HERO</div>
       )}
@@ -176,7 +181,12 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
   const renderLogo = (isDark: boolean = true) => (
     <div className="flex items-center">
       {logoImage ? (
-        <img src={logoImage} alt="Logo" className="h-[75px] w-auto object-contain" />
+        <img
+          src={logoImage}
+          alt="Logo"
+          className="h-[75px] w-auto object-contain"
+          crossOrigin="anonymous"
+        />
       ) : (
         isValidValue(empresaNome) && (
           <span className={`${isDark ? 'text-white' : 'text-[#0B0B0B]'} text-4xl font-black uppercase tracking-tighter leading-none`}>
