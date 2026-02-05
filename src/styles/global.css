@@ -4960,6 +4960,9 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   width: min(1300px, 100%);
   margin: 0 auto;
   position: relative;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .edit-profile-card {
@@ -4970,6 +4973,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .edit-profile-header {
@@ -4996,6 +5000,24 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  box-sizing: border-box;
+}
+
+.edit-profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #ffffff;
+  box-shadow: 0 16px 30px -28px rgba(15, 23, 42, 0.35);
+  box-sizing: border-box;
+}
+
+.edit-profile-section--company {
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.4);
 }
 
 .edit-profile-form label {
@@ -5016,7 +5038,31 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   transition: border 0.2s ease, box-shadow 0.2s ease;
 }
 
+.edit-profile-form select {
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 50, 99, 0.4);
+  background: rgba(241, 245, 249, 0.82);
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%),
+    linear-gradient(to right, transparent, transparent);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px),
+    100% 0;
+  background-size: 6px 6px, 6px 6px, 2.5rem 2.5rem;
+  background-repeat: no-repeat;
+  padding-right: 2.75rem;
+}
+
 .edit-profile-form input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+}
+
+.edit-profile-form select:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
@@ -5049,6 +5095,9 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   background: #ffffff;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   overflow: hidden;
+  min-height: 46px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .phone-input__country {
@@ -5060,6 +5109,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   background: #f8fafc;
   border-right: 1px solid #e2e8f0;
   min-width: 155px;
+  box-sizing: border-box;
 }
 
 .phone-input__flag {
@@ -5109,6 +5159,7 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   padding: 0.8rem 1rem;
   font-size: 1rem;
   background: transparent;
+  min-width: 0;
 }
 
 .phone-input__field:focus {
@@ -5125,12 +5176,14 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  align-items: center;
 }
 
 .company-map-search input {
   flex: 1;
   padding: 0.55rem 0.75rem;
   font-size: 0.9rem;
+  border-radius: 12px;
 }
 
 .company-map-search .btn-secondary {
@@ -6113,6 +6166,43 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.25rem;
+  width: 100%;
+}
+
+.edit-profile-grid > * {
+  min-width: 0;
+}
+
+.edit-profile-contact {
+  gap: 1rem;
+}
+
+.edit-profile-contact__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  align-items: end;
+}
+
+.edit-profile-contact__auto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.edit-profile-contact__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.edit-profile-contact__zip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
 }
 
 .edit-profile-actions {
@@ -6121,6 +6211,169 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   gap: 1rem;
   flex-wrap: wrap;
   margin-top: 0.5rem;
+}
+
+.edit-profile-actions .btn-primary,
+.edit-profile-actions .btn-secondary {
+  min-width: 160px;
+}
+
+.edit-profile-btn--compact {
+  font-size: 0.75rem;
+  padding: 0.45rem 0.8rem;
+  line-height: 1.1;
+  min-height: 32px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.edit-profile-zip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.edit-profile-zip-row > input {
+  flex: 1 1 160px;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.edit-profile-zip-row > button {
+  flex: 0 0 auto;
+}
+
+
+@media (max-width: 768px) {
+  .edit-profile-page {
+    width: 100%;
+    margin: 0;
+    padding: 1.5rem 1rem 2rem;
+  }
+
+  .edit-profile-card {
+    border-radius: 18px;
+  }
+
+  .edit-profile-header {
+    padding: 1.6rem 1.25rem 1.2rem;
+  }
+
+  .edit-profile-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .edit-profile-header p {
+    font-size: 0.95rem;
+  }
+
+  .edit-profile-form {
+    padding: 1.25rem;
+    gap: 1.1rem;
+  }
+
+  .edit-profile-section {
+    padding: 1rem;
+    gap: 0.9rem;
+  }
+
+  .edit-profile-avatar {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .edit-profile-avatar__preview {
+    width: 84px;
+    height: 84px;
+    border-radius: 20px;
+  }
+
+  .edit-profile-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .phone-input {
+    flex-direction: column;
+  }
+
+  .phone-input__country {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    min-width: 0;
+    padding: 0.6rem 0.8rem;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .phone-input__field {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .phone-input__flag {
+    width: 30px;
+    height: 20px;
+  }
+
+  .phone-input__dial {
+    font-size: 0.9rem;
+  }
+
+  .phone-input__chevron {
+    margin-left: auto;
+  }
+
+  .edit-profile-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .edit-profile-actions .btn-primary,
+  .edit-profile-actions .btn-secondary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .company-map-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .company-map-search .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-profile-btn--compact {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-profile-zip-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .edit-profile-zip-row > button {
+    width: 100%;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.75rem;
+    min-height: 32px;
+  }
+
+  .edit-profile-zip-row > input {
+    max-width: 100%;
+    font-size: 0.8rem;
+  }
+
+  .edit-profile-contact__row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
 }
 
 .edit-profile-page__overlay {

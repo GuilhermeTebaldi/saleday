@@ -111,6 +111,15 @@ const compressImageToMaxSize = (file, maxBytes = 2 * 1024 * 1024, minQuality = 0
 
 const FALLBACK_PHONE_MAX_DIGITS = 15;
 const COMPANY_DEFAULT_CENTER = [-23.5505, -46.6333];
+const ZIP_AUTO_DEBOUNCE_MS = 5000;
+
+const cleanZip = (value, country = 'BR') => {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (country === 'BR') return digits.slice(0, 8);
+  if (country === 'US') return digits.slice(0, 9);
+  return digits.slice(0, 12);
+};
 
 const getCountryMaxLocalDigits = (country) => {
   if (!country) return FALLBACK_PHONE_MAX_DIGITS;
@@ -163,6 +172,8 @@ export default function EditProfile() {
   const userSelectedPhoneCountryRef = useRef(false);
   const [form, setForm] = useState(initialFormState);
   const [saving, setSaving] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [loadingZip, setLoadingZip] = useState(false);
   const [companyLocating, setCompanyLocating] = useState(false);
   const [companyMapOpen, setCompanyMapOpen] = useState(false);
   const [companySearch, setCompanySearch] = useState('');
@@ -175,6 +186,8 @@ export default function EditProfile() {
   });
   const companyMapRef = useRef(null);
   const pendingCompanyCenterRef = useRef(null);
+  const zipInputRef = useRef(null);
+  const lastZipAutoFillRef = useRef({ zip: '', at: 0 });
   const focusCompanyMap = useCallback(
     (lat, lng, zoom = 16, animate = true) => {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -453,6 +466,119 @@ export default function EditProfile() {
     const isCountryField = name === 'country' || name === 'company_country';
     const nextValue = isCountryField ? normalizeCountryCode(value) : value;
     setForm({ ...form, [name]: nextValue });
+  };
+
+  const handleDetectLocation = async () => {
+    if (loadingLocation) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Geolocalização indisponível no dispositivo.');
+      return;
+    }
+    setLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords || {};
+        try {
+          const res = await api.get('/geo/reverse', { params: { lat: latitude, lng: longitude } });
+          const geo = res.data?.data || {};
+          setForm((prev) => ({
+            ...prev,
+            country: normalizeCountryCode(geo.country) || prev.country,
+            state: geo.state || prev.state,
+            city: geo.city || prev.city,
+            district: geo.neighborhood || prev.district,
+            street: geo.street || prev.street,
+            zip: geo.zip || prev.zip
+          }));
+          toast.success('Localização detectada com sucesso.');
+        } catch {
+          toast.error('Erro ao consultar localização.');
+        } finally {
+          setLoadingLocation(false);
+        }
+      },
+      () => {
+        toast.error('Não foi possível obter sua localização.');
+        setLoadingLocation(false);
+      },
+      { enableHighAccuracy: false, maximumAge: 600000, timeout: 7000 }
+    );
+  };
+
+  const applyZipLookup = async ({ showSuccessToast = true, mode = 'auto' } = {}) => {
+    if (loadingZip) return { success: false };
+    const country = normalizeCountryCode(form.country) || 'BR';
+    const cleaned = cleanZip(form.zip, country);
+    const isAuto = mode === 'auto';
+    if (!cleaned) {
+      if (!isAuto) toast.error('Informe o CEP/ZIP.');
+      return { success: false };
+    }
+    if (country === 'BR' && cleaned.length !== 8) {
+      if (!isAuto) toast.error('CEP deve ter 8 dígitos.');
+      return { success: false };
+    }
+    if (country === 'US' && !(cleaned.length === 5 || cleaned.length === 9)) {
+      if (!isAuto) toast.error('ZIP deve ter 5 ou 9 dígitos.');
+      return { success: false };
+    }
+    setLoadingZip(true);
+    try {
+      const { data } = await api.get('/geo/cep', { params: { country, zip: cleaned } });
+      if (!data.success || !data.data) {
+        if (!isAuto) toast.error('CEP/ZIP não encontrado.');
+        return { success: false };
+      }
+      const a = data.data;
+      const nextCountry = normalizeCountryCode(a.country) || country;
+      const allowOverwrite = mode === 'manual';
+      setForm((prev) => {
+        if (allowOverwrite) {
+          return {
+            ...prev,
+            country: nextCountry,
+            state: a.state || '',
+            city: a.city || '',
+            district: a.neighborhood || '',
+            street: a.street || '',
+            zip: a.zip || cleaned
+          };
+        }
+        return {
+          ...prev,
+          country: nextCountry || prev.country,
+          state: prev.state || a.state || '',
+          city: prev.city || a.city || '',
+          district: prev.district || a.neighborhood || '',
+          street: prev.street || a.street || '',
+          zip: a.zip || cleaned
+        };
+      });
+      if (showSuccessToast) {
+        toast.success('Endereço preenchido pelo CEP.');
+      }
+      return { success: true };
+    } catch (err) {
+      console.error(err?.response?.data || err.message);
+      if (!isAuto) toast.error('Erro ao consultar CEP.');
+      return { success: false };
+    } finally {
+      setLoadingZip(false);
+    }
+  };
+
+  const handleZipBlur = (event) => {
+    if (event?.relatedTarget?.dataset?.zipAutofill === 'true') return;
+    const country = normalizeCountryCode(form.country) || 'BR';
+    const cleaned = cleanZip(form.zip, country);
+    if (!cleaned) return;
+    if (country === 'BR' && cleaned.length !== 8) return;
+    if (country === 'US' && !(cleaned.length === 5 || cleaned.length === 9)) return;
+    const now = Date.now();
+    const last = lastZipAutoFillRef.current;
+    if (last.zip === cleaned && now - last.at < ZIP_AUTO_DEBOUNCE_MS) return;
+    lastZipAutoFillRef.current = { zip: cleaned, at: now };
+    applyZipLookup({ showSuccessToast: true, mode: 'auto' });
   };
 
   const handlePhoneInput = (event) => {
@@ -747,52 +873,54 @@ export default function EditProfile() {
         </header>
 
         <form onSubmit={handleSubmit} className="edit-profile-form">
-          <section className="edit-profile-avatar">
-            <div
-              className="edit-profile-avatar__preview"
-              role={avatarPreview ? 'button' : undefined}
-              tabIndex={avatarPreview ? 0 : undefined}
-              aria-label={avatarPreview ? 'Ver foto do perfil' : undefined}
-              onClick={handleAvatarPreview}
-              onKeyDown={handleAvatarPreview}
-              style={avatarPreview ? { cursor: 'zoom-in' } : undefined}
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Foto do perfil" />
-              ) : (
-                <span className="edit-profile-avatar__placeholder">Sem foto</span>
-              )}
-            </div>
-            <div className="edit-profile-avatar__actions">
-              <label className="btn-secondary edit-profile-avatar__upload">
-                Trocar foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  disabled={saving}
-                />
-              </label>
-              {(avatarPreview || user?.profile_image_url) && (
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={handleRemoveAvatar}
-                  disabled={saving}
-                >
-                  Remover foto
-                </button>
-              )}
-              <p className="edit-profile-avatar__hint">Formatos JPG ou PNG até 2MB.</p>
-            </div>
+          <section className="edit-profile-section">
+            <section className="edit-profile-avatar">
+              <div
+                className="edit-profile-avatar__preview"
+                role={avatarPreview ? 'button' : undefined}
+                tabIndex={avatarPreview ? 0 : undefined}
+                aria-label={avatarPreview ? 'Ver foto do perfil' : undefined}
+                onClick={handleAvatarPreview}
+                onKeyDown={handleAvatarPreview}
+                style={avatarPreview ? { cursor: 'zoom-in' } : undefined}
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Foto do perfil" />
+                ) : (
+                  <span className="edit-profile-avatar__placeholder">Sem foto</span>
+                )}
+              </div>
+              <div className="edit-profile-avatar__actions">
+                <label className="btn-secondary edit-profile-avatar__upload">
+                  Trocar foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    disabled={saving}
+                  />
+                </label>
+                {(avatarPreview || user?.profile_image_url) && (
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={handleRemoveAvatar}
+                    disabled={saving}
+                  >
+                    Remover foto
+                  </button>
+                )}
+                <p className="edit-profile-avatar__hint">Formatos JPG ou PNG até 2MB.</p>
+              </div>
+            </section>
+
+            <label>
+              Nome completo
+              <input name="username" value={form.username} onChange={handleChange} placeholder="Seu nome" />
+            </label>
           </section>
 
-          <label>
-            Nome completo
-            <input name="username" value={form.username} onChange={handleChange} placeholder="Seu nome" />
-          </label>
-
-          <div className="edit-profile-grid">
+          <section className="edit-profile-section edit-profile-contact">
             <label>
               Telefone celular
               <div className="phone-input">
@@ -845,51 +973,90 @@ export default function EditProfile() {
                 Exemplo: {selectedPhoneCountry?.dialCode || ''} {getCountryExample(selectedPhoneCountry)}
               </p>
             </label>
-            <label>
-              CEP
-              <input name="zip" value={form.zip} onChange={handleChange} placeholder="00000-000" />
-            </label>
-          </div>
 
-          <div className="edit-profile-grid">
-            <label>
-              País
-              <select name="country" value={form.country} onChange={handleChange}>
-                <option value="">Selecione o país</option>
-                {COUNTRY_OPTIONS.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {form.country && (
-                <p className="edit-profile-country__hint">
-                  País selecionado: {getCountryLabel(form.country)}
-                </p>
-              )}
-            </label>
-            <label>
-              Estado
-              <input name="state" value={form.state} onChange={handleChange} placeholder="São Paulo" />
-            </label>
-            <label>
-              Cidade
-              <input name="city" value={form.city} onChange={handleChange} placeholder="São Paulo" />
-            </label>
-          </div>
+            <div className="edit-profile-contact__row">
+              <div className="edit-profile-contact__auto">
+                <span className="edit-profile-contact__label">Localização automática</span>
+                <button
+                  type="button"
+                  className="btn-primary edit-profile-btn--compact"
+                  onClick={handleDetectLocation}
+                  disabled={loadingLocation}
+                >
+                  {loadingLocation ? 'Detectando...' : 'Usar minha localização'}
+                </button>
+              </div>
 
-          <div className="edit-profile-grid">
-            <label>
-              Bairro
-              <input name="district" value={form.district} onChange={handleChange} placeholder="Centro" />
-            </label>
+              <label className="edit-profile-contact__zip">
+                CEP
+                <div className="edit-profile-zip-row">
+                  <input
+                    ref={zipInputRef}
+                    name="zip"
+                    className="edit-profile-zip-input"
+                    value={form.zip}
+                    onChange={(event) => {
+                      const cleaned = cleanZip(event.target.value, normalizeCountryCode(form.country) || 'BR');
+                      setForm((prev) => ({ ...prev, zip: cleaned }));
+                    }}
+                    onBlur={handleZipBlur}
+                    placeholder="00000-000"
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary edit-profile-btn--compact edit-profile-zip-btn"
+                    onClick={() => applyZipLookup({ showSuccessToast: true, mode: 'manual' })}
+                    disabled={loadingZip}
+                    data-zip-autofill="true"
+                  >
+                    {loadingZip ? 'Buscando...' : 'Preencher pelo CEP'}
+                  </button>
+                </div>
+              </label>
+            </div>
+          </section>
+
+          <section className="edit-profile-section">
+            <div className="edit-profile-grid">
+              <label>
+                País
+                <select name="country" value={form.country} onChange={handleChange}>
+                  <option value="">Selecione o país</option>
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {form.country && (
+                  <p className="edit-profile-country__hint">
+                    País selecionado: {getCountryLabel(form.country)}
+                  </p>
+                )}
+              </label>
+              <label>
+                Estado
+                <input name="state" value={form.state} onChange={handleChange} placeholder="São Paulo" />
+              </label>
+              <label>
+                Cidade
+                <input name="city" value={form.city} onChange={handleChange} placeholder="São Paulo" />
+              </label>
+            </div>
+
+            <div className="edit-profile-grid">
+              <label>
+                Bairro
+                <input name="district" value={form.district} onChange={handleChange} placeholder="Centro" />
+              </label>
               <label>
                 Rua
                 <input name="street" value={form.street} onChange={handleChange} placeholder="Rua Principal" />
               </label>
             </div>
+          </section>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+          <section className="edit-profile-section edit-profile-section--company rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Minha empresa</p>
@@ -927,40 +1094,40 @@ export default function EditProfile() {
             </label>
 
             <div className="space-y-1 text-sm text-slate-700">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-semibold text-slate-900">Local da empresa</p>
-              <button
-                type="button"
-                className="btn-primary text-[11px] px-3 py-1"
-                onClick={() => setCompanyMapOpen(true)}
-              >
-                    Selecionar no mapa
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="font-semibold text-slate-900">Local da empresa</p>
+                <button
+                  type="button"
+                  className="btn-primary text-[11px] px-3 py-1"
+                  onClick={() => setCompanyMapOpen(true)}
+                >
+                  Selecionar no mapa
+                </button>
+              </div>
+              <p className="text-slate-600 text-sm">
+                {form.company_address || form.company_city || form.company_state || form.company_country
+                  ? [form.company_address, form.company_city, form.company_state, getCountryLabel(form.company_country)]
+                      .filter(Boolean)
+                      .join(', ')
+                  : 'Nenhum local definido. Clique em "Selecionar no mapa".'}
+              </p>
+              {form.company_lat && form.company_lng && (
+                <>
+                  <p className="text-xs text-slate-500">
+                    {Number(form.company_lat).toFixed(5)}, {Number(form.company_lng).toFixed(5)}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-secondary text-[9px] px-1 py-0.25 rounded-sm mt-1 inline-flex items-center gap-1"
+                    style={{ minWidth: '34px' }}
+                    onClick={handleClearCompanyLocation}
+                  >
+                    Limpar
                   </button>
-                </div>
-            <p className="text-slate-600 text-sm">
-            {form.company_address || form.company_city || form.company_state || form.company_country
-              ? [form.company_address, form.company_city, form.company_state, getCountryLabel(form.company_country)]
-                  .filter(Boolean)
-                  .join(', ')
-              : 'Nenhum local definido. Clique em "Selecionar no mapa".'}
-            </p>
-                {form.company_lat && form.company_lng && (
-                  <>
-                    <p className="text-xs text-slate-500">
-                      {Number(form.company_lat).toFixed(5)}, {Number(form.company_lng).toFixed(5)}
-                    </p>
-                    <button
-                      type="button"
-                      className="btn-secondary text-[9px] px-1 py-0.25 rounded-sm mt-1 inline-flex items-center gap-1"
-                      style={{ minWidth: '34px' }}
-                      onClick={handleClearCompanyLocation}
-                    >
-                      Limpar
-                    </button>
-                  </>
-            )}
-          </div>
-          </div>
+                </>
+              )}
+            </div>
+          </section>
 
           <div className="edit-profile-actions">
             <button type="button" className="btn-secondary" onClick={handleReset} disabled={saving}>
