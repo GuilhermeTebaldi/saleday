@@ -2,11 +2,13 @@
 import React from 'react';
 import { PropertyData, isValidValue, formatCEP } from '../types';
 import { getCategoryDetailFields } from '../../src/utils/categoryFields.js';
+import { DICTS } from '../../src/i18n/dictionaries.js';
 
 interface PreviewCardProps {
   data: PropertyData;
   heroImage: string | null;
   logoImage: string | null;
+  locale?: string;
 }
 
 // Componentes Atômicos Compartilhados
@@ -17,23 +19,23 @@ const Badge: React.FC<{ icon: React.ReactNode; label: string; dark?: boolean }> 
   </div>
 );
 
-const PriceTag: React.FC<{ preco: string; className?: string }> = ({ preco, className }) => (
+const PriceTag: React.FC<{ preco: string; className?: string; t: (key: string) => string }> = ({ preco, className, t }) => (
   <div className={`bg-[#19C37D] py-5 px-10 rounded-[2rem] shadow-[0_15px_40px_rgba(25,195,125,0.3)] flex flex-col items-center justify-center ${className}`}>
-    <span className="text-white text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-90">Valor do Investimento</span>
+    <span className="text-white text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-90">{t('Valor do Investimento')}</span>
     <span className="text-white font-black tracking-tight leading-none whitespace-nowrap tabular-nums text-[clamp(28px,5.5vw,64px)]">
-      {isValidValue(preco) ? preco : 'CONSULTE'}
+      {isValidValue(preco) ? preco : t('CONSULTE')}
     </span>
   </div>
 );
 
-const formatBadgeLabel = (name, value, label) => {
+const formatBadgeLabel = (name, value, label, t) => {
   if (!isValidValue(value)) return '';
   if (name === 'area' || name === 'areaM2') return `${value} m²`;
   if (name === 'bedrooms' || name === 'quartos') return `${value} Qts`;
   if (name === 'bathrooms' || name === 'banheiros') return `${value} Ban`;
   if (name === 'parking' || name === 'vagas') return `${value} Vagas`;
   if (name === 'year') return `${value}`;
-  if (label) return `${label}: ${value}`;
+  if (label) return `${t(label)}: ${value}`;
   return String(value);
 };
 
@@ -130,7 +132,7 @@ const iconForField = (name) => {
   }
 };
 
-const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean }> = ({ data, dark }) => {
+const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean; t: (key: string) => string }> = ({ data, dark, t }) => {
   const category = data.category || data.categoria;
   const detailFields = getCategoryDetailFields(category);
   const values = data as Record<string, any>;
@@ -138,10 +140,12 @@ const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean }> = ({ data, 
   const badges = detailFields
     .map((field) => {
       const value = values[field.name];
-      const label = formatBadgeLabel(field.name, value, field.label);
+      const label = formatBadgeLabel(field.name, value, field.label, t);
       return label ? { label, icon: iconForField(field.name) } : null;
     })
-    .filter(Boolean) as { label: string }[];
+    .filter(Boolean) as {
+      [x: string]: any; label: string 
+}[];
 
   if (!badges.length) return null;
 
@@ -159,8 +163,11 @@ const CommonBadges: React.FC<{ data: PropertyData; dark?: boolean }> = ({ data, 
   );
 };
 
-export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoImage }) => {
+export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoImage, locale }) => {
+  const dict = DICTS[locale || 'pt-BR'] || DICTS['pt-BR'];
+  const t = (key: string) => dict[key] ?? key;
   const { templateId = 'classic', empresaNome, categoria, preco, headline, cep, bairro, cidade, uf, tipoImovel } = data;
+  const categoriaLabel = categoria ? t(categoria) : t('Imóveis');
 
   const renderHero = () => (
     <div className="absolute inset-0 bg-[#E2E8F0] overflow-hidden">
@@ -205,9 +212,9 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
         <div className="h-[130px] bg-[#0B0B0B] flex items-center justify-between px-12 z-20">
           {renderLogo()}
           <div className="flex flex-col items-end">
-             <span className="text-[#19C37D] text-xs font-black tracking-[0.4em] uppercase mb-1">Destaque</span>
+             <span className="text-[#19C37D] text-xs font-black tracking-[0.4em] uppercase mb-1">{t('Destaque')}</span>
              <span className="text-white text-4xl font-black uppercase tracking-[0.1em] leading-none">
-               {isValidValue(categoria) ? categoria : 'IMÓVEIS'}
+               {isValidValue(categoria) ? categoriaLabel.toUpperCase() : t('Imóveis').toUpperCase()}
              </span>
           </div>
         </div>
@@ -238,15 +245,15 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
                    <span className="text-gray-400 text-3xl font-bold"> • {cidade}/{uf}</span>
                  )}
               </div>
-              {isValidValue(cep) && <span className="text-gray-400 text-xl font-bold tracking-widest mt-2">CEP {formatCEP(cep)}</span>}
+              {isValidValue(cep) && <span className="text-gray-400 text-xl font-bold tracking-widest mt-2">{t('CEP')} {formatCEP(cep)}</span>}
             </div>
 
             {/* PREÇO COMO PILL DESTAQUE NA ZONA C */}
-            <PriceTag preco={preco} className="-mt-20 z-30" />
+            <PriceTag preco={preco} className="-mt-20 z-30" t={t} />
           </div>
 
           <div className="mt-auto">
-            <CommonBadges data={data} />
+            <CommonBadges data={data} t={t} />
           </div>
         </div>
       </div>
@@ -261,13 +268,13 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
         <div className="absolute top-12 left-12 right-12 flex justify-between items-center z-10">
           {renderLogo()}
           <div className="bg-[#19C37D] py-2 px-6 rounded-full text-white font-black uppercase tracking-widest text-xl">
-            {categoria}
+            {categoriaLabel}
           </div>
         </div>
         
         <div className="absolute inset-x-12 bottom-12 space-y-8 z-10">
           <div>
-            <span className="text-[#19C37D] text-2xl font-black uppercase tracking-[0.4em] block mb-2">Exclusividade</span>
+            <span className="text-[#19C37D] text-2xl font-black uppercase tracking-[0.4em] block mb-2">{t('Exclusividade')}</span>
             <h2 className="text-white text-[120px] font-black uppercase leading-[0.8] tracking-tighter mb-4">
               {isValidValue(headline) ? headline : tipoImovel}
             </h2>
@@ -278,9 +285,9 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
           </div>
           
           <div className="flex items-end justify-between">
-            <CommonBadges data={data} dark />
+            <CommonBadges data={data} dark t={t} />
             <div className="bg-white p-1 rounded-[2.5rem] shadow-2xl">
-              <PriceTag preco={preco} className="!rounded-[2.2rem] !py-8 !px-12" />
+              <PriceTag preco={preco} className="!rounded-[2.2rem] !py-8 !px-12" t={t} />
             </div>
           </div>
         </div>
@@ -301,10 +308,10 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
         </div>
         
         <div className="flex-grow bg-[#0B0B0B] px-12 pb-12 pt-4 flex flex-col relative">
-          <PriceTag preco={preco} className="absolute -top-16 right-12 !rounded-3xl !scale-110 !shadow-[0_20px_60px_rgba(0,0,0,0.5)]" />
+          <PriceTag preco={preco} className="absolute -top-16 right-12 !rounded-3xl !scale-110 !shadow-[0_20px_60px_rgba(0,0,0,0.5)]" t={t} />
           
           <div className="flex flex-col gap-1 mb-8">
-            <span className="text-[#19C37D] text-2xl font-black uppercase tracking-[0.5em]">{categoria}</span>
+            <span className="text-[#19C37D] text-2xl font-black uppercase tracking-[0.5em]">{categoriaLabel}</span>
             <h2 className="text-white text-[90px] font-black uppercase leading-none tracking-tighter">
               {tipoImovel} <span className="text-gray-600">No {bairro}</span>
             </h2>
@@ -313,9 +320,9 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({ data, heroImage, logoI
           <div className="mt-auto flex justify-between items-center bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
             <div className="space-y-1">
               <span className="text-white text-2xl font-black uppercase">{bairro}</span>
-              <p className="text-gray-500 text-lg font-bold">{cidade} • CEP {formatCEP(cep)}</p>
+              <p className="text-gray-500 text-lg font-bold">{cidade} • {t('CEP')} {formatCEP(cep)}</p>
             </div>
-            <CommonBadges data={data} dark />
+            <CommonBadges data={data} dark t={t} />
           </div>
         </div>
       </div>

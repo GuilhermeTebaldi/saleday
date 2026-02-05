@@ -7,6 +7,7 @@ import { EditorForm } from './components/EditorForm';
 import api from '../src/api/api.js';
 import { getProductPriceLabel } from '../src/utils/product.js';
 import { getPrimaryImageEntry, toAbsoluteImageUrl } from '../src/utils/images.js';
+import { normalizeCountryCode } from '../src/data/countries.js';
 
 const INITIAL_DATA: PropertyData = {
   templateId: 'classic',
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   const [productLink, setProductLink] = useState('');
   const [importingProduct, setImportingProduct] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [productLocale, setProductLocale] = useState<string>('pt-BR');
 
   const handleDataUpdate = (newData: PropertyData) => {
     setData(newData);
@@ -130,52 +132,67 @@ const App: React.FC = () => {
 
     setData((prev) => ({
       ...prev,
-      category: product?.category ?? prev.category,
-      categoria: product?.category ?? prev.categoria,
-      empresaNome: product?.seller_name ?? prev.empresaNome,
-      headline: product?.title ?? prev.headline,
-      preco: priceLabel || prev.preco,
-      cep: product?.zip ?? prev.cep,
-      rua: product?.street ?? prev.rua,
-      bairro: product?.neighborhood ?? prev.bairro,
-      cidade: product?.city ?? prev.cidade,
-      uf: product?.state ?? prev.uf,
+      category: product?.category ?? '',
+      categoria: product?.category ?? '',
+      empresaNome: product?.seller_name ?? '',
+      headline: product?.title ?? '',
+      preco: priceLabel || '',
+      cep: product?.zip ?? '',
+      rua: product?.street ?? '',
+      bairro: product?.neighborhood ?? '',
+      cidade: product?.city ?? '',
+      uf: product?.state ?? '',
       tipoImovel:
         product?.property_type ??
         product?.propertyType ??
         product?.model ??
         product?.title ??
-        prev.tipoImovel,
+        '',
       areaM2:
         product?.surface_area ??
         product?.surfaceArea ??
         product?.area ??
-        prev.areaM2,
-      quartos: product?.bedrooms ?? prev.quartos,
-      banheiros: product?.bathrooms ?? prev.banheiros,
-      vagas: product?.parking ?? prev.vagas,
-      brand: product?.brand ?? prev.brand,
-      model: product?.model ?? prev.model,
-      color: product?.color ?? prev.color,
-      year: product?.year ?? prev.year,
-      propertyType: product?.property_type ?? product?.propertyType ?? prev.propertyType,
-      area: product?.surface_area ?? product?.surfaceArea ?? product?.area ?? prev.area,
-      bedrooms: product?.bedrooms ?? prev.bedrooms,
-      bathrooms: product?.bathrooms ?? prev.bathrooms,
-      parking: product?.parking ?? prev.parking,
-      rentType: product?.rent_type ?? product?.rentType ?? prev.rentType,
-      serviceType: product?.service_type ?? product?.serviceType ?? prev.serviceType,
-      serviceDuration: product?.service_duration ?? product?.serviceDuration ?? prev.serviceDuration,
-      serviceRate: product?.service_rate ?? product?.serviceRate ?? prev.serviceRate,
-      serviceLocation: product?.service_location ?? product?.serviceLocation ?? prev.serviceLocation,
-      jobTitle: product?.job_title ?? product?.jobTitle ?? prev.jobTitle,
-      jobType: product?.job_type ?? product?.jobType ?? prev.jobType,
-      jobSalary: product?.job_salary ?? product?.jobSalary ?? prev.jobSalary,
-      jobRequirements: product?.job_requirements ?? product?.jobRequirements ?? prev.jobRequirements
+        '',
+      quartos: product?.bedrooms ?? '',
+      banheiros: product?.bathrooms ?? '',
+      vagas: product?.parking ?? '',
+      brand: product?.brand ?? '',
+      model: product?.model ?? '',
+      color: product?.color ?? '',
+      year: product?.year ?? '',
+      propertyType: product?.property_type ?? product?.propertyType ?? '',
+      area: product?.surface_area ?? product?.surfaceArea ?? product?.area ?? '',
+      bedrooms: product?.bedrooms ?? '',
+      bathrooms: product?.bathrooms ?? '',
+      parking: product?.parking ?? '',
+      rentType: product?.rent_type ?? product?.rentType ?? '',
+      serviceType: product?.service_type ?? product?.serviceType ?? '',
+      serviceDuration: product?.service_duration ?? product?.serviceDuration ?? '',
+      serviceRate: product?.service_rate ?? product?.serviceRate ?? '',
+      serviceLocation: product?.service_location ?? product?.serviceLocation ?? '',
+      jobTitle: product?.job_title ?? product?.jobTitle ?? '',
+      jobType: product?.job_type ?? product?.jobType ?? '',
+      jobSalary: product?.job_salary ?? product?.jobSalary ?? '',
+      jobRequirements: product?.job_requirements ?? product?.jobRequirements ?? ''
     }));
 
     if (primaryImage) setHeroImage(primaryImage);
     if (sellerLogo) setLogoImage(sellerLogo);
+
+    const rawLocale = product?.locale || product?.language || product?.lang;
+    if (rawLocale && typeof rawLocale === 'string') {
+      const normalized = rawLocale.trim().toLowerCase();
+      if (normalized.startsWith('it')) setProductLocale('it-IT');
+      else if (normalized.startsWith('en')) setProductLocale('en-US');
+      else if (normalized.startsWith('es')) setProductLocale('es-ES');
+      else if (normalized.startsWith('pt')) setProductLocale('pt-BR');
+    } else {
+      const country = normalizeCountryCode(product?.country);
+      if (country === 'IT') setProductLocale('it-IT');
+      else if (country === 'US') setProductLocale('en-US');
+      else if (country === 'ES') setProductLocale('es-ES');
+      else if (country === 'BR') setProductLocale('pt-BR');
+    }
   }, []);
 
   const handleImportFromLink = useCallback(async () => {
@@ -193,6 +210,9 @@ const App: React.FC = () => {
         setImportError('Não foi possível encontrar esse produto.');
         return;
       }
+      setData(INITIAL_DATA);
+      setHeroImage(null);
+      setLogoImage(null);
       applyProductToData(product);
     } catch (err) {
       console.error('Erro ao importar produto', err);
@@ -289,7 +309,7 @@ const App: React.FC = () => {
         <section className="lg:col-span-7 flex flex-col items-center sticky top-8">
            <div className="bg-white p-2 rounded-[2rem] shadow-2xl border border-white/50 transform scale-[0.35] sm:scale-[0.45] md:scale-[0.55] lg:scale-[0.6] xl:scale-[0.65] origin-top transition-all">
              <div ref={cardRef} className="export-area overflow-hidden bg-white">
-               <PreviewCard data={data} heroImage={heroImage} logoImage={logoImage} />
+               <PreviewCard data={data} heroImage={heroImage} logoImage={logoImage} locale={productLocale} />
              </div>
            </div>
         </section>

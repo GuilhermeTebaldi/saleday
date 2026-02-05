@@ -24,6 +24,7 @@ import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import useLoginPrompt from '../hooks/useLoginPrompt.js';
 import { getCurrentPath } from '../components/ScrollRestoration.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
+import { PRODUCT_CATEGORIES } from '../data/productCategories.js';
 
 const regionDisplay =
   typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
@@ -656,6 +657,14 @@ const normalizeLabel = (value) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+const CATEGORY_LABEL_MAP = (() => {
+  const map = new Map();
+  PRODUCT_CATEGORIES.forEach((label) => {
+    map.set(normalizeLabel(label), label);
+  });
+  return map;
+})();
+
 const normalizeCenter = (candidate) => {
   if (!candidate) return null;
   const lat = Number(candidate.lat);
@@ -724,19 +733,21 @@ const updateLikesInCollection = (collection, productId, delta) => {
   );
 };
 
-const buildQuickCategoryCounts = (list = [], activeCountry) => {
-  const counts = new Map();
-  list.forEach((item) => {
-    const itemCountry = normalizeCountryCode(item?.country);
-    if (activeCountry && itemCountry && itemCountry !== activeCountry) {
-      return;
-    }
-    const label = item?.category ? String(item.category).trim() : '';
-    if (!label) return;
-    counts.set(label, (counts.get(label) || 0) + 1);
-  });
-  return counts;
-};
+  const buildQuickCategoryCounts = (list = [], activeCountry) => {
+    const counts = new Map();
+    list.forEach((item) => {
+      const itemCountry = normalizeCountryCode(item?.country);
+      if (activeCountry && itemCountry && itemCountry !== activeCountry) {
+        return;
+      }
+      const raw = item?.category ? String(item.category).trim() : '';
+      if (!raw) return;
+      const normalized = normalizeLabel(raw);
+      if (!normalized) return;
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    });
+    return counts;
+  };
 
 
 export default function Home() {
@@ -899,16 +910,22 @@ export default function Home() {
   const deriveCategoryOptions = useCallback((list = []) => {
     const counts = new Map();
     list.forEach((item) => {
-      const label = item?.category ? String(item.category).trim() : '';
-      if (!label) return;
-      counts.set(label, (counts.get(label) || 0) + 1);
+      const raw = item?.category ? String(item.category).trim() : '';
+      if (!raw) return;
+      const normalized = normalizeLabel(raw);
+      if (!normalized) return;
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
     });
     ['Terreno', 'Aluguel'].forEach((label) => {
-      if (!counts.has(label)) counts.set(label, 0);
+      const normalized = normalizeLabel(label);
+      if (!counts.has(normalized)) counts.set(normalized, 0);
     });
     return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([label, count]) => ({ label, count }));
+      .map(([normalized, count]) => ({
+        label: CATEGORY_LABEL_MAP.get(normalized) || normalized,
+        count
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }, []);
 
   const handleProductsLoaded = useCallback(
@@ -1481,7 +1498,7 @@ export default function Home() {
     return QUICK_CATEGORY_SHORTCUTS
       .map((item) => ({
         ...item,
-        total: counts.get(item.label) || 0
+        total: counts.get(normalizeLabel(item.label)) || 0
       }))
       .filter((item) => item.total > 0 || ['Terreno', 'Aluguel'].includes(item.label));
   }, [quickCategoryCache, products, activeCountryForShortcuts]);
