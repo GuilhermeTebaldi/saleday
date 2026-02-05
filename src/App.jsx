@@ -25,6 +25,7 @@ import SellerProfile from './pages/SellerProfile.jsx';
 import SellerSearch from './pages/SellerSearch.jsx';
 import EditProduct from './pages/EditProduct.jsx';
 import SalesRequests from './pages/SalesRequests.jsx';
+import Molduras from './pages/Molduras.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
@@ -106,6 +107,7 @@ export default function App() {
               <PurchaseNotificationBanner />
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/molduras" caseSensitive={false} element={<Molduras />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/politica-de-privacidade" element={<Legal />} />
