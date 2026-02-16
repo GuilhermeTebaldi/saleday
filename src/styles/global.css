@@ -6279,6 +6279,16 @@ body.edit-profile-route .nav-side-backdrop {
   pointer-events: none !important;
 }
 
+body.edit-profile-route .edit-profile-page__overlay,
+body.edit-profile-route .home-drawer__overlay,
+body.edit-profile-route .home-fav-overlay,
+body.edit-profile-route .new-product-publish-overlay,
+body.edit-profile-route .product-detail__share-overlay,
+body.edit-profile-route .ig-rate-overlay {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 body.edit-profile-route .app-shell {
   position: static !important;
   left: auto !important;
@@ -6295,6 +6305,11 @@ body.edit-profile-route .app-header .nav-icon-button {
   animation: none !important;
   transition: none !important;
   filter: none !important;
+}
+
+body.edit-profile-route * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 body.edit-profile-route .edit-profile-page {

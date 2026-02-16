@@ -197,6 +197,13 @@ export default function Header() {
   }, [isHome, navPanelOpen]);
 
   useEffect(() => {
+    if (location.pathname !== '/edit-profile') return;
+    setNavPanelOpen(false);
+    setHeaderSearchOpen(false);
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const handleToggleSearch = () => setHeaderSearchOpen((prev) => !prev);
     window.addEventListener('templesale:toggle-header-search', handleToggleSearch);
