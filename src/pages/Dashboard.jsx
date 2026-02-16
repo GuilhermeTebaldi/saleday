@@ -24,6 +24,7 @@ import { IMG_PLACEHOLDER } from '../utils/placeholders.js';
 import CloseBackButton from '../components/CloseBackButton.jsx';
 import LoadingBar from '../components/LoadingBar.jsx';
 import { motion } from 'framer-motion';
+import { ENTRY_LOCALE_OPTIONS } from '../i18n/localeOptions.js';
 
 const getInitial = (value) => {
   if (!value) return 'S';
@@ -207,13 +208,6 @@ const CogIcon = ({ className = '' }) => (
     />
   </svg>
 );
-
-const LOCALE_OPTIONS = [
-  { value: 'pt-BR', label: 'Português (BR)' },
-  { value: 'en-US', label: 'English (US)' },
-  { value: 'es-ES', label: 'Español' },
-  { value: 'it-IT', label: 'Italiano' }
-];
 
 const PrimaryButton = ({
   as: Component = 'button',
@@ -989,7 +983,7 @@ export default function Dashboard() {
             <div className="dashboard-language mt-4 space-y-2">
               <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--ts-muted)]">Idioma</p>
               <div className="flex flex-wrap gap-2">
-                {LOCALE_OPTIONS.map((option) => {
+                {ENTRY_LOCALE_OPTIONS.map((option) => {
                   const isActive = option.value === activeLocale;
                   return (
                     <button
@@ -1002,6 +996,9 @@ export default function Dashboard() {
                           : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                       }`}
                     >
+                      <span aria-hidden="true" className="mr-1.5">
+                        {option.flag}
+                      </span>
                       {option.label}
                     </button>
                   );

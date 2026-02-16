@@ -8,6 +8,7 @@ import Auth0ProviderWrapper from './context/Auth0Provider.jsx';
 import { LocaleProvider } from './context/LocaleContext.jsx';
 import Header from './components/Header.jsx';
 import BanBanner from './components/BanBanner.jsx';
+import LanguageEntryGate from './components/LanguageEntryGate.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminProtectedRoute from './components/AdminProtectedRoute.jsx';
 import Home from './pages/Home.jsx';
@@ -100,6 +101,7 @@ export default function App() {
                   <img src="/mira2.png" alt="Mira" className="splash-screen__logo" />
                 </div>
               )}
+              <LanguageEntryGate enabled={splashDone} />
               <AutoI18n />
               <BanBanner message={banMessage} />
               <Header />

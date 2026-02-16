@@ -5,6 +5,7 @@ const LANGUAGE_TO_LOCALE = {
   en: 'en-US',
   es: 'es-ES',
   it: 'it-IT',
+  ar: 'ar-SA',
   de: 'de-DE',
   ja: 'ja-JP',
   zh: 'zh-CN'

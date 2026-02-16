@@ -211,6 +211,7 @@ function matchSupportedLocale(value) {
   const normalized = value.toLowerCase();
   const locales = Object.keys(DICTS);
   if (normalized.startsWith('pt')) return 'pt-BR';
+  if (normalized.startsWith('ar')) return 'ar-SA';
   return (
     locales.find((loc) => loc.toLowerCase() === normalized) ||
     locales.find((loc) => normalized.startsWith(loc.slice(0, 2).toLowerCase())) ||

@@ -310,7 +310,7 @@ const PUBLISH_STEPS = [
     label: 'Categoria',
     title: 'Escolha a categoria',
     subtitle: 'Toque na opção que melhor descreve o seu anúncio.',
-    image: 'https://res.cloudinary.com/dymox62b9/image/upload/v1768744372/saleday/products/ezatbqqvyfyhxh7c16fg.png',
+    image: '/imagensnewproduto/pagina1.png',
     requiredFields: ['category']
   },
   {
@@ -318,7 +318,7 @@ const PUBLISH_STEPS = [
     label: 'Título e preço',
     title: 'Título e preço',
     subtitle: 'Defina um título claro e o valor.',
-    image: 'https://res.cloudinary.com/dymox62b9/image/upload/v1768744422/saleday/products/wadpb1wm15nswra9y03k.png',
+    image: '/imagensnewproduto/pagina2.png',
     requiredFields: ['title']
   },
   {
@@ -326,7 +326,7 @@ const PUBLISH_STEPS = [
     label: 'Descrição e Detalhes',
     title: 'Descrição e detalhes',
     subtitle: 'Conte os detalhes mais importantes do produto.',
-    image: 'https://res.cloudinary.com/dymox62b9/image/upload/v1768744460/saleday/products/s1bgtxoew2jcp5sbiyjm.png',
+    image: '/imagensnewproduto/pagina3.png',
     requiredFields: ['description']
   },
   {
@@ -334,7 +334,7 @@ const PUBLISH_STEPS = [
     label: 'Imagens',
     title: 'Fotos do produto',
     subtitle: 'Adicione fotos reais e bem iluminadas.',
-    image: 'https://res.cloudinary.com/dymox62b9/image/upload/v1768744486/saleday/products/j1zqwfjy0saopco1lwqv.png',
+    image: '/imagensnewproduto/pagina4.png',
     requiredFields: []
   },
   {
@@ -342,7 +342,7 @@ const PUBLISH_STEPS = [
     label: 'Localização',
     title: 'Localização do anúncio',
     subtitle: 'Informe onde o produto está.',
-    image: 'https://res.cloudinary.com/dymox62b9/image/upload/v1768744512/saleday/products/iwssouunjbrutlglwfkg.png',
+    image: '/imagensnewproduto/pagina5.png',
     requiredFields: ['country', 'zip', 'city']
   }
 ];

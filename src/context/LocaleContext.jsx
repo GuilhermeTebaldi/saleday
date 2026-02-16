@@ -12,6 +12,7 @@ const matchSupportedLocale = (value) => {
   if (normalized.startsWith('en')) return 'en-US';
   if (normalized.startsWith('es')) return 'es-ES';
   if (normalized.startsWith('it')) return 'it-IT';
+  if (normalized.startsWith('ar')) return 'ar-SA';
   if (normalized.startsWith('de')) return 'de-DE';
   if (normalized.startsWith('ja')) return 'ja-JP';
   if (normalized.startsWith('zh')) return 'zh-CN';

@@ -59,7 +59,16 @@ const BASE_COUNTRIES = [
   { code: 'IT', label: 'Itália', language: 'it', aliases: ['Italia', 'Italy'] },
   { code: 'SM', label: 'San Marino', language: 'it' },
   { code: 'VA', label: 'Vaticano', language: 'it', aliases: ['Vatican', 'Holy See'] },
-  { code: 'CH', label: 'Suíça', language: 'it', aliases: ['Switzerland'] }
+  { code: 'CH', label: 'Suíça', language: 'it', aliases: ['Switzerland'] },
+  { code: 'SA', label: 'Arábia Saudita', language: 'ar', aliases: ['Saudi Arabia'] },
+  { code: 'AE', label: 'Emirados Árabes Unidos', language: 'ar', aliases: ['United Arab Emirates', 'UAE'] },
+  { code: 'QA', label: 'Catar', language: 'ar', aliases: ['Qatar'] },
+  { code: 'KW', label: 'Kuwait', language: 'ar' },
+  { code: 'OM', label: 'Omã', language: 'ar', aliases: ['Oman'] },
+  { code: 'BH', label: 'Bahrein', language: 'ar', aliases: ['Bahrain'] },
+  { code: 'EG', label: 'Egito', language: 'ar', aliases: ['Egypt'] },
+  { code: 'JO', label: 'Jordânia', language: 'ar', aliases: ['Jordan'] },
+  { code: 'MA', label: 'Marrocos', language: 'ar', aliases: ['Morocco'] }
 ];
 
 export const COUNTRY_OPTIONS = [...BASE_COUNTRIES].sort((a, b) =>
