@@ -6267,6 +6267,63 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
     0 24px 36px -12px rgba(15, 23, 42, 0.781);
 }
 
+/* Hardening for Chrome rendering glitches on Edit Profile route */
+body.edit-profile-route {
+  background: linear-gradient(180deg, var(--templesale-ice) 0%, #ffffff 45%, var(--templesale-ice-2) 100%) !important;
+  overscroll-behavior-y: none;
+}
+
+body.edit-profile-route .home-search-toolbar,
+body.edit-profile-route .nav-side-backdrop {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+body.edit-profile-route .app-shell {
+  position: static !important;
+  left: auto !important;
+  transform: none !important;
+  max-width: none !important;
+}
+
+body.edit-profile-route .app-logo,
+body.edit-profile-route .app-logo__word-wrap,
+body.edit-profile-route .app-logo__word,
+body.edit-profile-route .app-logo__mark,
+body.edit-profile-route .app-header .nav-icon-button {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+}
+
+body.edit-profile-route .edit-profile-page {
+  min-height: calc(100dvh - var(--home-header-height, 64px));
+}
+
+body.edit-profile-route .edit-profile-card,
+body.edit-profile-route .edit-profile-section,
+body.edit-profile-route .edit-profile-section--company,
+body.edit-profile-route .edit-profile-avatar__preview,
+body.edit-profile-route .phone-input,
+body.edit-profile-route .btn-primary,
+body.edit-profile-route .btn-secondary,
+body.edit-profile-route .templesale-back-button {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+body.edit-profile-route .edit-profile-card,
+body.edit-profile-route .edit-profile-section,
+body.edit-profile-route .edit-profile-form input,
+body.edit-profile-route .edit-profile-form select,
+body.edit-profile-route .edit-profile-textarea,
+body.edit-profile-route .btn-primary,
+body.edit-profile-route .btn-secondary,
+body.edit-profile-route .templesale-back-button {
+  transition: none !important;
+}
+
 
 @media (max-width: 768px) {
   .edit-profile-page {

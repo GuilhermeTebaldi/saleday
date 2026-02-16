@@ -188,6 +188,19 @@ export default function EditProfile() {
   const pendingCompanyCenterRef = useRef(null);
   const zipInputRef = useRef(null);
   const lastZipAutoFillRef = useRef({ zip: '', at: 0 });
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    document.body.classList.add('edit-profile-route');
+    document.body.classList.remove('templesale-panel-open', 'templesale-header-search-open');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('templesale:close-hamburger'));
+    }
+    return () => {
+      document.body.classList.remove('edit-profile-route');
+    };
+  }, []);
+
   const focusCompanyMap = useCallback(
     (lat, lng, zoom = 16, animate = true) => {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
