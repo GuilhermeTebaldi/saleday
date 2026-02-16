@@ -6218,6 +6218,30 @@ section[class*="bg-[var(--ts-bg)]"] .new-product__details-grid span {
   min-width: 160px;
 }
 
+.edit-profile-action-btn {
+  border: 1px solid #0f3a78;
+  background: #1654a3;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: none;
+  transform: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.edit-profile-action-btn:hover:not(:disabled),
+.edit-profile-action-btn:focus-visible:not(:disabled),
+.edit-profile-action-btn:active:not(:disabled) {
+  background: #124488;
+  border-color: #0f346b;
+  box-shadow: none;
+  transform: none;
+}
+
+.edit-profile-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .edit-profile-btn--compact {
   font-size: 0.75rem;
   padding: 0.45rem 0.8rem;
@@ -6321,6 +6345,7 @@ body.edit-profile-route .edit-profile-section,
 body.edit-profile-route .edit-profile-section--company,
 body.edit-profile-route .edit-profile-avatar__preview,
 body.edit-profile-route .phone-input,
+body.edit-profile-route .edit-profile-action-btn,
 body.edit-profile-route .btn-primary,
 body.edit-profile-route .btn-secondary,
 body.edit-profile-route .templesale-back-button {
@@ -6333,6 +6358,7 @@ body.edit-profile-route .edit-profile-section,
 body.edit-profile-route .edit-profile-form input,
 body.edit-profile-route .edit-profile-form select,
 body.edit-profile-route .edit-profile-textarea,
+body.edit-profile-route .edit-profile-action-btn,
 body.edit-profile-route .btn-primary,
 body.edit-profile-route .btn-secondary,
 body.edit-profile-route .templesale-back-button {

@@ -1000,7 +1000,7 @@ export default function EditProfile() {
                 <span className="edit-profile-contact__label">Localização automática</span>
                 <button
                   type="button"
-                  className="btn-primary edit-profile-btn--compact"
+                  className="edit-profile-action-btn edit-profile-btn--compact"
                   onClick={handleDetectLocation}
                   disabled={loadingLocation}
                 >
@@ -1025,7 +1025,7 @@ export default function EditProfile() {
                   />
                   <button
                     type="button"
-                    className="btn-primary edit-profile-btn--compact edit-profile-zip-btn"
+                    className="edit-profile-action-btn edit-profile-btn--compact edit-profile-zip-btn"
                     onClick={() => applyZipLookup({ showSuccessToast: true, mode: 'manual' })}
                     disabled={loadingZip}
                     data-zip-autofill="true"
