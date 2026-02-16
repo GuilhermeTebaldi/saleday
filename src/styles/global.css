@@ -13275,6 +13275,11 @@ body.templesale-panel-open .nav-side-backdrop {
   transition: opacity 0.2s ease;
 }
 
+.admin-panel__filters-submit:hover {
+  transform: none;
+  box-shadow: 0 16px 24px -16px rgba(15, 23, 42, 0.85);
+}
+
 .admin-panel__filters-submit:focus-visible {
   outline: 2px solid rgba(249, 115, 22, 0.6);
   outline-offset: 2px;
@@ -13337,6 +13342,12 @@ body.templesale-panel-open .nav-side-backdrop {
   border-radius: 18px;
   border: 1px solid rgba(226, 232, 240, 0.9);
   padding: 1.05rem 1.2rem;
+  box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.6);
+}
+
+.admin-panel__entry-card:hover {
+  transform: none;
+  border-color: rgba(226, 232, 240, 0.9);
   box-shadow: 0 18px 40px -34px rgba(15, 23, 42, 0.6);
 }
 

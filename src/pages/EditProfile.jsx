@@ -739,6 +739,14 @@ export default function EditProfile() {
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const fileName = String(file.name || '').trim();
+    const isMarkdownFile = /\.(md|markdown)$/i.test(fileName);
+    const hasSuspiciousMarkdownPattern = /bug\?\.md/i.test(fileName);
+
+    if (isMarkdownFile || hasSuspiciousMarkdownPattern) {
+      toast.error('Arquivo inválido. Envie apenas imagens (JPG, PNG ou WEBP).');
+      return;
+    }
 
     if (!file.type.startsWith('image/')) {
       toast.error('Selecione um arquivo de imagem válido.');
