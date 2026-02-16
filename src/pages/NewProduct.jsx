@@ -306,6 +306,14 @@ const NEW_PRODUCT_ADDRESS_STORAGE_KEY = 'newProductAddress';
 // Step metadata keeps the wizard flow in a single page without duplicating form logic.
 const PUBLISH_STEPS = [
   {
+    id: 'location',
+    label: 'Localização',
+    title: 'Localização do anúncio',
+    subtitle: 'Informe onde o produto está.',
+    image: '/imagensnewproduto/pagina5.png',
+    requiredFields: ['country', 'zip', 'city']
+  },
+  {
     id: 'category',
     label: 'Categoria',
     title: 'Escolha a categoria',
@@ -336,16 +344,29 @@ const PUBLISH_STEPS = [
     subtitle: 'Adicione fotos reais e bem iluminadas.',
     image: '/imagensnewproduto/pagina4.png',
     requiredFields: []
-  },
-  {
-    id: 'location',
-    label: 'Localização',
-    title: 'Localização do anúncio',
-    subtitle: 'Informe onde o produto está.',
-    image: '/imagensnewproduto/pagina5.png',
-    requiredFields: ['country', 'zip', 'city']
   }
 ];
+
+const CATEGORY_STEP_INDEX = Math.max(
+  0,
+  PUBLISH_STEPS.findIndex((step) => step.id === 'category')
+);
+const TITLE_PRICE_STEP_INDEX = Math.max(
+  0,
+  PUBLISH_STEPS.findIndex((step) => step.id === 'title-price')
+);
+const DESCRIPTION_DETAILS_STEP_INDEX = Math.max(
+  0,
+  PUBLISH_STEPS.findIndex((step) => step.id === 'description-details')
+);
+const IMAGES_STEP_INDEX = Math.max(
+  0,
+  PUBLISH_STEPS.findIndex((step) => step.id === 'images')
+);
+const LOCATION_STEP_INDEX = Math.max(
+  0,
+  PUBLISH_STEPS.findIndex((step) => step.id === 'location')
+);
 
 const STEP_FIELD_INDEX = {
   ...PUBLISH_STEPS.reduce((acc, step, index) => {
@@ -354,7 +375,7 @@ const STEP_FIELD_INDEX = {
     });
     return acc;
   }, {}),
-  year: 2
+  year: DESCRIPTION_DETAILS_STEP_INDEX
 };
 
 const TOTAL_PUBLISH_STEPS = PUBLISH_STEPS.length;
@@ -581,8 +602,9 @@ export default function NewProduct() {
   const initialZipRef = useRef(baseForm.zip);
   const locationSourceRef = useRef('');
   const [activeImageKindId, setActiveImageKindId] = useState(null);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(0);
+  // Start in location to resolve country/currency context before users reach the price field.
+  const [currentStep, setCurrentStep] = useState(LOCATION_STEP_INDEX);
+  const [maxStepReached, setMaxStepReached] = useState(LOCATION_STEP_INDEX);
   const isFloorplanCategory = useMemo(() => {
     const normalized = normalizeCategoryLabel(form.category);
     return (
@@ -618,8 +640,8 @@ export default function NewProduct() {
     } else {
       locationSourceRef.current = '';
     }
-    setCurrentStep(0);
-    setMaxStepReached(0);
+    setCurrentStep(LOCATION_STEP_INDEX);
+    setMaxStepReached(LOCATION_STEP_INDEX);
   }, [baseForm]);
 
   useEffect(() => {
@@ -692,8 +714,8 @@ export default function NewProduct() {
     resetImagePreviews();
     setForm(baseForm);
     setShowFieldErrors(false);
-    setCurrentStep(0);
-    setMaxStepReached(0);
+    setCurrentStep(LOCATION_STEP_INDEX);
+    setMaxStepReached(LOCATION_STEP_INDEX);
   }, [baseForm, resetImagePreviews]);
 
   useEffect(() => () => {
@@ -862,7 +884,7 @@ export default function NewProduct() {
   }, []);
 
   const handleStepNext = useCallback(() => {
-    if (currentStep === 3 && images.length === 0) {
+    if (currentStep === IMAGES_STEP_INDEX && images.length === 0) {
       toast.error('Adicione ao menos uma foto para continuar.');
       scrollToField('images');
       return;
@@ -897,7 +919,7 @@ export default function NewProduct() {
       if (sending) return;
       setForm((prev) => ({ ...prev, category }));
       setShowFieldErrors(false);
-      advanceToStep(1);
+      advanceToStep(TITLE_PRICE_STEP_INDEX);
       scrollToTop();
     },
     [advanceToStep, scrollToTop, sending]
@@ -1863,7 +1885,7 @@ export default function NewProduct() {
                   alt={`Ilustração da etapa ${activeStep.label}`}
                 />
                 <div className="space-y-4">
-                  {currentStep === 0 && (
+                  {currentStep === CATEGORY_STEP_INDEX && (
                     <>
                       <div className={STEP_CARD_CLASS}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1931,7 +1953,7 @@ export default function NewProduct() {
                     </>
                   )}
 
-                  {currentStep === 1 && (
+                  {currentStep === TITLE_PRICE_STEP_INDEX && (
                     <>
                       <div className={STEP_CARD_CLASS}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2063,7 +2085,7 @@ export default function NewProduct() {
                     </>
                   )}
 
-                  {currentStep === 2 && (
+                  {currentStep === DESCRIPTION_DETAILS_STEP_INDEX && (
                     <>
                       <div className={STEP_CARD_CLASS}>
                         <label className={`${FIELD_LABEL_CLASS} mt-0`}>
@@ -2118,7 +2140,7 @@ export default function NewProduct() {
                     </>
                   )}
 
-                  {currentStep === 3 && (
+                  {currentStep === IMAGES_STEP_INDEX && (
                     <>
                       <div
                         className={`space-y-4 ${STEP_CARD_CLASS}`}
@@ -2353,14 +2375,16 @@ export default function NewProduct() {
                       <StepFooter
                         onClear={handleClearForm}
                         onBack={handleStepBack}
-                        onNext={handleStepNext}
-                        nextLabel="Continuar para localização"
+                        nextLabel="Publicar produto"
+                        nextLabelLoading="Publicando..."
+                        isSubmit
                         disabled={sending}
+                        loading={sending}
                       />
                     </>
                   )}
 
-                  {currentStep === 4 && (
+                  {currentStep === LOCATION_STEP_INDEX && (
                     <>
                       <div className={`${STEP_CARD_CLASS} space-y-4`}>
                         <div className="flex flex-col gap-2">
@@ -2493,11 +2517,10 @@ export default function NewProduct() {
                       <StepFooter
                         onClear={handleClearForm}
                         onBack={handleStepBack}
-                        nextLabel="Publicar produto"
-                        nextLabelLoading="Publicando..."
-                        isSubmit
+                        onNext={handleStepNext}
+                        nextLabel="Continuar para categoria"
+                        showBack={LOCATION_STEP_INDEX > 0}
                         disabled={sending}
-                        loading={sending}
                       />
                     </>
                   )}
